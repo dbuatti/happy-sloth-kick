@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
+import { useAuth } from '@/context/AuthContext'; // Added missing import
 
 export type GoalType = 'daily' | 'weekly' | 'monthly' | '3-month' | '6-month' | '9-month' | 'yearly' | '3-year' | '5-year' | '7-year' | '10-year';
 
