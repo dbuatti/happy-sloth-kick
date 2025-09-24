@@ -9,7 +9,7 @@ interface ResonanceGoalTimelineSectionProps {
   goalType: GoalType;
   goals: Goal[];
   allCategories: Category[];
-  onAddGoal: Parameters<typeof QuickAddGoal>['0']['onAddGoal']; // Corrected type
+  onAddGoal: Parameters<typeof QuickAddGoal>['0']['onAddGoal'];
   onEditGoal: (goal: Goal) => void;
   onDeleteGoal: (goalId: string) => void;
   onToggleCompleteGoal: (goalId: string, completed: boolean) => void;
@@ -45,12 +45,12 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
   return (
     <div className="space-y-3 border-b pb-4 mb-4 last:border-b-0 last:pb-0 last:mb-0"> {/* Adjusted vertical spacing */}
       <h3 className="text-lg font-bold text-foreground flex items-center gap-2"> {/* Reduced font size */}
-        <Target className="h-4 w-4 text-primary" /> {goalType.charAt(0).toUpperCase() + goalType.slice(1).replace('-', ' ')} Goals {/* Reduced icon size */}
+        <Target className="h-4 w-4 text-primary" /> {(goalType as string).charAt(0).toUpperCase() + (goalType as string).slice(1).replace('-', ' ')} Goals {/* Reduced icon size */}
       </h3>
       <div className="relative">
         <div className="absolute left-0 top-1/2 w-full border-t border-dashed border-muted-foreground/30" />
         <div className="relative z-10 bg-background px-2 py-0.5 inline-block -translate-y-1/2"> {/* Adjusted vertical padding */}
-          <span className="text-xs text-muted-foreground">{goalType.replace('-', ' ')}</span> {/* Reduced font size */}
+          <span className="text-xs text-muted-foreground">{(goalType as string).replace('-', ' ')}</span> {/* Reduced font size */}
         </div>
       </div>
 
@@ -60,7 +60,7 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
           <Skeleton className="h-20 w-full rounded-lg" /> {/* Reduced height, rounded */}
         </div>
       ) : topLevelGoals.length === 0 ? (
-        <p className="text-muted-foreground text-xs text-center py-3">No {goalType.replace('-', ' ')} goals set yet.</p> {/* Adjusted font size, vertical padding */}
+        <p className="text-muted-foreground text-xs text-center py-3">No {(goalType as string).replace('-', ' ')} goals set yet.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3"> {/* Adjusted gap */}
           {topLevelGoals.map(goal => (
@@ -69,11 +69,11 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
               goal={goal}
               onEdit={onEditGoal}
               onDelete={onDeleteGoal}
-              onToggleComplete={onToggleCompleteGoal}
+              onToggleCompleteGoal={onToggleCompleteGoal}
               onAddSubGoal={onAddSubGoal}
               subGoals={getSubGoals(goal.id)}
               isExpanded={expandedGoals[goal.id] !== false}
-              toggleExpand={toggleExpandGoal}
+              toggleExpandGoal={toggleExpandGoal}
               isDemo={isDemo}
               level={0}
             />
