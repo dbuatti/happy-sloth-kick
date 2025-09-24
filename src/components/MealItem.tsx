@@ -8,6 +8,7 @@ import { format, parseISO, isSameDay, setHours, setMinutes, addDays } from 'date
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface MealItemProps {
   meal: Meal;
@@ -28,6 +29,9 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   const [hasIngredients, setHasIngredients] = useState(meal.has_ingredients);
   const [isCompleted, setIsCompleted] = useState(meal.is_completed);
 
+  const debouncedName = useDebounce(name, 500);
+  const debouncedNotes = useDebounce(notes, 500);
+
   const isPlaceholder = meal.id.startsWith('placeholder-');
 
   // Effect to initialize local state when the meal prop changes
@@ -38,38 +42,17 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
     setIsCompleted(meal.is_completed);
   }, [meal]);
 
-  // Effect to debounce and save changes
+  // Effect for debounced name changes
   useEffect(() => {
-    if (isDemo) return;
+    if (isDemo || debouncedName === meal.name) return;
+    onUpdate(meal.id, { name: debouncedName });
+  }, [debouncedName, meal.name, meal.id, onUpdate, isDemo]);
 
-    const timer = setTimeout(() => {
-      const currentMealData: Partial<Meal> = {
-        name: name,
-        notes: notes,
-        has_ingredients: hasIngredients,
-        is_completed: isCompleted,
-      };
-
-      if (isPlaceholder) {
-        // For placeholders, create the meal if any content is entered
-        if (name.trim() !== '' || notes.trim() !== '' || hasIngredients || isCompleted) {
-          onUpdate(meal.id, { ...meal, ...currentMealData }); // Pass placeholder ID, but also current data
-        }
-      } else {
-        // For existing meals, check if any field has changed from the prop value
-        const hasNameChanged = name !== meal.name;
-        const hasNotesChanged = notes !== (meal.notes || '');
-        const hasIngredientsChanged = hasIngredients !== meal.has_ingredients;
-        const hasCompletedChanged = isCompleted !== meal.is_completed;
-
-        if (hasNameChanged || hasNotesChanged || hasIngredientsChanged || hasCompletedChanged) {
-          onUpdate(meal.id, currentMealData);
-        }
-      }
-    }, 500); // Debounce time
-
-    return () => clearTimeout(timer);
-  }, [name, notes, hasIngredients, isCompleted, meal, onUpdate, isDemo, isPlaceholder]);
+  // Effect for debounced notes changes
+  useEffect(() => {
+    if (isDemo || debouncedNotes === (meal.notes || '')) return;
+    onUpdate(meal.id, { notes: debouncedNotes });
+  }, [debouncedNotes, meal.notes, meal.id, onUpdate, isDemo]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value);
@@ -82,13 +65,23 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   const handleHasIngredientsChange = async (checked: boolean) => {
     if (isDemo) return;
     setHasIngredients(checked);
-    // The useEffect above will handle saving this change after debounce
+    const updates: Partial<Meal> = { has_ingredients: checked };
+    if (isPlaceholder) {
+      updates.name = name;
+      updates.notes = notes;
+    }
+    await onUpdate(meal.id, updates);
   };
 
   const handleIsCompletedChange = async (checked: boolean) => {
     if (isDemo) return;
     setIsCompleted(checked);
-    // The useEffect above will handle saving this change after debounce
+    const updates: Partial<Meal> = { is_completed: checked };
+    if (isPlaceholder) {
+      updates.name = name;
+      updates.notes = notes;
+    }
+    await onUpdate(meal.id, updates);
   };
 
   const mealDate = parseISO(meal.meal_date);
