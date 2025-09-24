@@ -44,7 +44,6 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
 
     try {
       const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
-      // Assuming suggestGoalDetails is similar to suggestTaskDetails
       const suggestions = await suggestGoalDetails(title.trim(), categoriesForAI, new Date());
       dismissToast(loadingToastId);
       setIsSuggesting(false);
@@ -53,17 +52,26 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
       let finalCategoryId: string | null = null;
 
       if (suggestions) {
-        const existingCategory = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase());
+        const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        let effectiveCategoryName = suggestions.category;
+
+        if (uuidRegex.test(suggestions.category)) {
+          console.warn("AI suggested category name looks like a UUID. Attempting to use 'General' category instead.");
+          showError("AI suggested an invalid category name. Attempting to use 'General' category.");
+          effectiveCategoryName = "General";
+        }
+
+        let existingCategory = allCategories.find(cat => cat.name.toLowerCase() === effectiveCategoryName.toLowerCase());
         
         if (existingCategory) {
           finalCategoryId = existingCategory.id;
         } else {
-          // Category does not exist, create it
-          const newCategory = await onAddCategory(suggestions.category, '#6b7280'); // Default color for new AI-created categories
+          // Category does not exist, try to create it
+          const newCategory = await onAddCategory(effectiveCategoryName, '#6b7280'); // Default color for new AI-created categories
           if (newCategory) {
             finalCategoryId = newCategory.id;
           } else {
-            showError('Failed to create new category. Using default.');
+            showError(`Failed to create category "${effectiveCategoryName}". Using first available category.`);
             finalCategoryId = allCategories[0]?.id || null;
           }
         }
