@@ -93,7 +93,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                 <Checkbox
                   id={`goal-${goal.id}`}
                   checked={goal.completed}
-                  onCheckedChange={(checked: boolean) => onToggleComplete(goal.id, checked)}
+                  onCheckedChange={(checked: boolean) => { console.log('Checkbox toggled for goal:', goal.id, 'new state:', checked); onToggleComplete(goal.id, checked); }}
                   disabled={isDemo}
                   className="h-3.5 w-3.5 rounded-full border-2"
                 />
@@ -123,10 +123,10 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
               </div >
               {!isDemo && (
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(goal); }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); console.log('Edit button clicked for goal:', goal.id); onEdit(goal); }}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(goal.id); }}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); console.log('Delete button clicked for goal:', goal.id); onDelete(goal.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -146,13 +146,13 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
         </ContextMenuTrigger>
         {!isDemo && (
           <ContextMenuContent>
-            <ContextMenuItem onSelect={() => onEdit(goal)}>
+            <ContextMenuItem onSelect={() => { console.log('Context menu Edit Goal selected for:', goal.id); onEdit(goal); }}>
               <Edit className="mr-2 h-4 w-4" /> Edit Goal
             </ContextMenuItem>
-            <ContextMenuItem onSelect={() => onAddSubGoal(goal.id)}>
+            <ContextMenuItem onSelect={() => { console.log('Context menu Add Sub-goal selected for:', goal.id); onAddSubGoal(goal.id); }}>
               <Plus className="mr-2 h-4 w-4" /> Add Sub-goal
             </ContextMenuItem>
-            <ContextMenuItem onSelect={() => onDelete(goal.id)} className="text-destructive">
+            <ContextMenuItem onSelect={() => { console.log('Context menu Delete Goal selected for:', goal.id); onDelete(goal.id); }} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" /> Delete Goal
             </ContextMenuItem>
           </ContextMenuContent>

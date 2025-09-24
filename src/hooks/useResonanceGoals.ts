@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 
 export type GoalType = 'daily' | 'weekly' | 'monthly' | '3-month' | '6-month' | '9-month' | 'yearly' | '3-year' | '5-year' | '7-year' | '10-year';
@@ -123,6 +122,7 @@ export const useResonanceGoals = (props?: UseResonanceGoalsProps) => {
   const updateGoalMutation = useMutation<Goal, Error, { id: string; updates: UpdateGoalData }>({
     mutationFn: async ({ id, updates }) => {
       if (!userId) throw new Error('User not authenticated.');
+      console.log('Attempting to update goal:', { id, updates }); // Add this log
       const { data, error } = await supabase
         .from('goals')
         .update(updates)
@@ -130,7 +130,10 @@ export const useResonanceGoals = (props?: UseResonanceGoalsProps) => {
         .eq('user_id', userId)
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error); // Log Supabase specific error
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {

@@ -23,8 +23,9 @@ serve(async (req) => {
     }
 
     const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+    console.log('GEMINI_API_KEY status:', geminiApiKey ? 'set' : 'NOT SET');
     if (!geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not set in Supabase secrets.' }), {
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY is not set in Supabase secrets. Please configure it in your Supabase dashboard under Edge Functions -> Manage Secrets.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
@@ -75,7 +76,7 @@ serve(async (req) => {
       parsed = JSON.parse(jsonString);
     } catch (jsonError) {
       console.error('JSON parsing error:', jsonError);
-      return new Response(JSON.stringify({ error: 'Failed to parse AI response as JSON.', rawResponse: text }), {
+      return new Response(JSON.stringify({ error: 'Failed to parse AI response as JSON. This might indicate an issue with the AI model\'s output format or an invalid API key. Please check the raw response.', rawResponse: text }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
