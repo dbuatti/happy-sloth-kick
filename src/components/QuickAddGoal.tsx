@@ -19,6 +19,7 @@ interface QuickAddGoalProps {
   allCategories: Category[];
   isDemo?: boolean;
   parentGoalId?: string | null;
+  onAddCategory: (name: string, color: string) => Promise<Category | null>; // New prop for adding categories
 }
 
 const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
@@ -27,6 +28,7 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
   allCategories,
   isDemo = false,
   parentGoalId = null,
+  onAddCategory, // Destructure new prop
 }) => {
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -48,14 +50,28 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
       setIsSuggesting(false);
 
       let goalDataToSend: Parameters<typeof onAddGoal>[0];
+      let finalCategoryId: string | null = null;
 
       if (suggestions) {
-        const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories[0]?.id || null;
+        const existingCategory = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase());
+        
+        if (existingCategory) {
+          finalCategoryId = existingCategory.id;
+        } else {
+          // Category does not exist, create it
+          const newCategory = await onAddCategory(suggestions.category, '#6b7280'); // Default color for new AI-created categories
+          if (newCategory) {
+            finalCategoryId = newCategory.id;
+          } else {
+            showError('Failed to create new category. Using default.');
+            finalCategoryId = allCategories[0]?.id || null;
+          }
+        }
         
         goalDataToSend = {
           title: suggestions.cleanedDescription,
           description: suggestions.notes,
-          category_id: suggestedCategoryId,
+          category_id: finalCategoryId,
           type: goalType,
           due_date: suggestions.dueDate,
           parent_goal_id: parentGoalId,

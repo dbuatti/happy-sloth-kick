@@ -18,6 +18,7 @@ interface ResonanceGoalTimelineSectionProps {
   loading: boolean;
   expandedGoals: Record<string, boolean>;
   toggleExpandGoal: (goalId: string) => void;
+  onAddCategory: (name: string, color: string) => Promise<Category | null>; // New prop
 }
 
 const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> = ({
@@ -33,6 +34,7 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
   loading,
   expandedGoals,
   toggleExpandGoal,
+  onAddCategory, // Destructure new prop
 }) => {
   const topLevelGoals = goals.filter(goal => goal.parent_goal_id === null)
     .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -86,6 +88,7 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
           onAddGoal={onAddGoal}
           allCategories={allCategories}
           isDemo={isDemo}
+          onAddCategory={onAddCategory} // Pass the new prop
         />
       </div>
     </div>

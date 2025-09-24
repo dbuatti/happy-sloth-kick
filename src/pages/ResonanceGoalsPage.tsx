@@ -131,6 +131,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   };
 
   const handleSuggestGoal = async () => {
+    if (isDemo) return; // Disable AI in demo mode
     if (!goalTitle.trim()) {
       showError('Please enter a goal title to get suggestions.');
       return;
@@ -144,16 +145,23 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
       if (suggestions) {
         setGoalTitle(suggestions.cleanedDescription);
         setGoalDescription(suggestions.notes || '');
+        
+        let finalCategoryId = '';
         const suggestedCategory = categories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase());
         if (suggestedCategory) {
-          setGoalCategory(suggestedCategory.id);
+          finalCategoryId = suggestedCategory.id;
         } else {
-          // If AI suggested a new category name, create it
+          // Category does not exist, create it
           const newCat = await addCategory({ name: suggestions.category, color: '#6b7280' }); // Default color
           if (newCat) {
-            setGoalCategory(newCat.id);
+            finalCategoryId = newCat.id;
+          } else {
+            showError('Failed to create new category. Using default.');
+            finalCategoryId = categories[0]?.id || '';
           }
         }
+        setGoalCategory(finalCategoryId);
+
         if (suggestions.dueDate) {
           setGoalDueDate(parseISO(suggestions.dueDate));
         }
@@ -310,6 +318,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
                         loading={loading}
                         expandedGoals={expandedGoals}
                         toggleExpandGoal={toggleExpandGoal}
+                        onAddCategory={addCategory} // Pass addCategory to the section
                       />
                     );
                   }
