@@ -2,13 +2,15 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { MealStaple } from '@/hooks/useMealStaples';
-import MealItem from './MealItem';
 import { cn } from '@/lib/utils';
 import { GripVertical } from 'lucide-react';
+import StapleItemDisplay from './StapleItemDisplay'; // Import the new component
 
 interface SortableStapleItemProps {
   staple: MealStaple;
   onUpdate: (id: string, updates: Partial<MealStaple>) => Promise<any>;
+  onOpenEditDialog: (staple: MealStaple) => void;
+  onOpenDeleteDialog: (staple: MealStaple) => void;
   isDemo?: boolean;
   isOverlay?: boolean;
 }
@@ -16,6 +18,8 @@ interface SortableStapleItemProps {
 const SortableStapleItem: React.FC<SortableStapleItemProps> = ({
   staple,
   onUpdate,
+  onOpenEditDialog,
+  onOpenDeleteDialog,
   isDemo = false,
   isOverlay = false,
 }) => {
@@ -53,12 +57,13 @@ const SortableStapleItem: React.FC<SortableStapleItemProps> = ({
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
       )}
-      <div className={cn("flex-1", !isDemo && "pl-6")}> {/* Add left padding if not in demo mode to make space for handle */}
-        <MealItem
-          meal={staple}
+      <div className={cn("flex-1", !isDemo && "pl-6")}>
+        <StapleItemDisplay
+          staple={staple}
           onUpdate={onUpdate}
+          onOpenEditDialog={onOpenEditDialog}
+          onOpenDeleteDialog={onOpenDeleteDialog}
           isDemo={isDemo}
-          isPlaceholder={false} // Sortable items are always real items
         />
       </div>
     </li>

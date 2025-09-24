@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown, ShoppingCart, GripVertical } from 'lucide-react';
+import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown, ShoppingCart } from 'lucide-react'; // Removed GripVertical
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMealStaples, MealStaple, NewMealStapleData } from '@/hooks/useMealStaples';
 import {
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
-import { showError } from '@/utils/toast'; // Import showError
+import { showError } from '@/utils/toast';
 
 import {
   DndContext,
@@ -46,7 +46,8 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import SortableStapleItem from './SortableStapleItem'; // Import the new sortable item
+import SortableStapleItem from './SortableStapleItem';
+import StapleItemDisplay from './StapleItemDisplay'; // Import the new component
 
 interface StaplesInventoryProps {
   isDemo?: boolean;
@@ -146,9 +147,10 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     }
   };
 
-  const handleQuantityChange = async (stapleId: string, newQuantity: number) => {
+  // Wrapper function for onUpdate to match StapleItemDisplay's expected signature
+  const handleUpdateStapleWrapper = async (id: string, updates: Partial<MealStaple>) => {
     if (isDemo) return;
-    await updateStaple({ id: stapleId, updates: { current_quantity: newQuantity } });
+    await updateStaple({ id, updates });
   };
 
   const handleQuickAddStaple = async (e: React.FormEvent) => {
@@ -201,90 +203,6 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     await reorderStaples(newOrder);
   };
 
-  const StapleItemContent: React.FC<{ staple: MealStaple }> = ({ staple }) => {
-    const [localCurrentQuantity, setLocalCurrentQuantity] = useState(staple.current_quantity);
-    const debouncedCurrentQuantity = useDebounce(localCurrentQuantity, 500);
-
-    useEffect(() => {
-      setLocalCurrentQuantity(staple.current_quantity);
-    }, [staple.current_quantity]);
-
-    useEffect(() => {
-      if (isDemo || debouncedCurrentQuantity === staple.current_quantity) return;
-      handleQuantityChange(staple.id, debouncedCurrentQuantity);
-    }, [debouncedCurrentQuantity, staple.current_quantity, staple.id, isDemo]);
-
-    const isLow = localCurrentQuantity < staple.target_quantity;
-    const isCritical = localCurrentQuantity === 0 && staple.target_quantity > 0;
-    const isOverTarget = localCurrentQuantity > staple.target_quantity;
-
-    const quantityColorClass = cn(
-      isCritical && 'text-destructive',
-      isLow && !isCritical && 'text-orange-500',
-      isOverTarget && 'text-green-500'
-    );
-
-    return (
-      <div
-        className={cn(
-          "flex items-center justify-between p-3 rounded-xl shadow-sm bg-card border-l-4",
-          isCritical && "border-destructive",
-          isLow && !isCritical && "border-orange-500",
-          isOverTarget && "border-green-500",
-          !isLow && !isCritical && !isOverTarget && "border-primary/20"
-        )}
-      >
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg truncate">{staple.name}</h3>
-          <p className="text-sm text-muted-foreground">Target: {staple.target_quantity} {staple.unit || 'unit'}</p>
-        </div>
-        <div className="flex items-center gap-2 ml-4">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setLocalCurrentQuantity(prev => Math.max(0, prev - 1))}
-            disabled={isDemo || localCurrentQuantity <= 0}
-          >
-            <Minus className="h-4 w-4" />
-          </Button>
-          <Input
-            type="number"
-            value={localCurrentQuantity}
-            onChange={(e) => setLocalCurrentQuantity(Number(e.target.value))}
-            className={cn("w-16 text-center font-bold h-9", quantityColorClass)}
-            min="0"
-            disabled={isDemo}
-          />
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setLocalCurrentQuantity(prev => prev + 1)}
-            disabled={isDemo}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={() => handleOpenAddEditDialog(staple)}>
-                <Edit className="mr-2 h-4 w-4" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => handleOpenDeleteDialog(staple)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <>
       <div className="space-y-4">
@@ -333,7 +251,9 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
                   <SortableStapleItem
                     key={staple.id}
                     staple={staple}
-                    onUpdate={updateStaple}
+                    onUpdate={handleUpdateStapleWrapper}
+                    onOpenEditDialog={handleOpenAddEditDialog}
+                    onOpenDeleteDialog={handleOpenDeleteDialog}
                     isDemo={isDemo}
                   />
                 ))}
@@ -344,7 +264,9 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
                 {activeStaple ? (
                   <SortableStapleItem
                     staple={activeStaple}
-                    onUpdate={updateStaple}
+                    onUpdate={handleUpdateStapleWrapper}
+                    onOpenEditDialog={handleOpenAddEditDialog}
+                    onOpenDeleteDialog={handleOpenDeleteDialog}
                     isDemo={isDemo}
                     isOverlay={true}
                   />
