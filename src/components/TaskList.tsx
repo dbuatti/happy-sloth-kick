@@ -348,7 +348,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       <QuickAddTask
                         sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
                         onAddTask={async (data) => { await handleAddTask(data); }}
-                        defaultCategoryId={allCategories.find(c => c.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || ''}
+                        // Removed defaultCategoryId prop
                         isDemo={isDemo}
                         allCategories={allCategories}
                         sections={sections}

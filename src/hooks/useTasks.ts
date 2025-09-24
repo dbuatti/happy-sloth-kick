@@ -293,13 +293,17 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    // Ensure status and recurring_type are explicitly set for addTaskMutation
+
+    // Refined defaultCategoryId logic
+    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+    const defaultCategoryId = generalCategory?.id || (allCategories.length > 0 ? allCategories[0].id : null);
+
     const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
       ...newTaskData,
       description: newTaskData.description || '', // Ensure description is string
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
-      category: newTaskData.category || 'general', // Ensure category is not null
+      category: newTaskData.category || defaultCategoryId, // Use refined defaultCategoryId
       priority: newTaskData.priority ?? 'medium', // Ensure priority is not undefined using nullish coalescing
       due_date: newTaskData.due_date ?? null, // Fix: Add nullish coalescing for due_date
       notes: newTaskData.notes ?? null, // Fix: Add nullish coalescing for notes
@@ -311,8 +315,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       link: newTaskData.link ?? null, // Fix: Add nullish coalescing for link
       image_url: newTaskData.image_url ?? null, // Fix: Add nullish coalescing for image_url
     };
-    return addTaskMutation(dataWithDefaults, mutationContext);
-  }, [userId, mutationContext]);
+
+    console.log('handleAddTask: Data being sent to addTaskMutation:', dataWithDefaults);
+    const result = await addTaskMutation(dataWithDefaults, mutationContext);
+    console.log('handleAddTask: Result from addTaskMutation:', result);
+    return result;
+  }, [userId, mutationContext, allCategories]); // Add allCategories to dependencies
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
     if (!userId) { showError('User not authenticated.'); return null; }

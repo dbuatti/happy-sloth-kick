@@ -5,6 +5,7 @@ import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
+import QuickAddTask from './QuickAddTask'; // Import QuickAddTask
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -45,6 +46,7 @@ interface DailyTasksHeaderProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   onToggleAllSections: () => void;
+  handleAddTask: (taskData: any) => Promise<any>; // Added handleAddTask
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -79,6 +81,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   toggleDoToday,
   onToggleAllSections,
+  handleAddTask, // Destructure handleAddTask
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 

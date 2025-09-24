@@ -12,14 +12,14 @@ interface QuickAddTaskProps {
   onAddTask: (taskData: {
     description: string;
     section_id: string | null;
-    category: string;
+    category: string | null; // Changed to string | null
     priority: Task['priority'];
     due_date?: string | null;
     notes?: string | null;
     remind_at?: string | null;
     link?: string | null;
   }) => Promise<any>;
-  defaultCategoryId: string;
+  // Removed defaultCategoryId prop
   isDemo?: boolean;
   allCategories: Category[]; // Added prop
   sections: TaskSection[]; // Added prop
@@ -29,7 +29,7 @@ interface QuickAddTaskProps {
 const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   sectionId,
   onAddTask,
-  defaultCategoryId,
+  // Removed defaultCategoryId from destructuring
   isDemo = false,
   allCategories,
   sections,
@@ -56,8 +56,12 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
 
       let taskDataToSend: Parameters<typeof onAddTask>[0];
 
+      // Refined defaultCategoryId logic for QuickAddTask as well
+      const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+      const effectiveDefaultCategoryId = generalCategory?.id || (allCategories.length > 0 ? allCategories[0].id : null);
+
       if (suggestions) {
-        const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || defaultCategoryId;
+        const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || effectiveDefaultCategoryId;
         // Fix: Ensure suggestions.section is a string before comparison
         const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''))?.id || sectionId;
 
@@ -75,13 +79,16 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
         showError('AI suggestions failed. Adding task with default details.');
         taskDataToSend = {
           description: description.trim(),
-          category: defaultCategoryId,
+          category: effectiveDefaultCategoryId,
           priority: 'medium',
           section_id: sectionId,
         };
       }
 
+      console.log('QuickAddTask: Data being sent to onAddTask:', taskDataToSend);
       const success = await onAddTask(taskDataToSend);
+      console.log('QuickAddTask: Result from onAddTask:', success);
+
       if (success) {
         setDescription('');
       }
