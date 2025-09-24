@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection'; // Import the new component
+import { suggestGoalDetails } from '@/integrations/supabase/api'; // Import suggestGoalDetails
+import { dismissToast, showError, showLoading } from '@/utils/toast'; // Import toast utilities
 
 interface ResonanceGoalsPageProps {
   isDemo?: boolean;
@@ -53,6 +55,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   const [goalDueDate, setGoalDueDate] = useState<Date | undefined>(undefined);
   const [goalParentId, setGoalParentId] = useState<string | null>(null); // New state for parent goal
   const [isSavingGoal, setIsSavingGoal] = useState(false);
+  const [isSuggestingGoal, setIsSuggestingGoal] = useState(false); // New state for AI suggestion
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [goalToDeleteId, setGoalToDeleteId] = useState<string | null>(null);
@@ -113,6 +116,39 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     }
   };
 
+  const handleSuggestGoal = async () => {
+    if (!goalTitle.trim()) {
+      showError('Please enter a goal title to get suggestions.');
+      return;
+    }
+    setIsSuggestingGoal(true);
+    const loadingToastId = showLoading('Getting AI suggestions...');
+    try {
+      const categoriesForAI = categories.map(cat => ({ id: cat.id, name: cat.name }));
+      const suggestions = await suggestGoalDetails(goalTitle, categoriesForAI, new Date());
+
+      if (suggestions) {
+        setGoalTitle(suggestions.cleanedDescription);
+        setGoalDescription(suggestions.notes || '');
+        const suggestedCategory = categories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase());
+        if (suggestedCategory) {
+          setGoalCategory(suggestedCategory.id);
+        }
+        if (suggestions.dueDate) {
+          setGoalDueDate(parseISO(suggestions.dueDate));
+        }
+        // Priority and section are not directly applicable to goals in the same way as tasks,
+        // so we'll ignore them for now or map them if a similar concept exists for goals.
+      }
+    } catch (error) {
+      console.error('Error getting AI suggestions for goal:', error);
+      showError('Failed to get AI suggestions. Please try again.');
+    } finally {
+      dismissToast(loadingToastId);
+      setIsSuggestingGoal(false);
+    }
+  };
+
   const handleSaveGoal = async (goalDataFromQuickAdd?: NewGoalData) => { // Adjusted type here
     setIsSavingGoal(true);
 
@@ -122,8 +158,8 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
       category_id: goalCategory,
       type: goalType,
       due_date: goalDueDate ? format(goalDueDate, 'yyyy-MM-dd') : null,
-      completed: editingGoal?.completed || false,
-      order: editingGoal?.order || null,
+      completed: editingGoal?.completed || false, // Retain existing completed status for edits
+      order: editingGoal?.order || null, // Retain existing order for edits
       parent_goal_id: goalParentId,
     };
 
@@ -274,14 +310,32 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
           <div className="grid gap-4 py-4">
             <div>
               <Label htmlFor="goal-title">Title</Label>
-              <Input
-                id="goal-title"
-                value={goalTitle}
-                onChange={(e) => setGoalTitle(e.target.value)}
-                placeholder="e.g., Learn a new song"
-                autoFocus
-                disabled={isSavingGoal || isDemo}
-              />
+              <div className="flex gap-1.5">
+                <Input
+                  id="goal-title"
+                  value={goalTitle}
+                  onChange={(e) => setGoalTitle(e.target.value)}
+                  placeholder="e.g., Learn a new song"
+                  autoFocus
+                  disabled={isSavingGoal || isDemo || isSuggestingGoal}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleSuggestGoal}
+                  disabled={isSavingGoal || isDemo || isSuggestingGoal || !goalTitle.trim()}
+                  title="Suggest details from title"
+                  aria-label="Suggest goal details"
+                  className="h-9 w-9"
+                >
+                  {isSuggestingGoal ? (
+                    <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
             </div>
             <div>
               <Label htmlFor="goal-description">Description (Optional)</Label>
@@ -291,12 +345,12 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
                 onChange={(e) => setGoalDescription(e.target.value)}
                 placeholder="Details about this goal..."
                 rows={3}
-                disabled={isSavingGoal || isDemo}
+                disabled={isSavingGoal || isDemo || isSuggestingGoal}
               />
             </div>
             <div>
               <Label htmlFor="goal-category">Category</Label>
-              <Select value={goalCategory} onValueChange={setGoalCategory} disabled={isSavingGoal || isDemo}>
+              <Select value={goalCategory} onValueChange={setGoalCategory} disabled={isSavingGoal || isDemo || isSuggestingGoal}>
                 <SelectTrigger id="goal-category">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -314,7 +368,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
             </div>
             <div>
               <Label htmlFor="goal-type">Goal Type</Label>
-              <Select value={goalType} onValueChange={(value) => setGoalType(value as GoalType)} disabled={isSavingGoal || isDemo || !!goalParentId}> {/* Disable if it's a sub-goal */}
+              <Select value={goalType} onValueChange={(value) => setGoalType(value as GoalType)} disabled={isSavingGoal || isDemo || !!goalParentId || isSuggestingGoal}> {/* Disable if it's a sub-goal */}
                 <SelectTrigger id="goal-type">
                   <SelectValue placeholder="Select goal type" />
                 </SelectTrigger>
@@ -335,7 +389,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
                       "w-full justify-start text-left font-normal",
                       !goalDueDate && "text-muted-foreground"
                     )}
-                    disabled={isSavingGoal || isDemo}
+                    disabled={isSavingGoal || isDemo || isSuggestingGoal}
                   >
                     <CalendarComponent className="mr-2 h-4 w-4" />
                     {goalDueDate ? format(goalDueDate, "PPP") : <span>Pick a date</span>}
@@ -353,8 +407,8 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsGoalFormOpen(false)} disabled={isSavingGoal || isDemo}>Cancel</Button>
-            <Button onClick={() => handleSaveGoal()} disabled={isSavingGoal || isDemo || !goalTitle.trim()}>
+            <Button variant="outline" onClick={() => setIsGoalFormOpen(false)} disabled={isSavingGoal || isDemo || isSuggestingGoal}>Cancel</Button>
+            <Button onClick={() => handleSaveGoal()} disabled={isSavingGoal || isDemo || isSuggestingGoal || !goalTitle.trim()}>
               {isSavingGoal ? 'Saving...' : 'Save Goal'}
             </Button>
           </DialogFooter>

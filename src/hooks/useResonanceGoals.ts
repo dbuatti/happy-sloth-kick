@@ -31,6 +31,7 @@ export interface Goal {
   category_color?: string; // Client-side join
 }
 
+// NewGoalData should allow 'order' and 'completed' to be optional as they might not be provided on creation
 export type NewGoalData = Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'category_name' | 'category_color'>;
 export type UpdateGoalData = Partial<NewGoalData>;
 
