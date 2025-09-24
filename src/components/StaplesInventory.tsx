@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, UtensilsCrossed, Edit, Trash2, Minus, ChevronDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMealStaples, MealStaple, NewMealStapleData } from '@/hooks/useMealStaples';
 import {
@@ -18,6 +17,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // Added DropdownMenu imports
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 
