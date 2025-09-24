@@ -46,13 +46,8 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
     const date = parseISO(dueDate);
     if (!isValid(date)) return null;
 
-    if (isSameDay(date, new Date())) {
-      return 'Today';
-    } else if (isPast(date) && !isSameDay(date, new Date())) {
-      return format(date, 'MMM d');
-    } else {
-      return format(date, 'MMM d');
-    }
+    // Format as DD MONTH YY (e.g., 24 SEPTEMBER 25)
+    return format(date, 'dd MMMM yy').toUpperCase();
   };
 
   const hasSubGoals = subGoals.length > 0;
@@ -97,19 +92,6 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                   disabled={isDemo}
                   className={cn("h-3.5 w-3.5 rounded-full border-2", textColorClass)} // Apply text color to checkbox
                 />
-                {goal.due_date && (
-                  <div className={cn("flex items-center gap-1 text-xs flex-shrink-0", textColorClass)}>
-                    <CalendarDays className="h-3 w-3" />
-                    <span className={cn(
-                      "font-bold uppercase",
-                      isOverdue && "text-destructive",
-                      isDueToday && "text-orange-500"
-                    )}>
-                      {getDueDateDisplay(goal.due_date)}
-                    </span>
-                    <span className="mx-1">·</span> {/* Separator */}
-                  </div>
-                )}
                 <CardTitle className={cn(
                   "text-sm font-semibold line-clamp-1 flex-grow min-w-0",
                   goal.completed && "line-through opacity-70" // Keep line-through, adjust opacity
@@ -118,8 +100,17 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                 </CardTitle>
               </div >
               <div className="flex items-center gap-1 text-xs flex-shrink-0 ml-auto">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: goal.category_color }} />
-                <span>{goal.category_name}</span>
+                {goal.due_date && (
+                  <span className={cn(
+                    "font-bold uppercase",
+                    isOverdue && "text-destructive",
+                    isDueToday && "text-orange-500"
+                  )}>
+                    {getDueDateDisplay(goal.due_date)}
+                  </span>
+                )}
+                {goal.due_date && goal.category_name && <span className="mx-1">·</span>} {/* Separator only if both exist */}
+                {goal.category_name && <span>{goal.category_name}</span>}
               </div>
               {!isDemo && (
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
