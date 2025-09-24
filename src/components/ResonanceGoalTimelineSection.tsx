@@ -40,14 +40,16 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
 }) => {
   // Filter top-level goals from the *entire* list of goals, matching the current goalType
   const topLevelGoals = useMemo(() => {
-    return allGoals.filter(goal => 
+    // Ensure allGoals is an array before calling filter
+    return (allGoals || []).filter(goal => 
       goal.parent_goal_id === null && goal.type === goalType
     ).sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [allGoals, goalType]);
 
   // Function to get sub-goals for a given parent goal ID from the *entire* list of goals
   const getSubGoals = useCallback((parentGoalId: string) => {
-    return allGoals.filter(goal => goal.parent_goal_id === parentGoalId)
+    // Ensure allGoals is an array before calling filter
+    return (allGoals || []).filter(goal => goal.parent_goal_id === parentGoalId)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [allGoals]);
 
