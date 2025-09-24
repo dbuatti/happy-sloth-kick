@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalType, Category, NewGoalData } from '@/hooks/useResonanceGoals';
-import { showError } from '@/utils/toast'; // Keep showError for basic validation
+import { showError } from '@/utils/toast';
+import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns'; // Import date-fns utilities
 
 interface QuickAddGoalProps {
   goalType: GoalType;
@@ -20,7 +21,6 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
   allCategories,
   isDemo = false,
   parentGoalId = null,
-  // onAddCategory is no longer directly used for AI-driven category creation, but kept if needed elsewhere
 }) => {
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -36,18 +36,59 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
     setIsSaving(true);
 
     try {
-      // Use the first available category as a default if no specific category is chosen
       const defaultCategoryId = allCategories[0]?.id || null;
+      const today = new Date();
+      let calculatedDueDate: Date | null = null;
+
+      // Calculate due date based on goal type
+      switch (goalType) {
+        case 'daily':
+          calculatedDueDate = addDays(today, 1); // Tomorrow
+          break;
+        case 'weekly':
+          calculatedDueDate = addWeeks(today, 1);
+          break;
+        case 'monthly':
+          calculatedDueDate = addMonths(today, 1);
+          break;
+        case '3-month':
+          calculatedDueDate = addMonths(today, 3);
+          break;
+        case '6-month':
+          calculatedDueDate = addMonths(today, 6);
+          break;
+        case '9-month':
+          calculatedDueDate = addMonths(today, 9);
+          break;
+        case 'yearly':
+          calculatedDueDate = addYears(today, 1);
+          break;
+        case '3-year':
+          calculatedDueDate = addYears(today, 3);
+          break;
+        case '5-year':
+          calculatedDueDate = addYears(today, 5);
+          break;
+        case '7-year':
+          calculatedDueDate = addYears(today, 7);
+          break;
+        case '10-year':
+          calculatedDueDate = addYears(today, 10);
+          break;
+        default:
+          calculatedDueDate = null;
+          break;
+      }
 
       const goalDataToSend: NewGoalData = {
         title: title.trim(),
-        description: null, // No AI suggestions, so description is null by default
+        description: null,
         category_id: defaultCategoryId,
         type: goalType,
-        due_date: null, // No AI suggestions, so due_date is null by default
+        due_date: calculatedDueDate ? format(calculatedDueDate, 'yyyy-MM-dd') : null, // Assign calculated due date
         parent_goal_id: parentGoalId,
-        order: null, // Default order to null
-        completed: false, // Default completed to false
+        order: null,
+        completed: false,
       };
 
       const success = await onAddGoal(goalDataToSend);
