@@ -8,12 +8,14 @@ import { format, parseISO, isSameDay, setHours, setMinutes, addDays } from 'date
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useSound } from '@/context/SoundContext'; // Import useSound
 
 interface MealItemProps {
   meal: Meal;
   currentDate: Date;
   onUpdate: (id: string, updates: Partial<Meal>) => Promise<any>;
   isDemo?: boolean;
+  isPlaceholder: boolean; // New prop
 }
 
 const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
@@ -22,26 +24,22 @@ const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
   dinner: { hour: 18, minute: 0 },
 };
 
-const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo = false }) => {
+const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo = false, isPlaceholder }) => {
+  const { playSound } = useSound(); // Initialize useSound
   const [name, setName] = useState(meal.name);
   const [notes, setNotes] = useState(meal.notes || '');
   const [hasIngredients, setHasIngredients] = useState(meal.has_ingredients);
   const [isCompleted, setIsCompleted] = useState(meal.is_completed);
-
-  const isPlaceholder = meal.id.startsWith('placeholder-');
+  const [showCompletionEffect, setShowCompletionEffect] = useState(false); // New state for animation
 
   // Ref to store the last known "saved" state from props
   const lastCommittedMealRef = useRef(meal);
 
   // Effect to synchronize local state with prop changes
-  // This runs when the 'meal' prop changes (e.g., after a save operation completes and new data comes from DB)
   useEffect(() => {
-    // Only update local state if the incoming meal prop is genuinely different from the last committed state
-    // This prevents local state from being overwritten by stale prop data during a save cycle
-    // or from re-initializing if the prop object reference changes but content is same.
     if (meal.id !== lastCommittedMealRef.current.id ||
         name !== meal.name ||
-        notes !== (lastCommittedMealRef.current.notes || '') || // Compare against ref's notes
+        notes !== (lastCommittedMealRef.current.notes || '') ||
         hasIngredients !== meal.has_ingredients ||
         isCompleted !== meal.is_completed) {
       setName(meal.name);
@@ -49,15 +47,14 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
       setHasIngredients(meal.has_ingredients);
       setIsCompleted(meal.is_completed);
     }
-    lastCommittedMealRef.current = meal; // Always update the ref with the latest prop
-  }, [meal]); // Only re-run when the meal prop itself changes
+    lastCommittedMealRef.current = meal;
+  }, [meal]);
 
   // Debounced effect for saving changes
   useEffect(() => {
     if (isDemo) return;
 
     const timer = setTimeout(async () => {
-      // Compare current local state with the last committed state from props
       const hasNameChanged = name !== lastCommittedMealRef.current.name;
       const hasNotesChanged = notes !== (lastCommittedMealRef.current.notes || '');
       const hasIngredientsChanged = hasIngredients !== lastCommittedMealRef.current.has_ingredients;
@@ -72,14 +69,11 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
         };
 
         if (isPlaceholder) {
-          // For placeholders, create the meal. MealPlanner's onUpdate handles this.
-          // We pass the placeholder ID, but the handler will create a new entry.
-          await onUpdate(meal.id, { // meal.id here is the placeholder ID
-            ...meal, // Pass existing meal data (like meal_date, meal_type)
-            ...updates, // Overlay with current local state
+          await onUpdate(meal.id, {
+            ...meal,
+            ...updates,
           });
         } else {
-          // For existing meals, just send the specific updates
           await onUpdate(meal.id, updates);
         }
       }
@@ -87,11 +81,8 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
 
     return () => clearTimeout(timer);
   }, [
-    name, notes, hasIngredients, isCompleted, // Local state changes trigger this effect
-    onUpdate, isDemo, isPlaceholder, meal.id // meal.id is needed for placeholder conversion
-    // IMPORTANT: lastCommittedMealRef.current is NOT a a direct dependency here.
-    // We are intentionally comparing against the *value* of the ref at the time of effect definition.
-    // The ref itself is stable.
+    name, notes, hasIngredients, isCompleted,
+    onUpdate, isDemo, isPlaceholder, meal.id
   ]);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,13 +96,18 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   const handleHasIngredientsChange = async (checked: boolean) => {
     if (isDemo) return;
     setHasIngredients(checked);
-    // The debounced effect will handle saving this change
   };
 
   const handleIsCompletedChange = async (checked: boolean) => {
     if (isDemo) return;
     setIsCompleted(checked);
-    // The debounced effect will handle saving this change
+    if (checked) {
+      playSound('success'); // Play sound on completion
+      setShowCompletionEffect(true);
+      setTimeout(() => setShowCompletionEffect(false), 600);
+    } else {
+      playSound('reset'); // Play sound on un-completion
+    }
   };
 
   const mealDate = parseISO(meal.meal_date);
@@ -124,9 +120,9 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
-      case 'breakfast': return <Coffee className="h-4 w-4 text-muted-foreground" />;
-      case 'lunch': return <Soup className="h-4 w-4 text-muted-foreground" />;
-      case 'dinner': return <UtensilsCrossed className="h-4 w-4 text-muted-foreground" />;
+      case 'breakfast': return <Coffee className="h-5 w-5 text-muted-foreground" />; // Increased size
+      case 'lunch': return <Soup className="h-5 w-5 text-muted-foreground" />; // Increased size
+      case 'dinner': return <UtensilsCrossed className="h-5 w-5 text-muted-foreground" />; // Increased size
     }
   };
 
@@ -149,17 +145,21 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 p-4 rounded-xl shadow-sm transition-all duration-200 ease-in-out",
+        "relative flex flex-col gap-2 p-4 rounded-xl shadow-sm transition-all duration-200 ease-in-out",
         "border-l-4",
         isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
-        !isCompleted && getIngredientStatusClasses()
+        !isCompleted && getIngredientStatusClasses(),
+        isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground" // Placeholder styling
       )}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {getMealIcon(meal.meal_type)}
-          <span className="text-sm font-semibold text-muted-foreground">
-            {isToday ? 'Today' : isTomorrow ? 'Tomorrow' : format(mealDate, 'EEE, MMM d')} - {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
+          <span className={cn(
+            "text-base font-semibold", // Increased font size
+            isPlaceholder ? "text-muted-foreground/70" : "text-foreground"
+          )}>
+            {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
                 size="icon"
                 className={cn("h-8 w-8", isDemo && "cursor-not-allowed")}
                 onClick={() => handleHasIngredientsChange(!hasIngredients)}
-                disabled={isDemo}
+                disabled={isDemo || isCompleted}
               >
                 {getIngredientStatusIcon()}
               </Button>
@@ -196,7 +196,9 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
         placeholder={`Add ${meal.meal_type} meal name...`}
         className={cn(
           "text-lg font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto",
-          isCompleted && "line-through text-muted-foreground"
+          "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary", // Improved affordance
+          isCompleted && "line-through text-muted-foreground",
+          isPlaceholder && "placeholder:text-muted-foreground/50"
         )}
         disabled={isDemo || isCompleted}
       />
@@ -207,10 +209,17 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
         rows={2}
         className={cn(
           "text-sm border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none",
-          isCompleted && "line-through text-muted-foreground"
+          "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary", // Improved affordance
+          isCompleted && "line-through text-muted-foreground",
+          isPlaceholder && "placeholder:text-muted-foreground/50"
         )}
         disabled={isDemo || isCompleted}
       />
+      {showCompletionEffect && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+          <CheckCircle2 className="h-16 w-16 text-green-500 animate-task-complete" />
+        </div>
+      )}
     </div>
   );
 };
