@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, ChevronDown, Edit, Trash2 } from 'lucide-react';
@@ -33,14 +33,33 @@ const StapleItemDisplay: React.FC<StapleItemDisplayProps> = ({
   const [localCurrentQuantity, setLocalCurrentQuantity] = useState(staple.current_quantity);
   const debouncedCurrentQuantity = useDebounce(localCurrentQuantity, 500);
 
-  useEffect(() => {
-    setLocalCurrentQuantity(staple.current_quantity);
-  }, [staple.current_quantity]);
+  // This ref stores the quantity that was last successfully committed to the server
+  // or the initial quantity from props. It helps distinguish internal vs. external updates.
+  const lastCommittedQuantityRef = useRef(staple.current_quantity);
 
+  // Effect to update local state when prop changes, but only if it's an external change
   useEffect(() => {
-    if (isDemo || debouncedCurrentQuantity === staple.current_quantity) return;
-    onUpdate(staple.id, { current_quantity: debouncedCurrentQuantity });
-  }, [debouncedCurrentQuantity, staple.current_quantity, staple.id, isDemo, onUpdate]);
+    // If the incoming prop value is different from what we last committed
+    // (meaning an external change or initial load), then update local state.
+    if (staple.current_quantity !== lastCommittedQuantityRef.current) {
+      setLocalCurrentQuantity(staple.current_quantity);
+      lastCommittedQuantityRef.current = staple.current_quantity; // Update ref to reflect new server state
+    }
+  }, [staple.current_quantity]); // Only re-run when the prop changes
+
+  // Effect to send updates to the backend after debounce
+  useEffect(() => {
+    if (isDemo) return;
+
+    // Only send update if the debounced value is different from the last committed value
+    // This prevents sending redundant updates if the debounced value is already what the server has.
+    if (debouncedCurrentQuantity !== lastCommittedQuantityRef.current) {
+      onUpdate(staple.id, { current_quantity: debouncedCurrentQuantity });
+      // Optimistically update ref to prevent re-sync from the first useEffect
+      // when the prop eventually updates due to *this* component's action.
+      lastCommittedQuantityRef.current = debouncedCurrentQuantity; 
+    }
+  }, [debouncedCurrentQuantity, staple.id, isDemo, onUpdate]);
 
   const isLow = localCurrentQuantity < staple.target_quantity;
   const isCritical = localCurrentQuantity === 0 && staple.target_quantity > 0;
