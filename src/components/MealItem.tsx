@@ -41,7 +41,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
     setIsCompleted(meal.is_completed);
   }, [meal]);
 
-  // Sync debounced changes to database
+  // Sync debounced changes to database for *real* meals only
   useEffect(() => {
     if (!isDemo && !isPlaceholder) {
       if (debouncedName !== meal.name) {
@@ -58,20 +58,17 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
     }
   }, [debouncedNotes, meal.notes, onUpdate, isDemo, isPlaceholder]);
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
-  };
-
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNotes(e.target.value);
-  };
-
   const handleHasIngredientsChange = async (checked: boolean) => {
     if (isDemo) return;
     setHasIngredients(checked);
     if (isPlaceholder) {
-      // If it's a placeholder, create a new meal first
-      await onUpdate(meal.id, { ...meal, name: name || `${meal.meal_type} meal`, has_ingredients: checked });
+      // When a placeholder is "activated", create a new meal with current state
+      await onUpdate(meal.id, {
+        name: name || `${meal.meal_type} meal`, // Use current name state
+        notes: notes || null, // Use current notes state
+        has_ingredients: checked,
+        is_completed: isCompleted, // Use current completion state
+      });
     } else {
       await onUpdate(meal.id, { has_ingredients: checked });
     }
@@ -81,8 +78,13 @@ const MealItem: React.FC<MealItemProps> = ({ meal, currentDate, onUpdate, isDemo
     if (isDemo) return;
     setIsCompleted(checked);
     if (isPlaceholder) {
-      // If it's a placeholder, create a new meal first
-      await onUpdate(meal.id, { ...meal, name: name || `${meal.meal_type} meal`, is_completed: checked });
+      // When a placeholder is "activated", create a new meal with current state
+      await onUpdate(meal.id, {
+        name: name || `${meal.meal_type} meal`, // Use current name state
+        notes: notes || null, // Use current notes state
+        has_ingredients: hasIngredients, // Use current ingredients state
+        is_completed: checked,
+      });
     } else {
       await onUpdate(meal.id, { is_completed: checked });
     }

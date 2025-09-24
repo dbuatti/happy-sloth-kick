@@ -16,12 +16,15 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
   const handleUpdateMeal = async (id: string, updates: Partial<Meal>) => {
     if (id.startsWith('placeholder-')) {
       // If it's a placeholder, we need to create a new meal in the DB
-      const [_, date, type] = id.split('-');
+      const parts = id.split('-'); // e.g., ["placeholder", "2024", "08", "01", "breakfast"]
+      const meal_date = `${parts[1]}-${parts[2]}-${parts[3]}`; // Reconstruct "YYYY-MM-DD"
+      const meal_type = parts[4] as Meal['meal_type'];
+
       const newMealData = {
-        meal_date: date,
-        meal_type: type as Meal['meal_type'],
-        name: updates.name || '',
-        notes: updates.notes || null,
+        meal_date: meal_date,
+        meal_type: meal_type,
+        name: updates.name || '', // Use name from updates, or default
+        notes: updates.notes || null, // Use notes from updates, or default
         has_ingredients: updates.has_ingredients ?? false,
         is_completed: updates.is_completed ?? false,
       };
