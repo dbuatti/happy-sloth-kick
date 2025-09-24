@@ -57,31 +57,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     }
   };
 
-  const handleNewTaskSubmit = async (taskData: TaskFormData) => {
-    let finalRemindAt: string | null = null;
-    if (taskData.remindAtDate && taskData.remindAtTime && taskData.remindAtTime.trim() !== "") {
-      const [hours, minutes] = taskData.remindAtTime.split(':').map(Number);
-      const remindDateTime = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
-      finalRemindAt = remindDateTime.toISOString();
-    }
-
-    const finalDueDate = taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null;
-
-    const newTaskData: NewTaskData = {
-      description: taskData.description.trim(),
-      category: taskData.category,
-      priority: taskData.priority,
-      due_date: finalDueDate,
-      notes: taskData.notes,
-      remind_at: finalRemindAt,
-      section_id: taskData.sectionId,
-      recurring_type: taskData.recurringType,
-      parent_task_id: taskData.parentTaskId,
-      link: taskData.link,
-      image_url: taskData.image_url,
-    };
-
-    const success = await handleAddTask(newTaskData);
+  const handleNewTaskSubmit = async (taskData: NewTaskData) => { // Changed parameter type to NewTaskData
+    const success = await handleAddTask(taskData);
     if (success) {
       setIsAddTaskDialogOpen(false);
       playSound('success');
