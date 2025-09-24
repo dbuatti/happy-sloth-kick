@@ -5,9 +5,8 @@ import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals';
 import { useAuth } from '@/context/AuthContext';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection';
 import GoalForm from '@/components/GoalForm';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { getRandomCategoryColor } from '@/lib/categoryColors'; 
-import { showError, showSuccess } from '@/utils/toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // Removed DialogFooter
+import { showError, showSuccess } from '@/utils/toast'; // Removed getRandomCategoryColor
 import {
   AlertDialog,
   AlertDialogAction,
