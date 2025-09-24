@@ -12,7 +12,7 @@ import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import NewTaskData
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -78,7 +78,7 @@ export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Partial<Task> | null;
-  onSave: (taskData: TaskFormData) => Promise<any>;
+  onSave: (taskData: NewTaskData) => Promise<any>; // Changed from TaskFormData to NewTaskData
   onCancel: () => void;
   sections: TaskSection[];
   allCategories: Category[];
@@ -257,7 +257,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
-      const userId = 'anonymous';
+      const userId = 'anonymous'; // This needs to be the actual user ID
       const filePath = `${userId}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
         .from('taskimages')
@@ -276,7 +276,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
       imageUrlToSave = urlData.publicUrl;
     }
 
-    const success = await onSave({
+    // Construct NewTaskData object
+    const newTaskData: NewTaskData = {
       description: data.description.trim(),
       category: data.category,
       priority: data.priority,
@@ -288,7 +289,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
       parent_task_id: data.parentTaskId,
       link: data.link,
       image_url: imageUrlToSave,
-    });
+    };
+
+    const success = await onSave(newTaskData); // Call onSave with NewTaskData
     setIsSaving(false);
     if (success) {
       onCancel();

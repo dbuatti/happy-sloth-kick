@@ -418,27 +418,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             </DialogDescription>
           </DialogHeader>
           <TaskForm
-            onSave={async (taskData: TaskFormData) => {
-              let finalRemindAt: string | null = null;
-              if (taskData.remindAtDate && taskData.remindAtTime && taskData.remindAtTime.trim() !== "") {
-                const [hours, minutes] = taskData.remindAtTime.split(':').map(Number);
-                const remindDateTime = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
-                finalRemindAt = remindDateTime.toISOString();
-              }
-
-              const success = await handleAddTask({
-                description: taskData.description.trim(),
-                category: taskData.category,
-                priority: taskData.priority,
-                due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
-                notes: taskData.notes,
-                remind_at: finalRemindAt,
-                section_id: taskData.sectionId, // Corrected to use taskData.sectionId
-                recurring_type: taskData.recurringType,
-                parent_task_id: taskData.parentTaskId,
-                link: taskData.link,
-                image_url: taskData.image_url,
-              });
+            onSave={async (newTaskData) => { // Changed parameter name to newTaskData
+              const success = await handleAddTask(newTaskData);
               if (success) setIsAddTaskOpenLocal(false);
               return success;
             }}
