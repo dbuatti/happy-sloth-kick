@@ -4,7 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { GoalType, Category, NewGoalData } from '@/hooks/useResonanceGoals';
 import { showError } from '@/utils/toast';
-import { format, addDays, addWeeks, addMonths, addYears } from 'date-fns'; // Import date-fns utilities
+import { format, addDays, addWeeks, addMonths, addYears, endOfWeek, lastDayOfMonth } from 'date-fns'; // Import necessary date-fns utilities
 
 interface QuickAddGoalProps {
   goalType: GoalType;
@@ -43,16 +43,16 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
       // Calculate due date based on goal type
       switch (goalType) {
         case 'daily':
-          calculatedDueDate = addDays(today, 1); // Tomorrow
+          calculatedDueDate = today; // Today's date
           break;
         case 'weekly':
-          calculatedDueDate = addWeeks(today, 1);
+          calculatedDueDate = endOfWeek(today, { weekStartsOn: 1 }); // End of current week (Friday, assuming week starts Monday)
           break;
         case 'monthly':
-          calculatedDueDate = addMonths(today, 1);
+          calculatedDueDate = lastDayOfMonth(today); // Last day of current month
           break;
         case '3-month':
-          calculatedDueDate = addMonths(today, 3);
+          calculatedDueDate = lastDayOfMonth(addMonths(today, 2)); // Last day of 3 months from creation (current month + 2 full months)
           break;
         case '6-month':
           calculatedDueDate = addMonths(today, 6);
