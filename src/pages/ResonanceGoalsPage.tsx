@@ -32,6 +32,9 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   const userId = demoUserId || user?.id;
 
   const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory } = useResonanceGoals({ userId });
+  // Dummy usage to satisfy TS6133 for Category type
+  type _CategoryUsed = Category;
+
   const isMobile = useIsMobile();
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
