@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Plus, Sparkles } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
-import { suggestTaskDetails } from '@/integrations/supabase/api';
+import { suggestTaskDetails, AICategory } from '@/integrations/supabase/api'; // Import AICategory
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { Button } from '@/components/ui/button'; // Added Button import
 
@@ -47,7 +47,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
     const loadingToastId = showLoading('Getting AI suggestions...');
 
     try {
-      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+      const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
       const suggestions = await suggestTaskDetails(description.trim(), categoriesForAI, currentDate);
       dismissToast(loadingToastId);
       setIsSuggesting(false);

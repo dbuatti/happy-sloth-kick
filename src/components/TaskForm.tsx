@@ -16,7 +16,7 @@ import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // 
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { suggestTaskDetails } from '@/integrations/supabase/api';
+import { suggestTaskDetails, AICategory } from '@/integrations/supabase/api'; // Import AICategory
 import { showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -194,13 +194,13 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     try {
-      const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+      const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
       const suggestions = await suggestTaskDetails(description, categoriesForAI, currentDate);
 
       if (suggestions) {
         setValue('description', suggestions.cleanedDescription);
         setValue('priority', suggestions.priority);
-        setValue('category', suggestions.category);
+        setValue('category', allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories[0]?.id || ''); // Map AI category name to ID
         
         if (suggestions.dueDate) {
           setValue('dueDate', parseISO(suggestions.dueDate));

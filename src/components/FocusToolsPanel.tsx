@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { Input } from './ui/input';
-import { suggestTaskDetails } from '@/integrations/supabase/api';
+import { suggestTaskDetails, AICategory } from '@/integrations/supabase/api'; // Import AICategory
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import PomodoroTimer from './PomodoroTimer';
@@ -89,7 +89,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     }
     setIsAddingQuickTask(true);
     const loadingToastId = showLoading('Getting AI suggestions...');
-    const categoriesForAI = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
+    const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
     const suggestions = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
     dismissToast(loadingToastId);
     if (!suggestions) {
