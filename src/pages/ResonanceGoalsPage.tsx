@@ -147,6 +147,12 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
         const suggestedCategory = categories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase());
         if (suggestedCategory) {
           setGoalCategory(suggestedCategory.id);
+        } else {
+          // If AI suggested a new category name, create it
+          const newCat = await addCategory({ name: suggestions.category, color: '#6b7280' }); // Default color
+          if (newCat) {
+            setGoalCategory(newCat.id);
+          }
         }
         if (suggestions.dueDate) {
           setGoalDueDate(parseISO(suggestions.dueDate));

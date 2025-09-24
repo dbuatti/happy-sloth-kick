@@ -63,23 +63,23 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
         <ContextMenuTrigger asChild>
           <Card
             className={cn(
-              "relative group w-full shadow-lg rounded-xl transition-all duration-200 ease-in-out overflow-hidden",
+              "relative group w-full shadow-sm rounded-lg transition-all duration-200 ease-in-out overflow-hidden", // Adjusted shadow, rounded, and padding
               "border-l-4",
-              goal.completed ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-xl",
+              goal.completed ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-md", // Adjusted hover shadow
               isOverdue && "border-destructive",
               isDueToday && "border-orange-500",
               isDemo && "opacity-70 cursor-not-allowed"
             )}
           >
-            <div className="absolute inset-0 rounded-xl" style={{ backgroundColor: goal.category_color, opacity: goal.completed ? 0.1 : 0.05 }} />
+            <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: goal.category_color, opacity: goal.completed ? 0.1 : 0.05 }} />
 
-            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-              <div className="flex items-center gap-3">
+            <CardHeader className="flex flex-row items-center justify-between py-2 pr-3 relative z-10"> {/* Adjusted vertical padding */}
+              <div className="flex items-center gap-2"> {/* Reduced gap */}
                 {hasSubGoals && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-7 w-7" // Reduced size
                     onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       toggleExpand(goal.id);
@@ -87,7 +87,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                     aria-label={isExpanded ? 'Collapse sub-goals' : 'Expand sub-goals'}
                   >
                     <ChevronRight className={cn(
-                      "h-5 w-5 transition-transform duration-200",
+                      "h-4 w-4 transition-transform duration-200", // Reduced icon size
                       isExpanded ? "rotate-90" : "rotate-0"
                     )} />
                   </Button>
@@ -97,20 +97,20 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                   checked={goal.completed}
                   onCheckedChange={(checked: boolean) => onToggleComplete(goal.id, checked)}
                   disabled={isDemo}
-                  className="h-5 w-5 rounded-full border-2"
+                  className="h-4 w-4 rounded-full border-2" // Reduced size
                 />
                 <CardTitle className={cn(
-                  "text-lg font-bold line-clamp-2",
+                  "text-base font-semibold line-clamp-1", // Reduced font size, line-clamp-1
                   goal.completed && "line-through text-muted-foreground"
                 )}>
                   {goal.title}
                 </CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="relative z-10 pt-0 space-y-2">
+            <CardContent className="relative z-10 pt-0 pb-2 px-4 space-y-1"> {/* Adjusted vertical padding */}
               {goal.description && (
                 <p className={cn(
-                  "text-sm text-muted-foreground line-clamp-2",
+                  "text-xs text-muted-foreground line-clamp-1", // Reduced font size, line-clamp-1
                   goal.completed && "line-through"
                 )}>
                   {goal.description}
@@ -118,7 +118,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
               )}
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">
-                  <Target className="h-3 w-3" />
+                  <Target className="h-3 w-3" /> {/* Reduced icon size */}
                   <span className="capitalize">{goal.type} Goal</span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -128,7 +128,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
               </div>
               {goal.due_date && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <CalendarDays className="h-3 w-3" />
+                  <CalendarDays className="h-3 w-3" /> {/* Reduced icon size */}
                   <span className={cn(
                     isOverdue && "text-destructive",
                     isDueToday && "text-orange-500"
