@@ -1,64 +1,36 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings, Filter, LayoutGrid, Target, Sparkles, ChevronsDownUp } from 'lucide-react';
+import { Plus, Settings, Sparkles } from 'lucide-react';
 import { useResonanceGoals, Goal, GoalType, Category } from '@/hooks/useResonanceGoals';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import GoalForm from '@/components/GoalForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import GoalForm, { GoalFormData } from '@/components/GoalForm';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Input } from '@/components/ui/input';
-import { suggestGoalDetails } from '@/integrations/supabase/api';
-import { dismissToast, showError, showLoading } from '@/utils/toast';
-import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
-import { arrayMove } from '@dnd-kit/sortable';
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, UniqueIdentifier, closestCorners } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, UniqueIdentifier, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
+import { Skeleton } from '@/components/ui/skeleton';
 import ResonanceGoalCard from '@/components/ResonanceGoalCard';
 import { getRandomCategoryColor } from '@/lib/categoryColors';
+import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
 
-const goalTypeOrder: GoalType[] = [
-  'daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'
-];
+const goalTypes: GoalType[] = ['daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'];
 
 const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const userId = demoUserId || user?.id;
-  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory, deleteCategory } = useResonanceGoals({ userId });
+  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory } = useResonanceGoals({ userId });
   const { settings } = useSettings();
   const isMobile = useIsMobile();
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-  const [parentGoalForSubGoal, setParentGoalForSubGoal] = useState<string | null>(null);
-
-  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
-
-  const [goalTitle, setGoalTitle] = useState('');
-  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [preselectedGoalType, setPreselectedGoalType] = useState<GoalType>('monthly');
+  const [preselectedParentGoalId, setPreselectedParentGoalId] = useState<string | null>(null);
 
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
-  const [expandedSections, setExpandedSections] = useState<Record<GoalType, boolean>>(() => {
-    const initial: Record<GoalType, boolean> = {} as Record<GoalType, boolean>;
-    goalTypeOrder.forEach(type => {
-      initial[type] = true; // All sections expanded by default
-    });
-    return initial;
-  });
-
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [activeItemData, setActiveItemData] = useState<Goal | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
 
   const toggleExpandGoal = useCallback((goalId: string) => {
     setExpandedGoals(prev => ({
@@ -67,241 +39,153 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
     }));
   }, []);
 
-  const toggleExpandSection = useCallback((goalType: GoalType) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [goalType]: !prev[goalType],
-    }));
-  }, []);
-
-  const handleOpenGoalForm = (goal: Goal | null, parentId: string | null = null) => {
+  const handleOpenGoalForm = (goal: Goal | null, type: GoalType = 'monthly', parentId: string | null = null) => {
     setEditingGoal(goal);
-    setParentGoalForSubGoal(parentId);
+    setPreselectedGoalType(type);
+    setPreselectedParentGoalId(parentId);
     setIsGoalFormOpen(true);
   };
 
-  const handleSaveGoal = async (goalData: Parameters<typeof GoalForm>['0']['onSave'][0]) => {
+  const handleSaveGoal = async (goalData: GoalFormData) => {
+    if (isDemo) return false;
+    const payload: NewGoalData = {
+      title: goalData.title,
+      description: goalData.description,
+      category_id: goalData.categoryId,
+      type: goalData.type,
+      due_date: goalData.dueDate,
+      parent_goal_id: goalData.parentGoalId,
+      completed: initialData?.completed ?? false, // Ensure completed is passed for updates
+      order: initialData?.order ?? null, // Ensure order is passed for updates
+    };
+
     if (editingGoal) {
-      await updateGoal({ id: editingGoal.id, updates: goalData });
+      await updateGoal({ id: editingGoal.id, updates: payload });
     } else {
-      await addGoal(goalData);
+      await addGoal(payload);
     }
-    setIsGoalFormOpen(false);
+    return true;
   };
 
   const handleDeleteGoal = async (goalId: string) => {
+    if (isDemo) return;
     await deleteGoal(goalId);
   };
 
   const handleToggleCompleteGoal = async (goalId: string, completed: boolean) => {
+    if (isDemo) return;
     await updateGoal({ id: goalId, updates: { completed } });
   };
 
   const handleAddSubGoal = (parentGoalId: string) => {
-    handleOpenGoalForm(null, parentGoalId);
+    const parentGoal = goals.find(g => g.id === parentGoalId);
+    if (parentGoal) {
+      handleOpenGoalForm(null, parentGoal.type, parentGoalId);
+    }
   };
 
   const handleAddCategory = async (name: string, color: string) => {
+    if (isDemo) return null;
     return await addCategory({ name, color });
   };
 
-  const handleCategoryCreated = () => {
-    // Categories are refetched by react-query automatically
-  };
+  // DND Logic
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  const [activeGoalData, setActiveGoalData] = useState<Goal | null>(null);
 
-  const handleCategoryDeleted = (deletedId: string) => {
-    // If a category is deleted, any goals using it will have category_id set to null
-    // React-query will refetch goals and categories, updating the UI
-  };
-
-  const handleSuggestGoal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!goalTitle.trim()) {
-      showError('Please enter a goal title to get suggestions.');
-      return;
-    }
-    if (isDemo) {
-      showError('AI suggestions are not available in demo mode.');
-      return;
-    }
-
-    setIsSuggesting(true);
-    const loadingToastId = showLoading('Generating AI suggestions...');
-
-    try {
-      const categoriesForAI = categories.map(cat => ({ id: cat.id, name: cat.name }));
-      const suggestions = await suggestGoalDetails(goalTitle, categoriesForAI, new Date());
-      dismissToast(loadingToastId);
-      setIsSuggesting(false);
-
-      if (suggestions) {
-        setGoalTitle(suggestions.title); // Corrected
-        setGoalDescription(suggestions.description || ''); // Corrected
-        // Set other fields based on suggestions
-        // For now, we'll just set title and description, and open the form
-        handleOpenGoalForm(null); // Open form with pre-filled data
-      } else {
-        showError('Failed to get AI suggestions. Please try again.');
-      }
-    } catch (error) {
-      dismissToast(loadingToastId);
-      showError('An error occurred while getting AI suggestions.');
-      console.error('AI Suggestion Error:', error);
-    } finally {
-      setIsSuggesting(false);
-    }
-  };
-
-  const [goalDescription, setGoalDescription] = useState(''); // State for AI suggested description
-
-  const goalsByGoalType = useMemo(() => {
-    const grouped = new Map<GoalType, Goal[]>();
-    goalTypeOrder.forEach(type => grouped.set(type, [])); // Ensure all types are present
-
-    goals.forEach(goal => {
-      if (grouped.has(goal.type)) {
-        grouped.get(goal.type)?.push(goal);
-      } else {
-        grouped.set(goal.type, [goal]);
-      }
-    });
-    return grouped;
-  }, [goals]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      enabled: !isDemo,
+    })
+  );
 
   const allSortableGoalIds = useMemo(() => {
     const ids: UniqueIdentifier[] = [];
-    goalTypeOrder.forEach(type => {
-      const goalsInType = goalsByGoalType.get(type) || [];
-      const topLevelGoalsInType = goalsInType.filter(g => g.parent_goal_id === null).sort((a, b) => (a.order || 0) - (b.order || 0));
-      
-      if (topLevelGoalsInType.length > 0 || (expandedSections[type] ?? true)) { // Only add type header if there are goals or section is expanded
-        ids.push(type); // Add the goal type as a draggable item
-      }
+    const addGoalsRecursively = (goalsToAdd: Goal[]) => {
+      goalsToAdd.forEach(goal => {
+        ids.push(goal.id);
+        if (expandedGoals[goal.id] !== false) { // Only add subgoals if expanded
+          const subGoals = goals.filter(sub => sub.parent_goal_id === goal.id).sort((a, b) => (a.order || 0) - (b.order || 0));
+          if (subGoals.length > 0) {
+            addGoalsRecursively(subGoals);
+          }
+        }
+      });
+    };
 
-      if (expandedSections[type] ?? true) { // Only add goals if section is expanded
-        const addGoalsRecursively = (goalsToAdd: Goal[]) => {
-          goalsToAdd.forEach(goal => {
-            ids.push(goal.id);
-            if (expandedGoals[goal.id] !== false) { // Check if individual goal is expanded
-              const subGoals = goalsInType.filter(sub => sub.parent_goal_id === goal.id).sort((a, b) => (a.order || 0) - (b.order || 0));
-              if (subGoals.length > 0) {
-                addSubgoalsRecursively(subGoals);
-              }
-            }
-          });
-        };
-        addGoalsRecursively(topLevelGoalsInType);
-      }
+    goalTypes.forEach(type => {
+      const topLevelGoalsForType = goals.filter(g => g.type === type && g.parent_goal_id === null).sort((a, b) => (a.order || 0) - (b.order || 0));
+      addGoalsRecursively(topLevelGoalsForType);
     });
     return ids;
-  }, [goalsByGoalType, expandedGoals, expandedSections, goals]);
-
-  const getGoalById = useCallback((id: UniqueIdentifier | null) => {
-    if (!id) return undefined;
-    return goals.find(g => g.id === id);
-  }, [goals]);
+  }, [goals, expandedGoals]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
-    setActiveItemData(getGoalById(event.active.id) || null);
+    setActiveGoalData(goals.find(g => g.id === event.active.id) || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
-    setActiveItemData(null);
+    setActiveGoalData(null);
     const { active, over } = event;
 
-    if (!over || active.id === over.id) {
+    if (!over || active.id === over.id || isDemo) {
       return;
     }
 
-    const activeGoal = getGoalById(active.id);
+    const activeGoal = goals.find(g => g.id === active.id);
+    const overGoal = goals.find(g => g.id === over.id);
+
     if (!activeGoal) return;
 
     let newParentId: string | null = null;
     let newGoalType: GoalType = activeGoal.type;
-    let overGoalId: string | null = null;
+    let newOrder: number | null = null;
 
-    if (goalTypeOrder.includes(over.id as GoalType)) {
-      // Dropped onto a goal type section header
-      newGoalType = over.id as GoalType;
-      newParentId = null; // Top-level goal in new section
-    } else {
-      // Dropped onto another goal
-      const overGoal = getGoalById(over.id);
-      if (overGoal) {
-        // If dropping onto a goal, make it a sub-goal of that goal
-        newParentId = overGoal.id;
-        newGoalType = overGoal.type; // Inherit type from parent
-        overGoalId = overGoal.id;
+    if (overGoal) {
+      // If dropping onto another goal, it becomes a sibling or a child
+      // For simplicity, let's assume it becomes a sibling for now.
+      // More complex logic would be needed to allow dropping as a child.
+      newParentId = overGoal.parent_goal_id;
+      newGoalType = overGoal.type;
+
+      const siblings = goals.filter(g => g.parent_goal_id === newParentId && g.type === newGoalType).sort((a, b) => (a.order || 0) - (b.order || 0));
+      const oldIndex = siblings.findIndex(g => g.id === active.id);
+      const newIndex = siblings.findIndex(g => g.id === over.id);
+
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const reorderedSiblings = arrayMove(siblings, oldIndex, newIndex);
+        const updates = reorderedSiblings.map((g, idx) => ({
+          id: g.id,
+          order: idx,
+        }));
+        // Perform batch update for order
+        await Promise.all(updates.map(u => updateGoal({ id: u.id, updates: { order: u.order } })));
+      } else {
+        // If dropping into a new position where it's not a direct sibling,
+        // place it at the end of the target's siblings or section
+        newOrder = (siblings.length > 0 ? Math.max(...siblings.map(s => s.order || 0)) : -1) + 1;
+        await updateGoal({ id: activeGoal.id, updates: { parent_goal_id: newParentId, type: newGoalType, order: newOrder } });
       }
-    }
-
-    // Update the goal's parent_goal_id, type, and order
-    const oldIndex = allSortableGoalIds.indexOf(active.id);
-    const newIndex = allSortableGoalIds.indexOf(over.id);
-    const isDraggingDown = oldIndex < newIndex;
-
-    const newOrderedGoals = arrayMove(goals, oldIndex, newIndex);
-
-    // Filter goals to only include those of the new type and parent for reordering
-    const siblings = newOrderedGoals.filter(g => g.type === newGoalType && g.parent_goal_id === newParentId);
-
-    const updates = siblings.map((goal, index) => ({
-      id: goal.id,
-      order: index,
-      type: newGoalType,
-      parent_goal_id: newParentId,
-    }));
-
-    await updateGoal({ id: activeGoal.id, updates: { type: newGoalType, parent_goal_id: newParentId } });
-    // Then update order for all affected siblings
-    for (const update of updates) {
-      await updateGoal({ id: update.id, updates: { order: update.order } });
+    } else {
+      // Dropping into an empty section or at the end of a type
+      // This part needs more specific drop targets if we want to drop into empty sections
+      // For now, if no overGoal, assume it's dropped at the end of its current type
+      const goalsOfType = goals.filter(g => g.type === activeGoal.type && g.parent_goal_id === null);
+      newOrder = (goalsOfType.length > 0 ? Math.max(...goalsOfType.map(g => g.order || 0)) : -1) + 1;
+      await updateGoal({ id: activeGoal.id, updates: { order: newOrder } });
     }
   };
 
   const renderContent = () => (
     <div className="flex-1 overflow-y-auto p-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-extrabold tracking-tight">Resonance Goals</h1>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
-            <Plus className="mr-2 h-4 w-4" /> Add Goal
-          </Button>
-          <Button variant="outline" size="icon" onClick={() => setIsManageCategoriesOpen(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="mb-6 p-4 border rounded-xl bg-card shadow-sm">
-        <form onSubmit={handleSuggestGoal} className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary flex-shrink-0" />
-          <Input
-            placeholder="Describe your goal (AI-powered)"
-            value={goalTitle}
-            onChange={(e) => setGoalTitle(e.target.value)}
-            className="flex-1 h-10 text-base"
-            disabled={isSuggesting || isDemo}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSuggestGoal(e as any);
-              }
-            }}
-          />
-          <Button type="submit" className="whitespace-nowrap h-10 text-base" disabled={isSuggesting || isDemo || !goalTitle.trim()}>
-            {isSuggesting ? <span className="animate-spin h-4 w-4 border-b-2 border-primary rounded-full" /> : 'Suggest'}
-          </Button>
-        </form>
-        {goalDescription && (
-          <p className="text-sm text-muted-foreground mt-2 ml-7">
-            AI Suggestion: {goalDescription}
-          </p>
-        )}
-      </div>
-
       {loading ? (
         <div className="space-y-4">
           <Skeleton className="h-10 w-full" />
@@ -310,45 +194,40 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
           <Skeleton className="h-40 w-full" />
         </div>
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={allSortableGoalIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-6">
-              {goalTypeOrder.map(type => {
-                const goalsForType = goalsByGoalType.get(type) || [];
-                const topLevelGoalsForType = goalsForType.filter(g => g.parent_goal_id === null);
-
-                // Only render section if there are goals or it's expanded
-                if (topLevelGoalsForType.length === 0 && !(expandedSections[type] ?? true)) {
-                  return null;
-                }
-
-                return (
-                  <ResonanceGoalTimelineSection
-                    key={type}
-                    goalType={type}
-                    goals={goalsForType}
-                    allCategories={categories}
-                    onAddGoal={addGoal}
-                    onEditGoal={handleOpenGoalForm}
-                    onDeleteGoal={handleDeleteGoal}
-                    onToggleCompleteGoal={handleToggleCompleteGoal}
-                    onAddSubGoal={handleAddSubGoal}
-                    isDemo={isDemo}
-                    loading={loading}
-                    expandedGoals={expandedGoals}
-                    toggleExpandGoal={toggleExpandGoal}
-                    onAddCategory={addCategory}
-                  />
-                );
-              })}
+              {goalTypes.map(type => (
+                <ResonanceGoalTimelineSection
+                  key={type}
+                  goalType={type}
+                  goals={goals.filter(g => g.type === type)}
+                  allCategories={categories}
+                  onAddGoal={handleSaveGoal}
+                  onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type, goal.parent_goal_id)}
+                  onDeleteGoal={handleDeleteGoal}
+                  onToggleCompleteGoal={handleToggleCompleteGoal}
+                  onAddSubGoal={handleAddSubGoal}
+                  isDemo={isDemo}
+                  loading={loading}
+                  expandedGoals={expandedGoals}
+                  toggleExpandGoal={toggleExpandGoal}
+                  onAddCategory={handleAddCategory}
+                />
+              ))}
             </div>
           </SortableContext>
           {createPortal(
             <DragOverlay dropAnimation={null}>
-              {activeId && activeItemData && (
+              {activeId && activeGoalData && (
                 <div className="rotate-2">
                   <ResonanceGoalCard
-                    goal={activeItemData}
+                    goal={activeGoalData}
                     onEdit={() => {}}
                     onDelete={() => {}}
                     onToggleComplete={() => {}}
@@ -356,8 +235,7 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
                     subGoals={[]}
                     isExpanded={false}
                     toggleExpand={() => {}}
-                    isDemo={isDemo}
-                    level={0}
+                    isDemo={true} // Render as demo/overlay
                   />
                 </div>
               )}
@@ -366,58 +244,47 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
           )}
         </DndContext>
       )}
+    </div>
+  );
 
-      {isMobile ? (
-        <Sheet open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
-          <SheetContent className="h-full sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</SheetTitle>
-              <DialogDescription className="sr-only">
-                {editingGoal ? 'Edit the details of your goal.' : 'Fill in the details to add a new goal.'}
-              </DialogDescription>
-            </SheetHeader>
-            <GoalForm
-              initialData={editingGoal}
-              onSave={handleSaveGoal}
-              onCancel={() => setIsGoalFormOpen(false)}
-              allCategories={categories}
-              parentGoalId={parentGoalForSubGoal}
-              prefilledTitle={goalTitle}
-              prefilledDescription={goalDescription}
-              onAddCategory={addCategory}
-            />
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
-              <DialogDescription className="sr-only">
-                {editingGoal ? 'Edit the details of your goal.' : 'Fill in the details to add a new goal.'}
-              </DialogDescription>
-            </DialogHeader>
-            <GoalForm
-              initialData={editingGoal}
-              onSave={handleSaveGoal}
-              onCancel={() => setIsGoalFormOpen(false)}
-              allCategories={categories}
-              parentGoalId={parentGoalForSubGoal}
-              prefilledTitle={goalTitle}
-              prefilledDescription={goalDescription}
-              onAddCategory={addCategory}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between p-4 border-b">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <Sparkles className="h-6 w-6 text-primary" /> Resonance Goals
+        </h1>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => handleOpenGoalForm(null, 'monthly')} disabled={isDemo}>
+            <Plus className="mr-2 h-4 w-4" /> Add Goal
+          </Button>
+          <Button variant="outline" size="icon" onClick={() => console.log('Open settings')} disabled={isDemo}>
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+      {renderContent()}
 
-      <ManageCategoriesDialog
-        isOpen={isManageCategoriesOpen}
-        onClose={() => setIsManageCategoriesOpen(false)}
-        categories={categories}
-        onCategoryCreated={handleCategoryCreated}
-        onCategoryDeleted={handleCategoryDeleted}
-      />
+      <FloatingAddGoalButton onClick={() => handleOpenGoalForm(null, 'monthly')} isDemo={isDemo} />
+
+      <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
+        <DialogContent className={isMobile ? "h-full max-h-screen overflow-y-auto" : "sm:max-w-md"}>
+          <DialogHeader>
+            <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {editingGoal ? 'Edit the details of your goal.' : 'Fill in the details to add a new goal.'}
+            </DialogDescription>
+          </DialogHeader>
+          <GoalForm
+            initialData={editingGoal}
+            onSave={handleSaveGoal}
+            onCancel={() => setIsGoalFormOpen(false)}
+            allCategories={categories}
+            preselectedType={preselectedGoalType}
+            parentGoalId={preselectedParentGoalId}
+            autoFocus
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

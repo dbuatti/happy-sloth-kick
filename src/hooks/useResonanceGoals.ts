@@ -32,7 +32,10 @@ export interface Goal {
 }
 
 // NewGoalData should allow 'order' and 'completed' to be optional as they might not be provided on creation
-export type NewGoalData = Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'category_name' | 'category_color'>;
+export type NewGoalData = Omit<Goal, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'category_name' | 'category_color'> & {
+  order?: number | null;
+  completed?: boolean;
+};
 export type UpdateGoalData = Partial<NewGoalData>;
 
 interface UseResonanceGoalsProps {
@@ -169,12 +172,12 @@ export const useResonanceGoals = (props?: UseResonanceGoalsProps) => {
     },
   });
 
-  const addCategoryMutation = useMutation<Category, Error, Omit<Category, 'id' | 'user_id' | 'created_at'>>({
-    mutationFn: async (newCategory) => {
+  const addCategoryMutation = useMutation<Category, Error, { name: string; color: string }>({
+    mutationFn: async ({ name, color }) => {
       if (!userId) throw new Error('User not authenticated.');
       const { data, error } = await supabase
         .from('categories')
-        .insert({ ...newCategory, user_id: userId })
+        .insert({ name, color, user_id: userId })
         .select()
         .single();
       if (error) throw error;

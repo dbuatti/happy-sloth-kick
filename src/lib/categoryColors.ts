@@ -1,56 +1,26 @@
-export const categoryColorMap = {
-  'red': {
-    name: 'Red',
-    backgroundClass: 'bg-red-50 dark:bg-red-950',
-    dotColor: '#F44336', // Red-500
-    dotBorder: 'border-red-300 dark:border-red-700'
-  },
-  'blue': {
-    name: 'Blue',
-    backgroundClass: 'bg-blue-50 dark:bg-blue-950',
-    dotColor: '#3b82f6', // Blue-500
-    dotBorder: 'border-blue-300 dark:border-blue-700'
-  },
-  'green': {
-    name: 'Green',
-    backgroundClass: 'bg-green-50 dark:bg-green-950',
-    dotColor: '#4CAF50', // Green-500
-    dotBorder: 'border-green-300 dark:border-green-700'
-  },
-  'yellow': {
-    name: 'Yellow',
-    backgroundClass: 'bg-yellow-50 dark:bg-yellow-950',
-    dotColor: '#FFCA28', // Yellow-500
-    dotBorder: 'border-yellow-300 dark:border-yellow-700'
-  },
-  'purple': {
-    name: 'Purple',
-    backgroundClass: 'bg-purple-50 dark:bg-purple-950',
-    dotColor: '#a855f7', // Purple-500
-    dotBorder: 'border-purple-300 dark:border-purple-700'
-  },
-  'pink': {
-    name: 'Pink',
-    backgroundClass: 'bg-pink-50 dark:bg-pink-950',
-    dotColor: '#ec4899', // Pink-500
-    dotBorder: 'border-pink-300 dark:border-pink-700'
-  },
-  'indigo': {
-    name: 'Indigo',
-    backgroundClass: 'bg-indigo-50 dark:bg-indigo-950',
-    dotColor: '#6366f1', // Indigo-500
-    dotBorder: 'border-indigo-300 dark:border-indigo-700'
-  },
-  'gray': {
-    name: 'Gray',
-    backgroundClass: 'bg-gray-50 dark:bg-gray-950',
-    dotColor: '#6b7280', // Gray-500
-    dotBorder: 'border-gray-300 dark:border-gray-700'
-  },
+import { cn } from "./utils";
+
+export type CategoryColorKey = 'gray' | 'blue' | 'green' | 'purple' | 'yellow' | 'red' | 'indigo' | 'pink' | 'teal';
+
+export const categoryColorMap: Record<CategoryColorKey, { name: string; dotColor: string; backgroundClass: string; dotBorder: string }> = {
+  gray: { name: 'Gray', dotColor: 'hsl(var(--muted-foreground))', backgroundClass: 'bg-muted', dotBorder: 'border-muted-foreground' },
+  blue: { name: 'Blue', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-blue-500', dotBorder: 'border-blue-500' },
+  green: { name: 'Green', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-green-500', dotBorder: 'border-green-500' },
+  purple: { name: 'Purple', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-purple-500', dotBorder: 'border-purple-500' },
+  yellow: { name: 'Yellow', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-yellow-500', dotBorder: 'border-yellow-500' },
+  red: { name: 'Red', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-red-500', dotBorder: 'border-red-500' },
+  indigo: { name: 'Indigo', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-indigo-500', dotBorder: 'border-indigo-500' },
+  pink: { name: 'Pink', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-pink-500', dotBorder: 'border-pink-500' },
+  teal: { name: 'Teal', dotColor: 'hsl(210 40% 96.1%)', backgroundClass: 'bg-teal-500', dotBorder: 'border-teal-500' },
 };
 
-export type CategoryColorKey = keyof typeof categoryColorMap;
-
 export const getCategoryColorProps = (colorKey: string) => {
-  return categoryColorMap[colorKey as CategoryColorKey] || categoryColorMap['gray'];
+  const key = colorKey as CategoryColorKey;
+  return categoryColorMap[key] || categoryColorMap.gray;
+};
+
+export const getRandomCategoryColor = (): CategoryColorKey => {
+  const availableColors = Object.keys(categoryColorMap).filter(key => key !== 'gray') as CategoryColorKey[];
+  const randomIndex = Math.floor(Math.random() * availableColors.length);
+  return availableColors[randomIndex];
 };

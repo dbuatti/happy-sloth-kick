@@ -14,6 +14,8 @@ interface QuickAddGoalProps {
     type: GoalType;
     due_date: string | null;
     parent_goal_id: string | null;
+    order?: number | null; // Added order
+    completed?: boolean; // Added completed
   }) => Promise<any>;
   allCategories: Category[];
   isDemo?: boolean;
@@ -53,6 +55,8 @@ const QuickAddGoal: React.FC<QuickAddGoalProps> = ({
         type: goalType,
         due_date: null, // No AI suggestions, so due_date is null by default
         parent_goal_id: parentGoalId,
+        order: null, // Default order to null
+        completed: false, // Default completed to false
       };
 
       const success = await onAddGoal(goalDataToSend);
