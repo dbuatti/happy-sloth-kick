@@ -184,13 +184,15 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
       return;
     }
 
-    const oldIndex = stapleIds.indexOf(String(active.id));
-    const newIndex = stapleIds.indexOf(String(over.id));
+    const currentStapleIds = staples.map(s => s.id);
+
+    const oldIndex = currentStapleIds.indexOf(String(active.id));
+    const newIndex = currentStapleIds.indexOf(String(over.id));
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const newOrder = arrayMove(stapleIds, oldIndex, newIndex);
-    await reorderStaples(newOrder);
+    const newOrderedIds = arrayMove(currentStapleIds, oldIndex, newIndex);
+    await reorderStaples(newOrderedIds);
   };
 
   return (
