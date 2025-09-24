@@ -157,7 +157,7 @@ const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = 
               <ResonanceGoalTimelineSection
                 key={type}
                 goalType={type}
-                allGoals={goals} {/* Pass ALL goals from the page */}
+                allGoals={goals}
                 allCategories={categories}
                 onAddGoal={addGoal}
                 onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type)}
