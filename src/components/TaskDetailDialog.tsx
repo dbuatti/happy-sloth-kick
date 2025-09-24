@@ -19,7 +19,7 @@ import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from '@/hooks/use-mobile';
-import { format, setHours, setMinutes, isValid } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 
 interface TaskDetailDialogProps {
   task: Task | null;
