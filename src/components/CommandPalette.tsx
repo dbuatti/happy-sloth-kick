@@ -11,7 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import TaskForm, { TaskFormData } from './TaskForm'; // Updated import
 import { useSound } from '@/context/SoundContext';
-import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
+import { format, setHours, setMinutes } from 'date-fns';
 
 
 interface CommandPaletteProps {
@@ -57,10 +57,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
   };
 
   const handleNewTaskSubmit = async (taskData: TaskFormData) => {
-    let finalRemindAt: Date | null = null;
+    let finalRemindAt: string | null = null;
     if (taskData.remindAtDate && taskData.remindAtTime && taskData.remindAtTime.trim() !== "") {
       const [hours, minutes] = taskData.remindAtTime.split(':').map(Number);
-      finalRemindAt = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
+      const remindDateTime = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
+      finalRemindAt = remindDateTime.toISOString();
     }
 
     const success = await handleAddTask({
@@ -69,7 +70,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
       priority: taskData.priority,
       due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
       notes: taskData.notes,
-      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      remind_at: finalRemindAt,
       section_id: taskData.sectionId,
       recurring_type: taskData.recurringType,
       parent_task_id: taskData.parentTaskId,
