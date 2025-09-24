@@ -113,8 +113,8 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
       queryClient.invalidateQueries({ queryKey: ['mealStaples', userId] });
     },
     onError: (err) => {
-      console.error('useMealStaples: Error deleting staple:', err.message);
       showError('Failed to delete staple.');
+      console.error(err);
     },
   });
 

@@ -343,7 +343,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
             <AlertDialogAction onClick={confirmDeleteStaple} disabled={isSaving || isDemo}>
               {isSaving ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
-          </AlertDialogFooter>
+          </DialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
