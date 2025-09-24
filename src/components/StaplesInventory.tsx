@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, ShoppingCart } from 'lucide-react';
+import { Plus, UtensilsCrossed, ShoppingCart, ListFilter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMealStaples, MealStaple, NewMealStapleData } from '@/hooks/useMealStaples';
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch"; // Import Switch component
 import { showError } from '@/utils/toast';
 
 import {
@@ -66,6 +67,8 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   const [quickAddStapleName, setQuickAddStapleName] = useState('');
   const [isQuickAdding, setIsQuickAdding] = useState(false);
 
+  const [showShoppingList, setShowShoppingList] = useState(false); // New state for shopping list mode
+
   // DND state
   const [activeStaple, setActiveStaple] = useState<MealStaple | null>(null);
 
@@ -81,7 +84,11 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
     })
   );
 
-  const stapleIds = staples.map(s => s.id);
+  const filteredStaples = showShoppingList
+    ? staples.filter(s => s.current_quantity < s.target_quantity)
+    : staples;
+
+  const stapleIds = filteredStaples.map(s => s.id);
 
   useEffect(() => {
     if (isAddEditDialogOpen) {
@@ -218,17 +225,33 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
           </Button>
         </form>
 
+        <div className="flex items-center justify-between p-2 rounded-md bg-muted/30">
+          <Label htmlFor="shopping-list-mode" className="flex items-center gap-2 text-sm font-medium">
+            <ListFilter className="h-4 w-4" /> Shopping List Mode
+          </Label>
+          <Switch
+            id="shopping-list-mode"
+            checked={showShoppingList}
+            onCheckedChange={setShowShoppingList}
+            disabled={isDemo}
+          />
+        </div>
+
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className="h-24 w-full rounded-xl" />
             ))}
           </div>
-        ) : staples.length === 0 ? (
+        ) : filteredStaples.length === 0 ? (
           <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
             <UtensilsCrossed className="h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">No staples added yet!</p>
-            <p className="text-sm">Add your essential ingredients to keep track of your pantry.</p>
+            <p className="text-lg font-medium mb-2">
+              {showShoppingList ? "No items needed for shopping!" : "No staples added yet!"}
+            </p>
+            <p className="text-sm">
+              {showShoppingList ? "All your staples are currently in stock or meet their target quantities." : "Add your essential ingredients to keep track of your pantry."}
+            </p>
           </div>
         ) : (
           <DndContext
@@ -239,7 +262,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
           >
             <SortableContext items={stapleIds} strategy={verticalListSortingStrategy}>
               <ul className="space-y-3">
-                {staples.map(staple => (
+                {filteredStaples.map(staple => (
                   <SortableStapleItem
                     key={staple.id}
                     staple={staple}
