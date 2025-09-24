@@ -24,6 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import FloatingAddGoalButton from '@/components/FloatingAddGoalButton'; // Import the new FAB
 
 interface ResonanceGoalsPageProps {
   isDemo?: boolean;
@@ -174,10 +175,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <Sparkles className="h-7 w-7 text-primary" /> Resonance Goals
             </CardTitle>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mt-4">
-              <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo} className="w-full sm:w-auto h-9">
-                <Plus className="mr-2 h-4 w-4" /> Add New Goal
-              </Button>
+            <div className="flex flex-col sm:flex-row justify-end items-start sm:items-center gap-4 mt-4">
               <Button onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo} variant="outline" className="w-full sm:w-auto h-9">
                 <LayoutGrid className="mr-2 h-4 w-4" /> Manage Categories
               </Button>
@@ -232,6 +230,8 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
       <footer className="p-4">
         <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
       </footer>
+
+      <FloatingAddGoalButton onClick={() => handleOpenGoalForm(null)} isDemo={isDemo} />
 
       {/* Goal Add/Edit Form Dialog */}
       <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
