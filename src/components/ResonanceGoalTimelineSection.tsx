@@ -51,9 +51,7 @@ const ResonanceGoalTimelineSection: React.FC<ResonanceGoalTimelineSectionProps> 
       </h3>
       <div className="relative">
         <div className="absolute left-0 top-1/2 w-full border-t border-dashed border-muted-foreground/30" />
-        <div className="relative z-10 bg-background px-2 py-0.5 inline-block -translate-y-1/2">
-          <span className="text-xs text-muted-foreground">{(goalType as string).replace('-', ' ')}</span>
-        </div>
+        {/* Removed the redundant span displaying goalType */}
       </div>
 
       {loading ? (
