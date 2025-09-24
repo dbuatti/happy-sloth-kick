@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 
-export type GoalType = 'daily' | 'weekly' | 'monthly' | 'yearly' | '3-year' | '5-year' | '10-year';
+export type GoalType = 'daily' | 'weekly' | 'monthly' | '3-month' | '6-month' | '9-month' | 'yearly' | '3-year' | '5-year' | '7-year' | '10-year';
 
 export interface Category {
   id: string;

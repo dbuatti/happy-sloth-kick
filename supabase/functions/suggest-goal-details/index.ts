@@ -26,7 +26,52 @@ function calculateFutureDates(currentDateString: string) {
   nextWeek.setDate(today.getDate() + 7);
   const nextWeekDateString = nextWeek.toISOString().split('T')[0];
 
-  return { tomorrowDateString, nextFridayDateString, nextWeekDateString };
+  const threeMonths = new Date(today);
+  threeMonths.setMonth(today.getMonth() + 3);
+  const threeMonthsDateString = threeMonths.toISOString().split('T')[0];
+
+  const sixMonths = new Date(today);
+  sixMonths.setMonth(today.getMonth() + 6);
+  const sixMonthsDateString = sixMonths.toISOString().split('T')[0];
+
+  const nineMonths = new Date(today);
+  nineMonths.setMonth(today.getMonth() + 9);
+  const nineMonthsDateString = nineMonths.toISOString().split('T')[0];
+
+  const oneYear = new Date(today);
+  oneYear.setFullYear(today.getFullYear() + 1);
+  const oneYearDateString = oneYear.toISOString().split('T')[0];
+
+  const threeYears = new Date(today);
+  threeYears.setFullYear(today.getFullYear() + 3);
+  const threeYearsDateString = threeYears.toISOString().split('T')[0];
+
+  const fiveYears = new Date(today);
+  fiveYears.setFullYear(today.getFullYear() + 5);
+  const fiveYearsDateString = fiveYears.toISOString().split('T')[0];
+
+  const sevenYears = new Date(today);
+  sevenYears.setFullYear(today.getFullYear() + 7);
+  const sevenYearsDateString = sevenYears.toISOString().split('T')[0];
+
+  const tenYears = new Date(today);
+  tenYears.setFullYear(today.getFullYear() + 10);
+  const tenYearsDateString = tenYears.toISOString().split('T')[0];
+
+
+  return { 
+    tomorrowDateString, 
+    nextFridayDateString, 
+    nextWeekDateString,
+    threeMonthsDateString,
+    sixMonthsDateString,
+    nineMonthsDateString,
+    oneYearDateString,
+    threeYearsDateString,
+    fiveYearsDateString,
+    sevenYearsDateString,
+    tenYearsDateString,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -63,7 +108,19 @@ Deno.serve(async (req) => {
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
 
     // Calculate dynamic dates using the helper function
-    const { tomorrowDateString, nextFridayDateString, nextWeekDateString } = calculateFutureDates(currentDate);
+    const { 
+      tomorrowDateString, 
+      nextFridayDateString, 
+      nextWeekDateString,
+      threeMonthsDateString,
+      sixMonthsDateString,
+      nineMonthsDateString,
+      oneYearDateString,
+      threeYearsDateString,
+      fiveYearsDateString,
+      sevenYearsDateString,
+      tenYearsDateString,
+    } = calculateFutureDates(currentDate);
 
     // Construct the prompt for the Gemini AI
     const prompt = `You are a helpful assistant that extracts structured goal data from natural language descriptions.
@@ -82,7 +139,7 @@ Deno.serve(async (req) => {
     Output:
     {
       "category": "Personal",
-      "dueDate": "${new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()).toISOString().split('T')[0]}",
+      "dueDate": "${oneYearDateString}",
       "cleanedDescription": "Learn to play guitar",
       "notes": null
     }
@@ -104,6 +161,26 @@ Deno.serve(async (req) => {
       "category": "Health",
       "dueDate": null,
       "cleanedDescription": "Run a marathon",
+      "notes": null
+    }
+
+    Example 4:
+    Title: "Launch new product in 6 months"
+    Output:
+    {
+      "category": "Work",
+      "dueDate": "${sixMonthsDateString}",
+      "cleanedDescription": "Launch new product",
+      "notes": null
+    }
+
+    Example 5:
+    Title: "Become financially independent in 10 years"
+    Output:
+    {
+      "category": "Finance",
+      "dueDate": "${tenYearsDateString}",
+      "cleanedDescription": "Become financially independent",
       "notes": null
     }
     

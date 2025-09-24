@@ -37,9 +37,13 @@ const goalTypes: { value: GoalType; label: string }[] = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
+  { value: '3-month', label: '3-Month' },
+  { value: '6-month', label: '6-Month' },
+  { value: '9-month', label: '9-Month' },
   { value: 'yearly', label: 'Yearly' },
   { value: '3-year', label: '3-Year Vision' },
   { value: '5-year', label: '5-Year Vision' },
+  { value: '7-year', label: '7-Year Vision' },
   { value: '10-year', label: '10-Year Vision' },
 ];
 
@@ -242,7 +246,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
 
   const groupedGoals = useMemo(() => {
     const groups: Record<GoalType, Goal[]> = {
-      'daily': [], 'weekly': [], 'monthly': [], 'yearly': [], '3-year': [], '5-year': [], '10-year': []
+      'daily': [], 'weekly': [], 'monthly': [], '3-month': [], '6-month': [], '9-month': [], 'yearly': [], '3-year': [], '5-year': [], '7-year': [], '10-year': []
     };
     goals.forEach((goal: Goal) => {
       groups[goal.type]?.push(goal);
@@ -284,7 +288,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
                 {goalTypes.map(type => {
                   const goalsOfType = groupedGoals[type.value];
                   // Only render a section if there are goals or if it's a top-level type
-                  if (goalsOfType && goalsOfType.length > 0 || ['daily', 'weekly', 'monthly'].includes(type.value)) {
+                  if (goalsOfType && goalsOfType.length > 0 || ['daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'].includes(type.value)) {
                     return (
                       <ResonanceGoalTimelineSection
                         key={type.value}
