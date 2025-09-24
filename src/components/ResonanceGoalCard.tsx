@@ -3,7 +3,7 @@ import { Goal } from '@/hooks/useResonanceGoals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO, isPast, isSameDay, isValid } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, getContrastTextColor } from '@/lib/utils'; // Import getContrastTextColor
 import { Edit, Trash2, CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import {
   ContextMenu,
@@ -56,6 +56,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
   };
 
   const hasSubGoals = subGoals.length > 0;
+  const textColorClass = getContrastTextColor(goal.category_color || '#6b7280'); // Default to gray if no color
 
   return (
     <div style={{ marginLeft: `${level * 16}px` }}>
@@ -64,12 +65,11 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
           <Card
             className={cn(
               "relative group w-full shadow-sm rounded-lg transition-all duration-200 ease-in-out overflow-hidden",
-              "border-l-4",
-              goal.completed ? "bg-green-500/10 border-green-500/30" : "bg-card border-border hover:shadow-md",
-              isOverdue && "border-destructive",
-              isDueToday && "border-orange-500",
-              isDemo && "opacity-70 cursor-not-allowed"
+              "hover:shadow-md",
+              isDemo && "opacity-70 cursor-not-allowed",
+              textColorClass // Apply calculated text color
             )}
+            style={{ backgroundColor: goal.category_color || '#6b7280' }} // Apply category color as background
           >
             <CardHeader className="flex flex-row items-center justify-between py-1.5 pr-3 relative z-10 h-auto">
               <div className="flex items-center gap-2 flex-grow min-w-0">
@@ -77,7 +77,7 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6"
+                    className={cn("h-6 w-6", textColorClass)} // Apply text color to button
                     onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       toggleExpand(goal.id);
@@ -95,27 +95,27 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                   checked={goal.completed}
                   onCheckedChange={(checked: boolean) => { console.log('Checkbox toggled for goal:', goal.id, 'new state:', checked); onToggleComplete(goal.id, checked); }}
                   disabled={isDemo}
-                  className="h-3.5 w-3.5 rounded-full border-2"
+                  className={cn("h-3.5 w-3.5 rounded-full border-2", textColorClass)} // Apply text color to checkbox
                 />
                 <CardTitle className={cn(
                   "text-sm font-semibold line-clamp-1 flex-grow min-w-0",
-                  goal.completed && "line-through text-muted-foreground"
+                  goal.completed && "line-through opacity-70" // Keep line-through, adjust opacity
                 )}>
                   {goal.title}
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                   {goal.due_date && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs">
                       <CalendarDays className="h-3 w-3" />
                       <span className={cn(
-                        isOverdue && "text-destructive",
-                        isDueToday && "text-orange-500"
+                        isOverdue && "text-destructive", // Keep destructive for overdue
+                        isDueToday && "text-orange-500" // Keep orange for due today
                       )}>
                         {getDueDateDisplay(goal.due_date)}
                       </span>
                     </div>
                   )}
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 text-xs">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: goal.category_color }} />
                     <span>{goal.category_name}</span>
                   </div>
@@ -123,10 +123,10 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
               </div >
               {!isDemo && (
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); console.log('Edit button clicked for goal:', goal.id); onEdit(goal); }}>
+                  <Button variant="ghost" size="icon" className={cn("h-7 w-7", textColorClass)} onClick={(e) => { e.stopPropagation(); console.log('Edit button clicked for goal:', goal.id); onEdit(goal); }}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); console.log('Delete button clicked for goal:', goal.id); onDelete(goal.id); }}>
+                  <Button variant="ghost" size="icon" className={cn("h-7 w-7 text-destructive", textColorClass === 'text-white' ? 'hover:bg-white/20' : 'hover:bg-black/10')} onClick={(e) => { e.stopPropagation(); console.log('Delete button clicked for goal:', goal.id); onDelete(goal.id); }}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -135,8 +135,8 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
             <CardContent className="relative z-10 pt-0 pb-1.5 px-4 space-y-1">
               {goal.description && (
                 <p className={cn(
-                  "text-xs text-muted-foreground line-clamp-1",
-                  goal.completed && "line-through"
+                  "text-xs line-clamp-1",
+                  goal.completed && "line-through opacity-70"
                 )}>
                   {goal.description}
                 </p>
