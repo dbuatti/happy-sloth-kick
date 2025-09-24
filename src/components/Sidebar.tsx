@@ -16,6 +16,7 @@ import {
   Palette,
   Sun,
   Monitor,
+  UtensilsCrossed, // Import the new icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -69,6 +70,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
       href: isDemo ? "/demo/projects" : "/projects",
       icon: BarChart3,
       visible: settings?.visible_pages?.projects !== false,
+    },
+    {
+      name: "Meal Planner", // New Nav Item
+      href: isDemo ? "/demo/meal-planner" : "/meal-planner",
+      icon: UtensilsCrossed,
+      visible: settings?.visible_pages?.mealPlanner !== false, // New setting for visibility
     },
     {
       name: "Sleep",

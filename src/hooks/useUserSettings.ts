@@ -28,6 +28,7 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
     dailyTasks: true,
     schedule: true,
     projects: true,
+    mealPlanner: true, // New default for Meal Planner visibility
     sleep: true,
     devSpace: true,
     settings: true,

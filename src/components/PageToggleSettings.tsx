@@ -4,23 +4,24 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from '@/context/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, UtensilsCrossed } from 'lucide-react'; // Import UtensilsCrossed
 
 const PageToggleSettings: React.FC = () => {
   const { settings, loading, updateSettings } = useSettings();
 
   // Define navItems locally or import them if they are a shared constant
   const localNavItems = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard, toggleable: true },
-    { name: "Daily Tasks", path: "/daily-tasks", icon: LayoutDashboard, toggleable: true },
-    { name: "Schedule", path: "/schedule", icon: LayoutDashboard, toggleable: true },
-    { name: "Projects", path: "/projects", icon: LayoutDashboard, toggleable: true },
-    { name: "Sleep", path: "/sleep", icon: LayoutDashboard, toggleable: true },
-    { name: "Dev Space", path: "/dev-space", icon: LayoutDashboard, toggleable: true },
-    { name: "Settings", path: "/settings", icon: LayoutDashboard, toggleable: true },
-    { name: "Analytics", path: "/analytics", icon: LayoutDashboard, toggleable: true },
-    { name: "Archive", path: "/archive", icon: LayoutDashboard, toggleable: true },
-    { name: "Help", path: "/help", icon: LayoutDashboard, toggleable: true },
+    { name: "Dashboard", path: "dashboard", icon: LayoutDashboard, toggleable: true },
+    { name: "Daily Tasks", path: "dailyTasks", icon: LayoutDashboard, toggleable: true },
+    { name: "Schedule", path: "schedule", icon: LayoutDashboard, toggleable: true },
+    { name: "Projects", path: "projects", icon: LayoutDashboard, toggleable: true },
+    { name: "Meal Planner", path: "mealPlanner", icon: UtensilsCrossed, toggleable: true }, // New entry
+    { name: "Sleep", path: "sleep", icon: LayoutDashboard, toggleable: true },
+    { name: "Dev Space", path: "devSpace", icon: LayoutDashboard, toggleable: true },
+    { name: "Settings", path: "settings", icon: LayoutDashboard, toggleable: true },
+    { name: "Analytics", path: "analytics", icon: LayoutDashboard, toggleable: true },
+    { name: "Archive", path: "archive", icon: LayoutDashboard, toggleable: true },
+    { name: "Help", path: "help", icon: LayoutDashboard, toggleable: true },
   ];
 
   const toggleablePages = localNavItems.filter(item => item.toggleable);
@@ -28,7 +29,7 @@ const PageToggleSettings: React.FC = () => {
   const handleToggle = (path: string, checked: boolean) => {
     const newVisiblePages = {
       ...(settings?.visible_pages || {}),
-      [path.replace('/','').replace('-','').replace(' ','')]: checked, // Normalize path to match settings key
+      [path]: checked, // Use the path directly as the key
     };
     updateSettings({ visible_pages: newVisiblePages });
   };
@@ -64,8 +65,7 @@ const PageToggleSettings: React.FC = () => {
         <div className="space-y-4">
           {toggleablePages.map(page => {
             const Icon = page.icon;
-            const settingsKey = page.path.replace('/','').replace('-','').replace(' ','');
-            const isVisible = settings?.visible_pages?.[settingsKey] !== false;
+            const isVisible = settings?.visible_pages?.[page.path] !== false;
             return (
               <div key={page.path} className="flex items-center justify-between">
                 <Label htmlFor={`toggle-${page.path}`} className="text-base font-medium flex items-center gap-2">
