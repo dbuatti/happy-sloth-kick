@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Target, Sparkles, LayoutGrid } from 'lucide-react';
+import { Plus, Target, Sparkles, LayoutGrid, Trash2 } from 'lucide-react'; // Imported Trash2
 import { Button } from '@/components/ui/button';
-import { useResonanceGoals, Goal, Category, GoalType } from '@/hooks/useResonanceGoals';
+import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals'; // Removed unused Category import
 import ResonanceGoalCard from '@/components/ResonanceGoalCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -41,7 +41,7 @@ const goalTypes: { value: GoalType; label: string }[] = [
 ];
 
 const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
-  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory, updateCategory, deleteCategory } = useResonanceGoals({ userId: demoUserId });
+  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory, deleteCategory } = useResonanceGoals({ userId: demoUserId }); // Removed unused updateCategory
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -96,6 +96,9 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
       category_id: goalCategory,
       type: goalType,
       due_date: goalDueDate ? format(goalDueDate, 'yyyy-MM-dd') : null,
+      completed: false, // Default for new goals
+      order: null, // Default for new goals
+      parent_goal_id: null, // Default for new goals
     };
 
     if (editingGoal) {

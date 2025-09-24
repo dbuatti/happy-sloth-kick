@@ -2,7 +2,7 @@ import React from 'react';
 import { Goal } from '@/hooks/useResonanceGoals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { format, parseISO, isPast, isSameDay } from 'date-fns';
+import { format, parseISO, isPast, isSameDay, isValid } from 'date-fns'; // Added isValid
 import { cn } from '@/lib/utils';
 import { Edit, Trash2, MoreHorizontal, CalendarDays, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';

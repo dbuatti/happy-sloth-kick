@@ -1,9 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/context/AuthContext';
-import { showError, showSuccess } from '@/utils/toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
+// Removed unused import: import { format } from 'date-fns';
 
 export type GoalType = 'daily' | 'weekly' | 'monthly' | 'yearly' | '3-year' | '5-year' | '10-year';
 
