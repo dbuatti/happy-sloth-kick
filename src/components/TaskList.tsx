@@ -433,7 +433,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                 due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
                 notes: taskData.notes,
                 remind_at: finalRemindAt,
-                section_id: preselectedSectionId ?? null,
+                section_id: taskData.sectionId, // Corrected to use taskData.sectionId
                 recurring_type: taskData.recurringType,
                 parent_task_id: taskData.parentTaskId,
                 link: taskData.link,

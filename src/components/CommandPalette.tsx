@@ -57,11 +57,10 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
   };
 
   const handleNewTaskSubmit = async (taskData: TaskFormData) => {
-    let finalRemindAt: string | null = null;
+    let finalRemindAt: Date | null = null;
     if (taskData.remindAtDate && taskData.remindAtTime && taskData.remindAtTime.trim() !== "") {
       const [hours, minutes] = taskData.remindAtTime.split(':').map(Number);
-      const remindDateTime = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
-      finalRemindAt = remindDateTime.toISOString();
+      finalRemindAt = setMinutes(setHours(taskData.remindAtDate, hours), minutes);
     }
 
     const success = await handleAddTask({
@@ -70,7 +69,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
       priority: taskData.priority,
       due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
       notes: taskData.notes,
-      remind_at: finalRemindAt,
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: taskData.sectionId,
       recurring_type: taskData.recurringType,
       parent_task_id: taskData.parentTaskId,

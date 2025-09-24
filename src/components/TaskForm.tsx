@@ -78,19 +78,7 @@ export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Partial<Task> | null;
-  onSave: (taskData: {
-    description: string;
-    category: string;
-    priority: string;
-    due_date: string | null;
-    notes: string | null;
-    remind_at: string | null;
-    section_id: string | null;
-    recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-    parent_task_id: string | null;
-    link: string | null;
-    image_url: string | null;
-  }) => Promise<any>;
+  onSave: (taskData: TaskFormData) => Promise<any>;
   onCancel: () => void;
   sections: TaskSection[];
   allCategories: Category[];
