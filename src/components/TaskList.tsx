@@ -25,7 +25,7 @@ import {
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
-import TaskForm from './TaskForm';
+import TaskForm, { TaskFormData } from './TaskForm';
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
@@ -416,7 +416,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             </DialogDescription>
           </DialogHeader>
           <TaskForm
-            onSave={async (taskData) => {
+            onSave={async (taskData: TaskFormData) => {
               const success = await handleAddTask({
                 ...taskData,
                 section_id: preselectedSectionId ?? null,

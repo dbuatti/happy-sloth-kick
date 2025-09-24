@@ -315,3 +315,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </Dialog>
+  );
+};
+
+export default AppointmentForm;

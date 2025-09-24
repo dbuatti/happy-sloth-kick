@@ -9,7 +9,7 @@ import { showError, showSuccess } from "@/utils/toast";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import TaskForm from './TaskForm'; // Updated import
+import TaskForm, { TaskFormData } from './TaskForm'; // Updated import
 import { useSound } from '@/context/SoundContext';
 
 interface CommandPaletteProps {
@@ -54,7 +54,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     }
   };
 
-  const handleNewTaskSubmit = async (taskData: any) => {
+  const handleNewTaskSubmit = async (taskData: TaskFormData) => {
     const success = await handleAddTask(taskData);
     if (success) {
       setIsAddTaskDialogOpen(false);

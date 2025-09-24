@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSound } from '@/context/SoundContext';
-import TaskForm from './TaskForm';
+import TaskForm, { TaskFormData } from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -57,8 +57,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
-
-  type TaskFormData = Parameters<typeof TaskForm>['0']['onSave'] extends ((taskData: infer T) => any) ? T : never;
 
   const handleSaveMainTask = async (taskData: TaskFormData) => {
     if (!task) return false;

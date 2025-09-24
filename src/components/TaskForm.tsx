@@ -74,7 +74,7 @@ const taskFormSchema = z.object({
   }
 });
 
-type TaskFormData = z.infer<typeof taskFormSchema>;
+export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Partial<Task> | null;
@@ -537,3 +537,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </Button>
       </div>
     </form>
+  );
+};
+
+export default TaskForm;

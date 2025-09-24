@@ -235,3 +235,8 @@ const ManageCategoriesDialog: React.FC<ManageCategoriesDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </Dialog>
+  );
+};
+
+export default ManageCategoriesDialog;

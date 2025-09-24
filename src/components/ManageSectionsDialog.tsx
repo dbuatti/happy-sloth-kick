@@ -81,10 +81,7 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
     }
   };
 
-  const handleCancelEdit = () => {
-    setLocalSectionName(section.name);
-    setIsEditingLocal(false);
-  };
+  // Removed the misplaced handleCancelEdit function
 
   const handleDeleteClick = (sectionId: string, sectionName: string) => {
     setSectionToDeleteId(sectionId);
@@ -209,3 +206,8 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </Dialog>
+  );
+};
+
+export default ManageSectionsDialog;
