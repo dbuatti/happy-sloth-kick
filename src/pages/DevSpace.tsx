@@ -1,34 +1,50 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Code, Search, Filter, X, ListRestart } from 'lucide-react';
-import { useDevIdeas, DevIdea, DevIdeaTag } from '@/hooks/useDevIdeas';
+import { Plus, Lightbulb, Zap, CheckCircle2 } from 'lucide-react';
+import { useDevIdeas, DevIdea } from '@/hooks/useDevIdeas';
+import DevIdeaCard from '@/components/DevIdeaCard';
 import DevIdeaForm from '@/components/DevIdeaForm';
-import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DndContext,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
-import { arrayMove } from '@dnd-kit/sortable';
-import { createPortal } from 'react-dom';
+import { Skeleton } from '@/components/ui/skeleton';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableDevIdeaCard from '@/components/SortableDevIdeaCard';
-import { getRandomTagColor } from '@/lib/tagColors'; // Corrected import
+import { useDroppable } from '@dnd-kit/core';
+import useKeyboardShortcuts, { ShortcutMap } from '@/hooks/useKeyboardShortcuts';
+
+interface DevIdeaColumnProps {
+    id: string;
+    title: string;
+    icon: React.ElementType;
+    className: string;
+    ideas: DevIdea[];
+    loading: boolean;
+    onEdit: (idea: DevIdea) => void;
+}
+
+const DevIdeaColumn: React.FC<DevIdeaColumnProps> = ({ id, title, icon: Icon, className, ideas, loading, onEdit }) => {
+    const { setNodeRef } = useDroppable({ id });
+
+    return (
+        <Card className="bg-muted/30 h-full">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <Icon className={className} /> {title} ({ideas.length})
+                </CardTitle>
+            </CardHeader>
+            <CardContent ref={setNodeRef} className="space-y-4 min-h-[200px]">
+                <SortableContext id={id} items={ideas.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                    {loading ? (
+                        <Skeleton className="h-24 w-full" />
+                    ) : (
+                        ideas.map(idea => <SortableDevIdeaCard key={idea.id} idea={idea} onEdit={onEdit} />)
+                    )}
+                </SortableContext>
+            </CardContent>
+        </Card>
+    );
+};
 
 interface DevSpaceProps {
   isDemo?: boolean;
@@ -36,279 +52,132 @@ interface DevSpaceProps {
 }
 
 const DevSpace: React.FC<DevSpaceProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-  const { ideas, tags, loading, addIdea, updateIdea, deleteIdea, setIdeas, addTag } = useDevIdeas({ userId: demoUserId });
-
+  const { ideas, tags, loading, addIdea, updateIdea, setIdeas, addTag } = useDevIdeas({ userId: demoUserId });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingIdea, setEditingIdea] = useState<DevIdea | null>(null);
+  const [activeIdea, setActiveIdea] = useState<DevIdea | null>(null);
 
-  const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8,
+    },
+  }));
 
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [activeIdeaData, setActiveIdeaData] = useState<DevIdea | null>(null);
+  const columns = useMemo(() => {
+    const ideaCol = ideas.filter(i => i.status === 'idea');
+    const inProgressCol = ideas.filter(i => i.status === 'in-progress');
+    const completedCol = ideas.filter(i => i.status === 'completed');
+    return { idea: ideaCol, 'in-progress': inProgressCol, completed: completedCol };
+  }, [ideas]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-      enabled: !isDemo,
-    })
-  );
+  const handleAddClick = () => {
+    setEditingIdea(null);
+    setIsFormOpen(true);
+  };
 
-  const filteredIdeas = useMemo(() => {
-    let filtered = ideas;
-
-    if (searchFilter) {
-      filtered = filtered.filter(idea =>
-        idea.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        idea.description?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        idea.local_file_path?.toLowerCase().includes(searchFilter.toLowerCase()) ||
-        idea.tags.some((tag: DevIdeaTag) => tag.name.toLowerCase().includes(searchFilter.toLowerCase()))
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(idea => idea.status === statusFilter);
-    }
-
-    if (priorityFilter !== 'all') {
-      filtered = filtered.filter(idea => idea.priority === priorityFilter);
-    }
-
-    if (selectedTagIds.size > 0) {
-      filtered = filtered.filter(idea =>
-        idea.tags.some((tag: DevIdeaTag) => selectedTagIds.has(tag.id))
-      );
-    }
-
-    return filtered;
-  }, [ideas, searchFilter, statusFilter, priorityFilter, selectedTagIds]);
-
-  const handleOpenForm = (idea: DevIdea | null) => {
+  const handleEditClick = (idea: DevIdea) => {
     setEditingIdea(idea);
     setIsFormOpen(true);
   };
 
-  const handleSaveIdea = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => {
+  const handleSave = async (data: Omit<DevIdea, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'tags'> & { tagIds: string[] }) => {
     if (editingIdea) {
-      await updateIdea({ id: editingIdea.id, updates: data });
+      return await updateIdea({ id: editingIdea.id, updates: data });
     } else {
-      await addIdea(data);
+      return await addIdea(data);
     }
-    setIsFormOpen(false);
-  };
-
-  const handleClearFilters = () => {
-    setSearchFilter('');
-    setStatusFilter('all');
-    setPriorityFilter('all');
-    setSelectedTagIds(new Set());
-    setShowAdvanced(false);
-  };
-
-  const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || priorityFilter !== 'all' || selectedTagIds.size > 0;
-
-  const handleTagToggle = (tagId: string) => {
-    setSelectedTagIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(tagId)) {
-        newSet.delete(tagId);
-      } else {
-        newSet.add(tagId);
-      }
-      return newSet;
-    });
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id);
-    setActiveIdeaData(ideas.find(idea => idea.id === event.active.id) || null);
+    const { active } = event;
+    setActiveIdea(ideas.find(idea => idea.id === active.id) || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setActiveId(null);
-    setActiveIdeaData(null);
+    setActiveIdea(null);
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
       return;
     }
 
-    setIdeas((currentIdeas: DevIdea[]) => {
-      const oldIndex = currentIdeas.findIndex((idea: DevIdea) => idea.id === active.id);
-      const newIndex = currentIdeas.findIndex((idea: DevIdea) => idea.id === over.id);
-      return arrayMove(currentIdeas, oldIndex, newIndex);
-    });
+    const activeId = String(active.id);
+    const overId = String(over.id);
+
+    const activeContainer = active.data.current?.sortable.containerId;
+    const overContainer = over.data.current?.sortable.containerId || over.id;
+
+    if (!activeContainer || !overContainer) return;
+
+    if (activeContainer !== overContainer) {
+        const newStatus = overContainer as DevIdea['status'];
+        if (['idea', 'in-progress', 'completed'].includes(newStatus)) {
+            updateIdea({ id: activeId, updates: { status: newStatus } });
+        }
+    } else if (activeId !== overId) {
+        setIdeas(arrayMove(ideas, ideas.findIndex((idea: DevIdea) => idea.id === activeId), ideas.findIndex((idea: DevIdea) => idea.id === overId)));
+    }
   };
 
+  const columnData = [
+    { id: 'idea', title: 'Ideas', icon: Lightbulb, className: 'text-yellow-500' },
+    { id: 'in-progress', title: 'In Progress', icon: Zap, className: 'text-blue-500' },
+    { id: 'completed', title: 'Completed', icon: CheckCircle2, className: 'text-green-500' },
+  ];
+
+  const shortcuts: ShortcutMap = {
+    'n': (e) => {
+      e.preventDefault();
+      handleAddClick();
+    },
+  };
+  useKeyboardShortcuts(shortcuts);
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-center mb-8">
-          <Code className="inline-block h-10 w-10 mr-3 text-primary" /> Dev Space
-        </h1>
-
-        <div className="flex flex-col sm:flex-row gap-3 px-4 py-3 mb-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-            <Input
-              placeholder="Search ideas..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              className="pl-10 h-9"
-            />
-            {searchFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-                onClick={() => setSearchFilter('')}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            )}
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex-1 flex flex-col">
+        <main className="flex-grow p-4">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-3xl font-bold">Dev Space</h1>
+            <Button onClick={handleAddClick} disabled={isDemo}>
+              <Plus className="mr-2 h-4 w-4" /> Add Idea
+            </Button>
           </div>
 
-          <div className="flex gap-2">
-            <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2 h-9">
-                  <Filter className="h-4 w-4" />
-                  Filter
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[9999]">
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="idea">Idea</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Priority</Label>
-                    <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[9999]">
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Tags</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {tags.map(tag => (
-                        <Button
-                          key={tag.id}
-                          variant={selectedTagIds.has(tag.id) ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => handleTagToggle(tag.id)}
-                          style={selectedTagIds.has(tag.id) ? { backgroundColor: tag.color, color: 'white' } : {}}
-                        >
-                          {tag.name}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            {isAnyFilterActive && (
-              <Button variant="outline" onClick={handleClearFilters} className="gap-2 h-9">
-                <ListRestart className="h-4 w-4" />
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-end mb-4">
-          <Button onClick={() => handleOpenForm(null)} disabled={isDemo}>
-            <Plus className="mr-2 h-4 w-4" /> Add New Idea
-          </Button>
-        </div>
-
-        {loading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="w-full shadow-md rounded-xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-6 w-1/4" />
-                </div>
-                <Skeleton className="h-4 w-full mb-1" />
-                <Skeleton className="h-4 w-5/6" />
-              </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {columnData.map(column => (
+              <DevIdeaColumn
+                key={column.id}
+                id={column.id}
+                title={column.title}
+                icon={column.icon}
+                className={column.className}
+                ideas={columns[column.id as keyof typeof columns]}
+                loading={loading}
+                onEdit={handleEditClick}
+              />
             ))}
           </div>
-        ) : filteredIdeas.length === 0 ? (
-          <div className="text-center text-muted-foreground py-12">
-            <Code className="h-16 w-16 mx-auto mb-4" />
-            <p className="text-xl font-semibold">No ideas found.</p>
-            <p className="text-sm">Try adjusting your filters or add a new idea!</p>
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={filteredIdeas.map(idea => idea.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-4">
-                {filteredIdeas.map(idea => (
-                  <SortableDevIdeaCard key={idea.id} idea={idea} onEdit={handleOpenForm} />
-                ))}
-              </div>
-            </SortableContext>
+        </main>
 
-            {createPortal(
-              <DragOverlay dropAnimation={null}>
-                {activeId && activeIdeaData && (
-                  <div className="rotate-2">
-                    <SortableDevIdeaCard idea={activeIdeaData} onEdit={handleOpenForm} />
-                  </div>
-                )}
-              </DragOverlay>,
-              document.body
-            )}
-          </DndContext>
-        )}
+        <DevIdeaForm
+          isOpen={isFormOpen}
+          onClose={() => setIsFormOpen(false)}
+          onSave={handleSave}
+          initialData={editingIdea}
+          allTags={tags}
+          onAddTag={async (name, color) => addTag({ name, color })}
+        />
       </div>
-
-      <DevIdeaForm
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        onSave={handleSaveIdea}
-        initialData={editingIdea}
-        allTags={tags}
-        onAddTag={addTag}
-      />
-    </div>
+      {createPortal(
+        <DragOverlay>
+          {activeIdea ? (
+            <DevIdeaCard idea={activeIdea} onEdit={() => {}} />
+          ) : null}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
 

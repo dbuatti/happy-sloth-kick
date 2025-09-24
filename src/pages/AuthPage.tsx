@@ -1,22 +1,18 @@
 import React from 'react';
 import AuthComponent from '@/components/AuthComponent';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
 
 const AuthPage: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <div className="container mx-auto py-6 px-4 max-w-4xl">
-        <div className="absolute top-4 left-4">
-          <Link to="/">
-            <Button variant="ghost">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Home
-            </Button>
-          </Link>
-        </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-background to-muted">
+      <header className="p-6 flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-primary">TaskMaster</h1>
+      </header>
+      <main className="flex-grow flex flex-col items-center justify-center p-4">
         <AuthComponent />
-      </div>
+      </main>
+      <footer className="p-6 text-center text-muted-foreground">
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+      </footer>
     </div>
   );
 };

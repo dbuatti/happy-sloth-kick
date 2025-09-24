@@ -1,24 +1,27 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Frown } from 'lucide-react';
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Frown } from "lucide-react";
 
-const NotFound: React.FC = () => {
+const NotFound = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    console.error(
+      "404 Error: User attempted to access non-existent route:",
+      location.pathname,
+    );
+  }, [location.pathname]);
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background">
-      <div className="container mx-auto py-6 px-4 max-w-4xl text-center">
-        <Frown className="h-24 w-24 text-primary mb-6 mx-auto" />
-        <h1 className="text-5xl font-extrabold tracking-tight text-foreground mb-4">
-          404 - Page Not Found
-        </h1>
-        <p className="text-lg text-muted-foreground mb-8">
-          Oops! The page you're looking for doesn't exist.
-        </p>
-        <Link to="/">
-          <Button size="lg" className="text-lg px-8 py-3">
-            Go to Home
-          </Button>
-        </Link>
+    <div className="min-h-screen flex items-center justify-center bg-background text-center p-4">
+      <div className="bg-card p-8 rounded-xl shadow-lg max-w-md w-full space-y-6">
+        <Frown className="h-24 w-24 text-primary mx-auto" />
+        <h1 className="text-6xl font-extrabold text-foreground">404</h1>
+        <p className="text-xl text-muted-foreground mb-4">Oops! The page you're looking for doesn't exist.</p>
+        <Button asChild size="lg" className="h-12 text-lg">
+          <a href="/">Return to Home</a>
+        </Button>
       </div>
     </div>
   );

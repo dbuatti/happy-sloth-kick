@@ -1,227 +1,362 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, CheckCircle2, Flame, Moon } from 'lucide-react'; // Removed Clock, Target
-import { useAuth } from '@/context/AuthContext';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { format, subDays, parseISO } from 'date-fns'; // Removed startOfMonth, subMonths, startOfWeek, subWeeks, endOfDay
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BarChart3, CalendarIcon, Clock, CheckCircle2, ListTodo, Target } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { format, eachDayOfInterval, startOfMonth } from 'date-fns';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { DateRange } from 'react-day-picker';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/context/AuthContext';
+
+interface AnalyticsTask {
+  id: string;
+  description: string;
+  status: 'to-do' | 'completed' | 'skipped' | 'archived';
+  is_daily_recurring: boolean;
+  created_at: string;
+  user_id: string;
+  category: string;
+  priority: string;
+  due_date: string | null;
+}
+
+const getAnalyticsData = async (startDate: Date, endDate: Date, userId: string) => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('created_at', startDate.toISOString())
+    .lt('created_at', endDate.toISOString());
+
+  if (error) {
+    console.error('Error fetching analytics data:', error);
+    return { dailyData: [], categoryData: [], priorityData: {} };
+  }
+
+  const tasksByDate = (data as AnalyticsTask[]).reduce((acc, task) => {
+    const date = format(new Date(task.created_at), 'yyyy-MM-dd');
+    if (!acc[date]) {
+      acc[date] = { completed: 0, total: 0 };
+    }
+    acc[date].total++;
+    if (task.status === 'completed') {
+      acc[date].completed++;
+    }
+    return acc;
+  }, {} as Record<string, { completed: number; total: number }>);
+
+  const dateRange = eachDayOfInterval({ start: startDate, end: endDate });
+  const dailyData = dateRange.map(date => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const dayData = tasksByDate[dateKey] || { completed: 0, total: 0 };
+    const completionRate = dayData.total > 0 ? (dayData.completed / dayData.total) * 100 : 0;
+    
+    return {
+      date: format(date, 'MMM dd'),
+      tasksCompleted: dayData.completed,
+      totalTasks: dayData.total,
+      completionRate: Math.round(completionRate),
+    };
+  });
+
+  const categoryCounts = (data as AnalyticsTask[]).reduce((acc, task) => {
+    const category = task.category || 'general';
+    if (!acc[category]) {
+      acc[category] = { completed: 0, total: 0 };
+    }
+    acc[category].total++;
+    if (task.status === 'completed') {
+      acc[category].completed++;
+    }
+    return acc;
+  }, {} as Record<string, { completed: number; total: number }>);
+
+  const categoryData = Object.entries(categoryCounts).map(([name, counts]) => ({
+    name,
+    value: counts.total,
+    completed: counts.completed,
+    completionRate: Math.round((counts.completed / counts.total) * 100)
+  }));
+
+  const priorityCounts = (data as AnalyticsTask[]).reduce((acc, task) => {
+    const priority = task.priority;
+    if (!acc[priority]) {
+      acc[priority] = { completed: 0, total: 0 };
+    }
+    acc[priority].total++;
+    if (task.status === 'completed') {
+      acc[priority].completed++;
+    }
+    return acc;
+  }, {} as Record<string, { completed: number; total: number }>);
+
+  return { dailyData, categoryData, priorityData: priorityCounts };
+};
 
 interface AnalyticsProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-const Analytics: React.FC<AnalyticsProps> = ({ isDemo = false, demoUserId }) => {
+const Analytics: React.FC<AnalyticsProps> = ({ demoUserId }) => {
   const { user } = useAuth();
-  const userId = demoUserId || user?.id;
+  const currentUserId = demoUserId || user?.id;
 
-  const [daysToDisplay, setDaysToDisplay] = useState(30);
-  const [habitGoalType, setHabitGoalType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
-
-  // Daily Task Completion Summary
-  const { data: dailyTaskCompletionData = [], isLoading: dailyTaskLoading } = useQuery({
-    queryKey: ['dailyTaskCompletion', userId, daysToDisplay],
-    queryFn: async () => {
-      if (!userId) return [];
-      const { data, error } = await supabase.rpc('get_daily_task_completion_summary', {
-        p_user_id: userId,
-        p_days: daysToDisplay,
-      });
-      if (error) throw error;
-      return data.map((d: any) => ({
-        date: format(parseISO(d.completion_date), 'MMM dd'),
-        completed_tasks_count: d.completed_tasks_count,
-      }));
-    },
-    enabled: !!userId,
+  const [analyticsDateRange, setAnalyticsDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: new Date(),
   });
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [priorityData, setPriorityData] = useState<any>({});
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const analyticsColors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
-  // Habit Completion Summary
-  const { data: habitCompletionData = [], isLoading: habitCompletionLoading } = useQuery({
-    queryKey: ['habitCompletion', userId, daysToDisplay, habitGoalType],
-    queryFn: async () => {
-      if (!userId) return [];
-      let rpcFunction;
-      let dateField;
-      switch (habitGoalType) {
-        case 'daily':
-          rpcFunction = 'get_daily_habit_completion_summary';
-          dateField = 'completion_date';
-          break;
-        case 'weekly':
-          rpcFunction = 'get_weekly_habit_completion_summary';
-          dateField = 'week_start_date';
-          break;
-        case 'monthly':
-          rpcFunction = 'get_monthly_habit_completion_summary';
-          dateField = 'month_start_date';
-          break;
-        default:
-          return [];
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!analyticsDateRange?.from || !analyticsDateRange?.to || !currentUserId) return;
+
+      setAnalyticsLoading(true);
+      try {
+        const { dailyData, categoryData, priorityData } = await getAnalyticsData(analyticsDateRange.from, analyticsDateRange.to, currentUserId);
+        setChartData(dailyData);
+        setCategoryData(categoryData);
+        setPriorityData(priorityData);
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+      } finally {
+        setAnalyticsLoading(false);
       }
+    };
 
-      const { data, error } = await supabase.rpc(rpcFunction, {
-        p_user_id: userId,
-        p_days: daysToDisplay,
-      });
-      if (error) throw error;
-      return data.map((d: any) => ({
-        date: format(parseISO(d[dateField]), habitGoalType === 'monthly' ? 'MMM yyyy' : 'MMM dd'),
-        completion_percentage: d.completion_percentage,
-      }));
-    },
-    enabled: !!userId,
-  });
+    if (currentUserId) {
+      fetchData();
+    }
+  }, [analyticsDateRange, currentUserId]);
 
-  // Sleep Summary
-  const { data: sleepSummaryData = [], isLoading: sleepSummaryLoading } = useQuery({
-    queryKey: ['dailySleepSummary', userId, daysToDisplay],
-    queryFn: async () => {
-      if (!userId) return [];
-      const { data, error } = await supabase.rpc('get_daily_sleep_summary', {
-        p_user_id: userId,
-        p_days: daysToDisplay,
-      });
-      if (error) throw error;
-      return data.map((d: any) => ({
-        date: format(parseISO(d.record_date), 'MMM dd'),
-        total_sleep_minutes: d.total_sleep_minutes,
-        sleep_efficiency: d.sleep_efficiency,
-      }));
-    },
-    enabled: !!userId,
-  });
-
-  const loading = dailyTaskLoading || habitCompletionLoading || sleepSummaryLoading;
+  const totalTasksCompleted = chartData.reduce((sum, day) => sum + day.tasksCompleted, 0);
+  const totalTasksCreated = chartData.reduce((sum, day) => sum + day.totalTasks, 0);
+  const averageCompletionRate = totalTasksCreated > 0 ? (totalTasksCompleted / totalTasksCreated) * 100 : 0;
+  const mostProductiveDay = chartData.length > 0 
+    ? chartData.reduce((max, day) => day.tasksCompleted > max.tasksCompleted ? day : max) 
+    : null;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl text-center mb-8">
-          <BarChart3 className="inline-block h-10 w-10 mr-3 text-primary" /> Analytics
-        </h1>
-
-        <div className="flex justify-end mb-4">
-          <Select value={String(daysToDisplay)} onValueChange={(value) => setDaysToDisplay(Number(value))}>
-            <SelectTrigger className="w-[180px] h-9">
-              <SelectValue placeholder="Select time range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 Days</SelectItem>
-              <SelectItem value="30">Last 30 Days</SelectItem>
-              <SelectItem value="90">Last 90 Days</SelectItem>
-              <SelectItem value="180">Last 180 Days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Daily Task Completion */}
-        <Card className="shadow-lg rounded-xl">
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-primary" /> Daily Task Completion
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <BarChart3 className="h-7 w-7 text-primary" /> Analytics
             </CardTitle>
           </CardHeader>
-          <CardContent className="h-64 pt-0">
-            {dailyTaskLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dailyTaskCompletionData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" className="text-xs text-muted-foreground" />
-                  <YAxis className="text-xs text-muted-foreground" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)' }}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Line type="monotone" dataKey="completed_tasks_count" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Habit Completion */}
-        <Card className="shadow-lg rounded-xl">
-          <CardHeader className="pb-2 flex-row items-center justify-between">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Flame className="h-5 w-5 text-orange-500" /> Habit Completion
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Select value={habitGoalType} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setHabitGoalType(value)}>
-                <SelectTrigger className="w-[100px] h-9">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
+          <CardContent className="pt-0">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 mb-4">
+              <h2 className="text-2xl font-bold">Task Analytics</h2>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="date"
+                      variant={"outline"}
+                      className={cn(
+                        "w-full sm:w-[300px] justify-start text-left font-normal h-9",
+                        !analyticsDateRange?.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {analyticsDateRange?.from ? (
+                        analyticsDateRange.to ? (
+                          <>
+                            {format(analyticsDateRange.from, "LLL dd, y")} -{" "}
+                            {format(analyticsDateRange.to, "LLL dd, y")}
+                          </>
+                        ) : (
+                          format(analyticsDateRange.from, "LLL dd, y")
+                        )
+                      ) : (
+                        <span>Pick a date range</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={analyticsDateRange?.from}
+                      selected={analyticsDateRange}
+                      onSelect={setAnalyticsDateRange}
+                      numberOfMonths={2}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-          </CardHeader>
-          <CardContent className="h-64 pt-0">
-            {habitCompletionLoading ? (
-              <Skeleton className="h-full w-full" />
+            {analyticsLoading ? (
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-4">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-24 w-full rounded-xl" />
+                  ))}
+                </div>
+                <Skeleton className="h-80 w-full rounded-xl" />
+                <Skeleton className="h-80 w-full rounded-xl" />
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Skeleton className="h-80 w-full rounded-xl" />
+                  <Skeleton className="h-80 w-full rounded-xl" />
+                </div>
+              </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={habitCompletionData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" className="text-xs text-muted-foreground" />
-                  <YAxis unit="%" domain={[0, 100]} className="text-xs text-muted-foreground" />
-                  <Tooltip
-                    formatter={(value: number) => [`${value}%`, 'Completion']}
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)' }}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Line type="monotone" dataKey="completion_percentage" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+              <div className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card className="rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Tasks Completed</CardTitle>
+                      <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{totalTasksCompleted}</div>
+                      <p className="text-xs text-muted-foreground">Out of {totalTasksCreated} created</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Average Completion Rate</CardTitle>
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{averageCompletionRate}%</div>
+                      <p className="text-xs text-muted-foreground">Overall completion rate</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Most Productive Day</CardTitle>
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{mostProductiveDay ? mostProductiveDay.date : 'N/A'}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {mostProductiveDay ? `${mostProductiveDay.tasksCompleted} tasks completed` : 'No data'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="rounded-xl">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Tasks Created</CardTitle>
+                      <ListTodo className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{totalTasksCreated}</div>
+                      <p className="text-xs text-muted-foreground">Across selected period</p>
+                    </CardContent>
+                  </Card>
+                </div>
 
-        {/* Sleep Summary */}
-        <Card className="shadow-lg rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Moon className="h-5 w-5 text-blue-500" /> Daily Sleep Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="h-64 pt-0">
-            {sleepSummaryLoading ? (
-              <Skeleton className="h-full w-full" />
-            ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sleepSummaryData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="date" className="text-xs text-muted-foreground" />
-                  <YAxis yAxisId="left" label={{ value: 'Minutes', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: 'hsl(var(--foreground))' } }} className="text-xs text-muted-foreground" />
-                  <YAxis yAxisId="right" orientation="right" unit="%" domain={[0, 100]} label={{ value: 'Efficiency', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fill: 'hsl(var(--foreground))' } }} className="text-xs text-muted-foreground" />
-                  <Tooltip
-                    formatter={(value: number, name: string) => {
-                      if (name === 'total_sleep_minutes') return [`${value} min`, 'Total Sleep'];
-                      if (name === 'sleep_efficiency') return [`${value}%`, 'Efficiency'];
-                      return [value, name];
-                    }}
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius-md)' }}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    itemStyle={{ color: 'hsl(var(--foreground))' }}
-                  />
-                  <Line yAxisId="left" type="monotone" dataKey="total_sleep_minutes" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Total Sleep" />
-                  <Line yAxisId="right" type="monotone" dataKey="sleep_efficiency" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Sleep Efficiency" />
-                </LineChart>
-              </ResponsiveContainer>
+                <div className="space-y-6">
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <h3 className="text-lg font-semibold mb-3">Tasks Completed Per Day</h3>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="tasksCompleted" fill="hsl(var(--primary))" name="Completed" />
+                            <Bar dataKey="totalTasks" fill="hsl(var(--muted))" name="Total" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="rounded-xl">
+                    <CardHeader>
+                      <h3 className="text-lg font-semibold mb-3">Daily Completion Rate</h3>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" />
+                            <YAxis domain={[0, 100]} />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="completionRate" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Tasks by Category</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={categoryData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                              >
+                                {categoryData.map((_entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={analyticsColors[index % analyticsColors.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="rounded-xl">
+                      <CardHeader>
+                        <h3 className="text-lg font-semibold mb-3">Tasks by Priority</h3>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={Object.entries(priorityData).map(([priority, data]: [string, any]) => ({
+                              priority,
+                              total: data.total,
+                              completed: data.completed
+                            }))}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="priority" />
+                              <YAxis />
+                              <Tooltip />
+                              <Bar dataKey="completed" fill="hsl(var(--primary))" name="Completed" />
+                              <Bar dataKey="total" fill="hsl(var(--muted))" name="Total" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 };
