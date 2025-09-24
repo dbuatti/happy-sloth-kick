@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { CalendarIcon } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Goal, GoalType, Category } from '@/hooks/useResonanceGoals';
+import { Goal, GoalType, Category, NewGoalData } from '@/hooks/useResonanceGoals';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -28,7 +28,7 @@ export type GoalFormData = z.infer<typeof goalFormSchema>;
 
 interface GoalFormProps {
   initialData?: Partial<Goal> | null;
-  onSave: (goalData: GoalFormData) => Promise<any>;
+  onSave: (goalData: NewGoalData) => Promise<any>;
   onCancel: () => void;
   allCategories: Category[];
   autoFocus?: boolean;
@@ -92,10 +92,15 @@ const GoalForm: React.FC<GoalFormProps> = ({
 
   const onSubmit = async (data: GoalFormData) => {
     setIsSaving(true);
-    const goalDataToSend = {
-      ...data,
-      dueDate: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
-      category_id: data.categoryId, // Ensure this matches the database column name
+    const goalDataToSend: NewGoalData = {
+      title: data.title,
+      description: data.description,
+      category_id: data.categoryId,
+      type: data.type,
+      due_date: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
+      parent_goal_id: data.parentGoalId,
+      completed: initialData?.completed ?? false, // Default to false for new, use initial for edit
+      order: initialData?.order ?? null, // Default to null for new, use initial for edit
     };
     const success = await onSave(goalDataToSend);
     setIsSaving(false);
