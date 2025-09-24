@@ -94,7 +94,6 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
                               <MealItem
                                 key={meal.id}
                                 meal={meal}
-                                currentDate={currentDate}
                                 onUpdate={handleUpdateMeal}
                                 isDemo={isDemo}
                                 isPlaceholder={meal.id.startsWith('placeholder-')}
