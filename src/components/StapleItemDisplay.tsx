@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Minus, ChevronDown, Edit, Trash2 } from 'lucide-react';
+import { Plus, Minus, ChevronDown, Edit, Trash2, AlertTriangle, CircleX } from 'lucide-react'; // Added AlertTriangle and CircleX
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,14 +75,18 @@ const StapleItemDisplay: React.FC<StapleItemDisplayProps> = ({
     <div
       className={cn(
         "flex items-center justify-between p-3 rounded-xl shadow-sm bg-card border-l-4",
-        isCritical && "border-destructive",
-        isLow && !isCritical && "border-orange-500",
+        isCritical && "border-destructive bg-destructive/5", // Added bg-destructive/5
+        isLow && !isCritical && "border-orange-500 bg-orange-500/5", // Added bg-orange-500/5
         isOverTarget && "border-green-500",
         !isLow && !isCritical && !isOverTarget && "border-primary/20"
       )}
     >
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-lg truncate">{staple.name}</h3>
+        <h3 className="font-semibold text-lg truncate flex items-center gap-2">
+          {staple.name}
+          {isCritical && <CircleX className="h-4 w-4 text-destructive" />}
+          {isLow && !isCritical && <AlertTriangle className="h-4 w-4 text-orange-500" />}
+        </h3>
         <p className="text-sm text-muted-foreground">Target: {staple.target_quantity} {staple.unit || 'unit'}</p>
       </div>
       <div className="flex items-center gap-2 ml-4">
