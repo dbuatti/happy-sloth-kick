@@ -43,6 +43,16 @@ const goalTypes: { value: GoalType; label: string }[] = [
   { value: '10-year', label: '10-Year Vision' },
 ];
 
+// Define the specific type of data expected from QuickAddGoal
+type QuickAddGoalData = {
+  title: string;
+  description: string | null;
+  category_id: string | null;
+  type: GoalType;
+  due_date: string | null;
+  parent_goal_id: string | null;
+};
+
 const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
   const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory, deleteCategory } = useResonanceGoals({ userId: demoUserId });
 
@@ -149,19 +159,31 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     }
   };
 
-  const handleSaveGoal = async (goalDataFromQuickAdd?: NewGoalData) => { // Adjusted type here
+  const handleSaveGoal = async (goalDataFromQuickAdd?: QuickAddGoalData) => {
     setIsSavingGoal(true);
 
-    const dataToSave: NewGoalData = goalDataFromQuickAdd || {
-      title: goalTitle.trim(),
-      description: goalDescription.trim() || null,
-      category_id: goalCategory,
-      type: goalType,
-      due_date: goalDueDate ? format(goalDueDate, 'yyyy-MM-dd') : null,
-      completed: editingGoal?.completed || false, // Retain existing completed status for edits
-      order: editingGoal?.order || null, // Retain existing order for edits
-      parent_goal_id: goalParentId,
-    };
+    let dataToSave: NewGoalData;
+
+    if (goalDataFromQuickAdd) {
+      // Data coming from QuickAddGoal, add default completed and order
+      dataToSave = {
+        ...goalDataFromQuickAdd,
+        completed: false, // Default for new goals
+        order: null,      // Default for new goals
+      };
+    } else {
+      // Data coming from the main form, use existing state
+      dataToSave = {
+        title: goalTitle.trim(),
+        description: goalDescription.trim() || null,
+        category_id: goalCategory,
+        type: goalType,
+        due_date: goalDueDate ? format(goalDueDate, 'yyyy-MM-dd') : null,
+        completed: editingGoal?.completed || false, // Retain existing completed status for edits
+        order: editingGoal?.order || null, // Retain existing order for edits
+        parent_goal_id: goalParentId,
+      };
+    }
 
     if (editingGoal) {
       await updateGoal({ id: editingGoal.id, updates: dataToSave });
