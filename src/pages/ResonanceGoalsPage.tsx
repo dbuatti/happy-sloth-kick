@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Sparkles, LayoutGrid, Trash2 } from 'lucide-react'; // Removed Plus
+import { Target, Sparkles, LayoutGrid, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals'; // Removed unused Category import
-import ResonanceGoalCard from '@/components/ResonanceGoalCard';
+import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals';
+import ResonanceGoalCard from '@/components/ResonanceGoalCard'; // Still used for individual cards within sections
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import FloatingAddGoalButton from '@/components/FloatingAddGoalButton'; // Import the new FAB
+import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
+import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection'; // Import the new component
 
 interface ResonanceGoalsPageProps {
   isDemo?: boolean;
@@ -42,7 +43,7 @@ const goalTypes: { value: GoalType; label: string }[] = [
 ];
 
 const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
-  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory, deleteCategory } = useResonanceGoals({ userId: demoUserId }); // Removed unused updateCategory
+  const { goals, categories, loading, addGoal, updateGoal, deleteGoal, addCategory, deleteCategory } = useResonanceGoals({ userId: demoUserId });
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -51,6 +52,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   const [goalCategory, setGoalCategory] = useState('');
   const [goalType, setGoalType] = useState<GoalType>('daily');
   const [goalDueDate, setGoalDueDate] = useState<Date | undefined>(undefined);
+  const [goalParentId, setGoalParentId] = useState<string | null>(null); // New state for parent goal
   const [isSavingGoal, setIsSavingGoal] = useState(false);
 
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -64,7 +66,16 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
   const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null);
   const [categoryToDeleteName, setCategoryToDeleteName] = useState<string | null>(null);
 
-  useMemo(() => {
+  const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('resonanceGoals_expandedGoals');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
     if (isGoalFormOpen) {
       if (editingGoal) {
         setGoalTitle(editingGoal.title);
@@ -72,12 +83,14 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
         setGoalCategory(editingGoal.category_id || '');
         setGoalType(editingGoal.type);
         setGoalDueDate(editingGoal.due_date ? parseISO(editingGoal.due_date) : undefined);
+        setGoalParentId(editingGoal.parent_goal_id || null);
       } else {
         setGoalTitle('');
         setGoalDescription('');
         setGoalCategory(categories[0]?.id || '');
         setGoalType('daily');
         setGoalDueDate(undefined);
+        setGoalParentId(null); // Reset parent ID for new top-level goals
       }
     }
   }, [isGoalFormOpen, editingGoal, categories]);
@@ -87,25 +100,38 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     setIsGoalFormOpen(true);
   };
 
-  const handleSaveGoal = async () => {
-    if (!goalTitle.trim() || !goalCategory || !goalType) return;
+  const handleAddSubGoal = (parentGoalId: string) => {
+    const parentGoal = goals.find(g => g.id === parentGoalId);
+    if (parentGoal) {
+      setEditingGoal(null); // Ensure it's a new goal
+      setGoalTitle('');
+      setGoalDescription('');
+      setGoalCategory(parentGoal.category_id || categories[0]?.id || '');
+      setGoalType(parentGoal.type); // Sub-goal inherits parent's type
+      setGoalDueDate(parentGoal.due_date ? parseISO(parentGoal.due_date) : undefined);
+      setGoalParentId(parentGoalId);
+      setIsGoalFormOpen(true);
+    }
+  };
+
+  const handleSaveGoal = async (goalDataFromQuickAdd?: Parameters<typeof addGoal>[0]) => {
     setIsSavingGoal(true);
 
-    const goalData = {
+    const dataToSave = goalDataFromQuickAdd || {
       title: goalTitle.trim(),
       description: goalDescription.trim() || null,
       category_id: goalCategory,
       type: goalType,
       due_date: goalDueDate ? format(goalDueDate, 'yyyy-MM-dd') : null,
-      completed: false, // Default for new goals
-      order: null, // Default for new goals
-      parent_goal_id: null, // Default for new goals
+      completed: editingGoal?.completed || false,
+      order: editingGoal?.order || null,
+      parent_goal_id: goalParentId,
     };
 
     if (editingGoal) {
-      await updateGoal({ id: editingGoal.id, updates: goalData });
+      await updateGoal({ id: editingGoal.id, updates: dataToSave });
     } else {
-      await addGoal(goalData);
+      await addGoal(dataToSave);
     }
     setIsSavingGoal(false);
     setIsGoalFormOpen(false);
@@ -167,6 +193,14 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     return groups;
   }, [goals]);
 
+  const toggleExpandGoal = (goalId: string) => {
+    setExpandedGoals(prev => {
+      const newState = { ...prev, [goalId]: !(prev[goalId] ?? true) };
+      localStorage.setItem('resonanceGoals_expandedGoals', JSON.stringify(newState));
+      return newState;
+    });
+  };
+
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
@@ -192,25 +226,24 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
               <div className="space-y-6">
                 {goalTypes.map(type => {
                   const goalsOfType = groupedGoals[type.value];
-                  if (goalsOfType && goalsOfType.length > 0) {
+                  // Only render a section if there are goals or if it's a top-level type
+                  if (goalsOfType && goalsOfType.length > 0 || ['daily', 'weekly', 'monthly'].includes(type.value)) {
                     return (
-                      <div key={type.value}>
-                        <h3 className="text-xl font-bold mb-3 text-foreground flex items-center gap-2">
-                          <Target className="h-5 w-5 text-primary" /> {type.label} Goals
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {goalsOfType.map(goal => (
-                            <ResonanceGoalCard
-                              key={goal.id}
-                              goal={goal}
-                              onEdit={handleOpenGoalForm}
-                              onDelete={handleDeleteGoalClick}
-                              onToggleComplete={handleToggleGoalComplete}
-                              isDemo={isDemo}
-                            />
-                          ))}
-                        </div>
-                      </div>
+                      <ResonanceGoalTimelineSection
+                        key={type.value}
+                        goalType={type.value}
+                        goals={goalsOfType || []}
+                        allCategories={categories}
+                        onAddGoal={handleSaveGoal}
+                        onEditGoal={handleOpenGoalForm}
+                        onDeleteGoal={handleDeleteGoalClick}
+                        onToggleCompleteGoal={handleToggleGoalComplete}
+                        onAddSubGoal={handleAddSubGoal}
+                        isDemo={isDemo}
+                        loading={loading}
+                        expandedGoals={expandedGoals}
+                        toggleExpandGoal={toggleExpandGoal}
+                      />
                     );
                   }
                   return null;
@@ -237,7 +270,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
       <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+            <DialogTitle>{editingGoal ? 'Edit Goal' : (goalParentId ? 'Add Sub-goal' : 'Add New Goal')}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
@@ -282,7 +315,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
             </div>
             <div>
               <Label htmlFor="goal-type">Goal Type</Label>
-              <Select value={goalType} onValueChange={(value) => setGoalType(value as GoalType)} disabled={isSavingGoal || isDemo}>
+              <Select value={goalType} onValueChange={(value) => setGoalType(value as GoalType)} disabled={isSavingGoal || isDemo || !!goalParentId}> {/* Disable if it's a sub-goal */}
                 <SelectTrigger id="goal-type">
                   <SelectValue placeholder="Select goal type" />
                 </SelectTrigger>
@@ -322,7 +355,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsGoalFormOpen(false)} disabled={isSavingGoal || isDemo}>Cancel</Button>
-            <Button onClick={handleSaveGoal} disabled={isSavingGoal || isDemo || !goalTitle.trim()}>
+            <Button onClick={() => handleSaveGoal()} disabled={isSavingGoal || isDemo || !goalTitle.trim()}>
               {isSavingGoal ? 'Saving...' : 'Save Goal'}
             </Button>
           </DialogFooter>
@@ -335,7 +368,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete this goal.
+              This action cannot be undone. This will permanently delete this goal and any sub-goals associated with it.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

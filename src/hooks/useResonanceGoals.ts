@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react'; // Added useEffect, useMemo
-import { supabase } from '@/integrations/supabase/client'; // Added supabase import
-import { useAuth } from '@/context/AuthContext'; // Added useAuth import
-import { showError, showSuccess } from '@/utils/toast'; // Added showError, showSuccess imports
+import { useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { showError, showSuccess } from '@/utils/toast';
 
 export type GoalType = 'daily' | 'weekly' | 'monthly' | 'yearly' | '3-year' | '5-year' | '10-year';
 
@@ -145,10 +145,11 @@ export const useResonanceGoals = (props?: UseResonanceGoalsProps) => {
   const deleteGoalMutation = useMutation<boolean, Error, string>({
     mutationFn: async (id) => {
       if (!userId) throw new Error('User not authenticated.');
+      // Delete the goal and any sub-goals associated with it
       const { error } = await supabase
         .from('goals')
         .delete()
-        .eq('id', id)
+        .or(`id.eq.${id},parent_goal_id.eq.${id}`) // Delete the goal itself OR any goals where this is the parent
         .eq('user_id', userId);
       if (error) throw error;
       return true;
