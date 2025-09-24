@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { format, parseISO, isSameDay, differenceInDays, startOfDay, addDays, isBefore } from 'date-fns';
+import { format, parseISO, isSameDay, startOfDay, addDays, isBefore } from 'date-fns';
 import { HabitLog } from '@/integrations/supabase/habit-api'; // Import HabitLog
 
 export interface Habit {

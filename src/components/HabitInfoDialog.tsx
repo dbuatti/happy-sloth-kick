@@ -3,9 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { HabitWithLogs } from '@/hooks/useHabits';
 import { format, parseISO } from 'date-fns';
-import { Flame, CalendarDays, Target, Clock, Repeat, ListTodo } from 'lucide-react';
+import { Flame, CalendarDays, Target, Clock, Repeat } from 'lucide-react';
 import HabitIconDisplay from './HabitIconDisplay';
-import { cn } from '@/lib/utils';
 
 interface HabitInfoDialogProps {
   isOpen: boolean;

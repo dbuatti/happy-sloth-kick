@@ -68,10 +68,10 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
 
   const completedToday = habit.completedToday;
 
-  const handleToggleCompletionForDay = async (date: Date, isCompleted: boolean, value: number | null = null): Promise<boolean> => {
+  const handleToggleCompletionForDay = async (habitId: string, date: Date, isCompleted: boolean, value: number | null = null): Promise<boolean> => {
     if (isDemo) return false;
     setIsSaving(true);
-    const success = await onToggleCompletion(habit.id, date, isCompleted, value);
+    const success = await onToggleCompletion(habitId, date, isCompleted, value);
     if (success && isSameDay(date, currentDate) && isCompleted) {
       playSound('success');
       setShowCompletionEffect(true);
@@ -93,12 +93,12 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
       return;
     }
 
-    handleToggleCompletionForDay(currentDate, !completedToday, recordedValue === '' ? null : Number(recordedValue));
+    handleToggleCompletionForDay(habit.id, currentDate, !completedToday, recordedValue === '' ? null : Number(recordedValue));
   };
 
   const handleRecordValueAndComplete = async () => {
     if (isDemo) return;
-    await handleToggleCompletionForDay(currentDate, true, recordedValue === '' ? null : Number(recordedValue));
+    await handleToggleCompletionForDay(habit.id, currentDate, true, recordedValue === '' ? null : Number(recordedValue));
   };
 
   const handleSuggestChallenge = async () => {
@@ -157,10 +157,10 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
                   <Sparkles className="mr-2 h-4 w-4" /> Suggest Challenge
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={completedToday}>
+                <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(habit.id, currentDate, true, recordedValue === '' ? null : Number(recordedValue))} disabled={completedToday}>
                   <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Complete (Today)
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(currentDate, false)} disabled={!completedToday}>
+                <DropdownMenuItem onSelect={() => handleToggleCompletionForDay(habit.id, currentDate, false)} disabled={!completedToday}>
                   <X className="mr-2 h-4 w-4" /> Mark Incomplete (Today)
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -215,7 +215,7 @@ const HabitCard: React.FC<HabitCardProps> = ({ habit, onToggleCompletion, onEdit
               habitStartDate={habit.start_date}
               habitColor={habit.color}
               currentDate={currentDate}
-              onToggleCompletionForDay={handleToggleCompletionForDay}
+              onToggleCompletionForDay={(day, isCompleted, valueRecorded) => handleToggleCompletionForDay(habit.id, day, isCompleted, valueRecorded)}
               isDemo={isDemo}
               weeksToShow={13}
             />

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Dumbbell, BookOpen, Sun, Moon, Coffee, UtensilsCrossed, Water, Heart,
+  Dumbbell, BookOpen, Sun, Moon, Coffee, UtensilsCrossed, Heart,
   Medal, Target, Zap, Lightbulb, Shield, Star, Smile, Cloud, Feather,
   Leaf, Mountain, Waves, Wind, Bell, Clock, Calendar, CheckCircle2,
   X, MoreHorizontal, Edit, Flame, CalendarDays, Pencil as PencilIcon, Sparkles, Info,
@@ -15,7 +15,7 @@ interface HabitIconDisplayProps {
 }
 
 const iconMap: { [key: string]: React.ElementType } = {
-  Dumbbell, BookOpen, Sun, Moon, Coffee, UtensilsCrossed, Water, Heart,
+  Dumbbell, BookOpen, Sun, Moon, Coffee, UtensilsCrossed, Heart,
   Medal, Target, Zap, Lightbulb, Shield, Star, Smile, Cloud, Feather,
   Leaf, Mountain, Waves, Wind, Bell, Clock, Calendar, CheckCircle2,
   X, MoreHorizontal, Edit, Flame, CalendarDays, PencilIcon, Sparkles, Info,
