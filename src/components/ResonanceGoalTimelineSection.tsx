@@ -2,15 +2,14 @@ import React from 'react';
 import { Goal, GoalType, Category } from '@/hooks/useResonanceGoals';
 import ResonanceGoalCard from './ResonanceGoalCard';
 import QuickAddGoal from './QuickAddGoal';
-import { Sparkles, Target } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Target } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ResonanceGoalTimelineSectionProps {
   goalType: GoalType;
   goals: Goal[];
   allCategories: Category[];
-  onAddGoal: (goalData: Parameters<typeof QuickAddGoal>['0']['onAddGoal']) => Promise<any>;
+  onAddGoal: Parameters<typeof QuickAddGoal>['0']['onAddGoal']; // Corrected type
   onEditGoal: (goal: Goal) => void;
   onDeleteGoal: (goalId: string) => void;
   onToggleCompleteGoal: (goalId: string, completed: boolean) => void;

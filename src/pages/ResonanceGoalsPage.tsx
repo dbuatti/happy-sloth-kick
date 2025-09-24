@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Target, Sparkles, LayoutGrid, Trash2 } from 'lucide-react';
+import { Sparkles, LayoutGrid, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals';
-import ResonanceGoalCard from '@/components/ResonanceGoalCard'; // Still used for individual cards within sections
+import { useResonanceGoals, Goal, GoalType, NewGoalData } from '@/hooks/useResonanceGoals';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -114,10 +113,10 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     }
   };
 
-  const handleSaveGoal = async (goalDataFromQuickAdd?: Parameters<typeof addGoal>[0]) => {
+  const handleSaveGoal = async (goalDataFromQuickAdd?: NewGoalData) => { // Adjusted type here
     setIsSavingGoal(true);
 
-    const dataToSave = goalDataFromQuickAdd || {
+    const dataToSave: NewGoalData = goalDataFromQuickAdd || {
       title: goalTitle.trim(),
       description: goalDescription.trim() || null,
       category_id: goalCategory,
