@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
-import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, X, ListRestart, Archive as ArchiveIcon, Undo2, Trash2 } from 'lucide-react';
+import { Search, Filter, X, ListRestart, Archive as ArchiveIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
@@ -22,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import BulkActionBar from '@/components/BulkActionBar';
 import { useDebounce } from '@/hooks/useDebounce';
+import { Skeleton } from "@/components/ui/skeleton"; // Added missing import
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -34,7 +33,8 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const [currentDate] = useState(new Date()); // Archive view doesn't change date
   const {
-    tasks,
+    tasks: rawTasks, // Renamed to rawTasks to distinguish from processedTasks
+    processedTasks, // Use processedTasks for TaskItem
     filteredTasks,
     loading,
     updateTask,
@@ -43,8 +43,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     bulkDeleteTasks,
     searchFilter,
     setSearchFilter,
-    statusFilter,
-    setStatusFilter,
+    // Removed statusFilter and setStatusFilter as they are not used in Archive UI
     categoryFilter,
     setCategoryFilter,
     priorityFilter,
@@ -52,7 +51,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     sections,
     allCategories,
     setFocusTask,
-    doTodayOffIds, // Get doTodayOffIds from useTasks
+    doTodayOffIds,
     toggleDoToday,
   } = useTasks({ currentDate, viewMode: 'archive', userId });
 
@@ -61,7 +60,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  // Removed isBulkUpdating as it was unused
 
   const debouncedSearchFilter = useDebounce(searchFilter, 300);
 
@@ -73,9 +72,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setSearchFilter('');
   };
 
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value);
-  };
+  // Removed handleStatusChange as it was unused
 
   const handleCategoryChange = (value: string) => {
     setCategoryFilter(value);
@@ -87,24 +84,14 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const clearAllFilters = () => {
     setSearchFilter('');
-    setStatusFilter('all');
+    // Removed setStatusFilter('all');
     setCategoryFilter('all');
     setPriorityFilter('all');
   };
 
-  const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all';
+  const isAnyFilterActive = searchFilter !== '' || categoryFilter !== 'all' || priorityFilter !== 'all'; // Removed statusFilter check
 
-  const handleToggleSelectTask = (taskId: string, isSelected: boolean) => {
-    setSelectedTaskIds(prev => {
-      const newSet = new Set(prev);
-      if (isSelected) {
-        newSet.add(taskId);
-      } else {
-        newSet.delete(taskId);
-      }
-      return newSet;
-    });
-  };
+  // Removed handleToggleSelectTask as it was unused
 
   const handleClearSelection = () => {
     setSelectedTaskIds(new Set());
@@ -112,26 +99,26 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
 
   const handleBulkComplete = async () => {
     if (selectedTaskIds.size === 0) return;
-    setIsBulkUpdating(true);
+    // Removed setIsBulkUpdating(true);
     await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
     setSelectedTaskIds(new Set());
-    setIsBulkUpdating(false);
+    // Removed setIsBulkUpdating(false);
   };
 
   const handleBulkArchive = async () => {
     if (selectedTaskIds.size === 0) return;
-    setIsBulkUpdating(true);
+    // Removed setIsBulkUpdating(true);
     await bulkUpdateTasks({ status: 'archived' }, Array.from(selectedTaskIds));
     setSelectedTaskIds(new Set());
-    setIsBulkUpdating(false);
+    // Removed setIsBulkUpdating(false);
   };
 
   const handleBulkChangePriority = async (priority: Task['priority']) => {
     if (selectedTaskIds.size === 0) return;
-    setIsBulkUpdating(true);
+    // Removed setIsBulkUpdating(true);
     await bulkUpdateTasks({ priority }, Array.from(selectedTaskIds));
     setSelectedTaskIds(new Set());
-    setIsBulkUpdating(false);
+    // Removed setIsBulkUpdating(false);
   };
 
   const handleDeleteSelectedClick = () => {
@@ -261,7 +248,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
               <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
                 <TaskItem
                   task={task}
-                  allTasks={tasks}
+                  allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
                   onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); return taskId; }}
                   onDelete={async (taskId) => { await deleteTask(taskId); }}
                   onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
@@ -278,7 +265,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
                   setFocusTask={setFocusTask}
                   isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                   toggleDoToday={toggleDoToday}
-                  doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
+                  doTodayOffIds={doTodayOffIds}
                   scheduledTasksMap={new Map()} // Archive tasks are not scheduled
                   isDemo={isDemo}
                 />

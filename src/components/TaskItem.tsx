@@ -44,7 +44,7 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>;
+  // Removed doTodayOffIds as it's not directly used here
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
   // Removed attributes and listeners from here
@@ -66,7 +66,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  doTodayOffIds,
+  // Removed doTodayOffIds from destructuring
   scheduledTasksMap,
   isDemo = false,
   // Removed attributes and listeners from here
