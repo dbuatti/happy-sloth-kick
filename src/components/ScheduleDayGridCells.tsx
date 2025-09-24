@@ -54,7 +54,7 @@ const ScheduleDayGridCells: React.FC<ScheduleDayGridCellsProps> = ({
             const { setNodeRef, isOver } = useDroppable({
               id: droppableId,
               data: { type: 'time-block', time: blockStartWithDate, date: day },
-              disabled: isDemo || isOutsideWorkHours, // Disable droppable if outside work hours or in demo mode
+              disabled: isDemo || !!isOutsideWorkHours, // Fixed: Convert isOutsideWorkHours to boolean
             });
 
             return (
