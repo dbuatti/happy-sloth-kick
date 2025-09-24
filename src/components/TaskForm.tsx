@@ -35,7 +35,7 @@ const taskFormSchema = z.object({
   parentTaskId: z.string().nullable().optional().transform(v => v ?? null),
   link: z.string().optional().transform((val) => {
     if (!val || val.trim() === '') return null;
-    const trimmedVal = val.trim();
+    let trimmedVal = val.trim();
     if (trimmedVal.startsWith('/') || trimmedVal.startsWith('~') || trimmedVal.startsWith('file:')) {
         return trimmedVal;
     }
@@ -78,7 +78,7 @@ export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Partial<Task> | null;
-  onSave: (taskData: NewTaskData) => Promise<any>; // Changed from TaskFormData to NewTaskData
+  onSave: (taskData: TaskFormData) => Promise<any>; // Changed from NewTaskData to TaskFormData
   onCancel: () => void;
   sections: TaskSection[];
   allCategories: Category[];

@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import TaskForm, { TaskFormData } from './TaskForm'; // Updated import
 import { useSound } from '@/context/SoundContext';
 import { format, setHours, setMinutes } from 'date-fns';
+import { NewTaskData } from '@/hooks/useTasks';
 
 
 interface CommandPaletteProps {
@@ -64,11 +65,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
       finalRemindAt = remindDateTime.toISOString();
     }
 
-    const success = await handleAddTask({
+    const finalDueDate = taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null;
+
+    const newTaskData: NewTaskData = {
       description: taskData.description.trim(),
       category: taskData.category,
       priority: taskData.priority,
-      due_date: taskData.dueDate ? format(taskData.dueDate, 'yyyy-MM-dd') : null,
+      due_date: finalDueDate,
       notes: taskData.notes,
       remind_at: finalRemindAt,
       section_id: taskData.sectionId,
@@ -76,7 +79,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
       parent_task_id: taskData.parentTaskId,
       link: taskData.link,
       image_url: taskData.image_url,
-    });
+    };
+
+    const success = await handleAddTask(newTaskData);
     if (success) {
       setIsAddTaskDialogOpen(false);
       playSound('success');
