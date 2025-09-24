@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar as CalendarUI } from "@/components/ui/calendar"; // Renamed import
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Trash2 } from 'lucide-react'; // Added Trash2 icon
+import { CalendarIcon, Trash2 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { format, parse, setHours, setMinutes, parseISO, addMinutes, isValid } from 'date-fns';
 import { Appointment, NewAppointmentData } from '@/hooks/useAppointments';
@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"; // Import AlertDialog components
+} from "@/components/ui/alert-dialog";
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -218,7 +218,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                      <CalendarComponent
+                      <CalendarUI // Corrected component usage
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
@@ -264,7 +264,6 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               <Label htmlFor="start-time">Start Time</Label>
               <Input
                 id="start-time"
-                type="time"
                 {...register('startTime')}
                 disabled={isSaving}
                 className="h-9 text-base"
@@ -316,8 +315,3 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
-  );
-};
-
-export default AppointmentForm;

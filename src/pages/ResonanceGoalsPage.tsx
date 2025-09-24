@@ -4,12 +4,12 @@ import { Sparkles, LayoutGrid, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useResonanceGoals, Goal, GoalType, NewGoalData } from '@/hooks/useResonanceGoals';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar as CalendarUI } from "@/components/ui/calendar"; // Renamed import
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,7 @@ import FloatingAddGoalButton from '@/components/FloatingAddGoalButton';
 import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection'; // Import the new component
 import { suggestGoalDetails } from '@/integrations/supabase/api'; // Import suggestGoalDetails
 import { dismissToast, showError, showLoading } from '@/utils/toast'; // Import toast utilities
+import { CalendarDays } from 'lucide-react'; // Import CalendarDays icon
 
 interface ResonanceGoalsPageProps {
   isDemo?: boolean;
@@ -355,6 +356,9 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{editingGoal ? 'Edit Goal' : (goalParentId ? 'Add Sub-goal' : 'Add New Goal')}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {editingGoal ? 'Edit the details of your goal.' : (goalParentId ? 'Add a new sub-goal.' : 'Fill in the details to add a new goal.')}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div>
@@ -440,12 +444,12 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
                     )}
                     disabled={isSavingGoal || isDemo || isSuggestingGoal}
                   >
-                    <CalendarComponent className="mr-2 h-4 w-4" />
+                    <CalendarDays className="mr-2 h-4 w-4" /> {/* Corrected icon usage */}
                     {goalDueDate ? format(goalDueDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
+                  <CalendarUI // Corrected component usage
                     mode="single"
                     selected={goalDueDate}
                     onSelect={setGoalDueDate}
@@ -487,6 +491,9 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Manage Categories</DialogTitle>
+            <DialogDescription className="sr-only">
+              Add, edit, or delete categories for your resonance goals.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <h4 className="text-md font-semibold">Existing Categories</h4>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -81,6 +81,11 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
     }
   };
 
+  const handleCancelEdit = () => {
+    setLocalSectionName(section.name);
+    setIsEditingLocal(false);
+  };
+
   const handleDeleteClick = (sectionId: string, sectionName: string) => {
     setSectionToDeleteId(sectionId);
     setSectionToDeleteName(sectionName);
@@ -105,6 +110,9 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Manage Sections</DialogTitle>
+          <DialogDescription className="sr-only">
+            Add, edit, or delete your task sections and manage their focus mode visibility.
+          </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-3">
           <div className="border-b pb-4 mb-4">
@@ -201,8 +209,3 @@ const ManageSectionsDialog: React.FC<ManageSectionsDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
-  );
-};
-
-export default ManageSectionsDialog;

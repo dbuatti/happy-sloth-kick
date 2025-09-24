@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus, UploadCloud, X, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import PersonAvatar from './PersonAvatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -105,7 +105,6 @@ const PeopleMemoryCard: React.FC = () => {
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsDragging(false);
   };
 
   return (
@@ -146,6 +145,9 @@ const PeopleMemoryCard: React.FC = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingPerson ? 'Edit Person' : 'Add Person'}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {editingPerson ? 'Edit the details of this person.' : 'Fill in the details to add a new person to your memory.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div

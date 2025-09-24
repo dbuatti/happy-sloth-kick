@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Calendar as CalendarUI } from "@/components/ui/calendar"; // Renamed import
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, BellRing, Lightbulb } from 'lucide-react';
+import { Calendar as CalendarIcon, BellRing, Lightbulb } from 'lucide-react'; // Renamed Calendar import to CalendarIcon
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -417,12 +417,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     disabled={isSaving || isSuggesting}
                     aria-label="Select due date"
                   >
-                    <Calendar className="mr-2 h-3.5 w-3.5" />
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
+                  <CalendarUI // Corrected component usage
                     mode="single"
                     selected={field.value || undefined}
                     onSelect={field.onChange}
@@ -481,7 +481,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
+                  <CalendarUI // Corrected component usage
                     mode="single"
                     selected={field.value || undefined}
                     onSelect={field.onChange}
@@ -537,7 +537,3 @@ const TaskForm: React.FC<TaskFormProps> = ({
         </Button>
       </div>
     </form>
-  );
-};
-
-export default TaskForm;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -50,6 +50,9 @@ const DashboardLayoutSettings: React.FC<DashboardLayoutSettingsProps> = ({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Customize Dashboard</DialogTitle>
+          <DialogDescription className="sr-only">
+            Toggle visibility for built-in and custom dashboard cards.
+          </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
           <h4 className="font-semibold">Built-in Cards</h4>
