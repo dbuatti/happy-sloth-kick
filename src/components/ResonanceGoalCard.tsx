@@ -71,8 +71,6 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
               isDemo && "opacity-70 cursor-not-allowed"
             )}
           >
-            <div className="absolute inset-0 rounded-lg" style={{ backgroundColor: goal.category_color, opacity: goal.completed ? 0.1 : 0.05 }} />
-
             <CardHeader className="flex flex-row items-center justify-between py-1.5 pr-3 relative z-10 h-auto">
               <div className="flex items-center gap-2 flex-grow min-w-0">
                 {hasSubGoals && (
@@ -123,6 +121,16 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                   </div>
                 </div>
               </div >
+              {!isDemo && (
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); onEdit(goal); }}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(goal.id); }}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="relative z-10 pt-0 pb-1.5 px-4 space-y-1">
               {goal.description && (
