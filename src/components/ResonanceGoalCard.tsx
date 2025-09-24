@@ -2,12 +2,12 @@ import React from 'react';
 import { Goal } from '@/hooks/useResonanceGoals';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { format, parseISO, isPast, isSameDay, isValid } from 'date-fns'; // Added isValid
+import { format, parseISO, isPast, isSameDay, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Edit, Trash2, MoreHorizontal, CalendarDays, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+// Removed unused imports: import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ResonanceGoalCardProps {
   goal: Goal;

@@ -160,7 +160,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     const groups: Record<GoalType, Goal[]> = {
       'daily': [], 'weekly': [], 'monthly': [], 'yearly': [], '3-year': [], '5-year': [], '10-year': []
     };
-    goals.forEach(goal => {
+    goals.forEach((goal: Goal) => {
       groups[goal.type]?.push(goal);
     });
     return groups;

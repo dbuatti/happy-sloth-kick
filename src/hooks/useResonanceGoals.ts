@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-// Removed unused import: import { format } from 'date-fns';
+import { useEffect, useMemo } from 'react'; // Added useEffect, useMemo
+import { supabase } from '@/integrations/supabase/client'; // Added supabase import
+import { useAuth } from '@/context/AuthContext'; // Added useAuth import
+import { showError, showSuccess } from '@/utils/toast'; // Added showError, showSuccess imports
 
 export type GoalType = 'daily' | 'weekly' | 'monthly' | 'yearly' | '3-year' | '5-year' | '10-year';
 
