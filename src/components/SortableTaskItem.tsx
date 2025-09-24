@@ -95,6 +95,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
+          doTodayOffIds={doTodayOffIds}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
           level={level}

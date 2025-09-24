@@ -396,6 +396,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       setFocusTask={setFocusTask}
                       isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
                       toggleDoToday={toggleDoToday}
+                      doTodayOffIds={doTodayOffIds}
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
                     />
