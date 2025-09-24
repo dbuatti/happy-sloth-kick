@@ -66,7 +66,6 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   const [isQuickAdding, setIsQuickAdding] = useState(false);
 
   // DND state
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeStaple, setActiveStaple] = useState<MealStaple | null>(null);
 
   const sensors = useSensors(
@@ -172,14 +171,12 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
 
   // DND Handlers
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id);
     const activeStaple = staples.find(s => s.id === event.active.id);
     setActiveStaple(activeStaple || null);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    setActiveId(null);
     setActiveStaple(null);
 
     if (!over || active.id === over.id) {
