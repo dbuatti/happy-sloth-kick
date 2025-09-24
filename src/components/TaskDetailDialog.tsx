@@ -20,6 +20,7 @@ import TaskForm, { TaskFormData } from './TaskForm';
 import { cn } from '@/lib/utils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { format, setHours, setMinutes, isValid } from 'date-fns';
 
 interface TaskDetailDialogProps {
   task: Task | null;
@@ -58,22 +59,51 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [isAddSubtaskOpen, setIsAddSubtaskOpen] = useState(false);
 
-  const handleSaveMainTask = async (taskData: TaskFormData) => {
+  const transformFormDataToTask = (formData: TaskFormData) => {
+    let finalRemindAt: string | null = null;
+    if (formData.remindAtDate && formData.remindAtTime && formData.remindAtTime.trim() !== "") {
+      const [hours, minutes] = formData.remindAtTime.split(':').map(Number);
+      const reminderDateTime = setMinutes(setHours(formData.remindAtDate, hours), minutes);
+      if (isValid(reminderDateTime)) {
+        finalRemindAt = reminderDateTime.toISOString();
+      }
+    }
+
+    return {
+      description: formData.description.trim(),
+      category: formData.category,
+      priority: formData.priority,
+      due_date: formData.dueDate ? format(formData.dueDate, 'yyyy-MM-dd') : null,
+      notes: formData.notes,
+      remind_at: finalRemindAt,
+      section_id: formData.sectionId,
+      recurring_type: formData.recurringType,
+      parent_task_id: formData.parentTaskId,
+      link: formData.link,
+      image_url: formData.image_url,
+    };
+  };
+
+  const handleSaveMainTask = async (formData: TaskFormData) => {
     if (!task) return false;
     setIsSaving(true);
-    await onUpdate(task.id, taskData);
+    const updates = transformFormDataToTask(formData);
+    await onUpdate(task.id, updates);
     setIsSaving(false);
     return true;
   };
 
-  const handleAddSubtask = async (subtaskData: TaskFormData) => {
+  const handleAddSubtask = async (formData: TaskFormData) => {
     if (!task) return false;
+    setIsSaving(true);
+    const newSubtaskData = transformFormDataToTask(formData);
     const success = await handleAddTask({
-      ...subtaskData,
+      ...newSubtaskData,
       parent_task_id: task.id,
       section_id: task.section_id,
-      category: task.category,
+      category: task.category, // Inherit category from parent task
     });
+    setIsSaving(false);
     if (success) {
       setIsAddSubtaskOpen(false);
     }
