@@ -103,23 +103,22 @@ const ResonanceGoalCard: React.FC<ResonanceGoalCardProps> = ({
                 )}>
                   {goal.title}
                 </CardTitle>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
+                <div className="flex items-center gap-1 text-xs flex-shrink-0 ml-auto">
                   {goal.due_date && (
-                    <div className="flex items-center gap-1 text-xs">
+                    <>
                       <CalendarDays className="h-3 w-3" />
                       <span className={cn(
-                        "font-bold uppercase", // Added font-bold and uppercase
-                        isOverdue && "text-destructive", // Keep destructive for overdue
-                        isDueToday && "text-orange-500" // Keep orange for due today
+                        "font-bold uppercase",
+                        isOverdue && "text-destructive",
+                        isDueToday && "text-orange-500"
                       )}>
                         {getDueDateDisplay(goal.due_date)}
                       </span>
-                    </div>
+                      <span className="mx-1">·</span> {/* Separator */}
+                    </>
                   )}
-                  <div className="flex items-center gap-1 text-xs">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: goal.category_color }} />
-                    <span>{goal.category_name}</span>
-                  </div>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: goal.category_color }} />
+                  <span>{goal.category_name}</span>
                 </div>
               </div >
               {!isDemo && (
