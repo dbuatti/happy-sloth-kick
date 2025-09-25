@@ -20,6 +20,9 @@ interface MutationContext {
   dismissReminder: (id: string) => void;
 }
 
+// Regex to validate UUID format
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const calculateNextRecurrenceDate = (
   currentDate: Date,
   recurringType: 'daily' | 'weekly' | 'monthly',
@@ -189,6 +192,13 @@ export const updateTaskMutation = async (
       return insertedTask.id; // Return the ID of the newly created real task
     } else {
       // Existing logic for non-virtual tasks
+      // Validate taskId format for non-virtual tasks
+      if (!UUID_REGEX.test(taskId)) {
+        console.error(`Invalid taskId format for non-virtual task: "${taskId}". Skipping update.`);
+        showError('Invalid task ID format. Cannot update task.');
+        return null;
+      }
+
       const { data: currentTask, error: fetchError } = await supabase
         .from('tasks')
         .select('*')
@@ -286,6 +296,13 @@ export const deleteTaskMutation = async (
   inFlightUpdatesRef.current.add(taskId);
 
   try {
+    // Validate taskId format for non-virtual tasks
+    if (!taskId.startsWith('virtual-') && !UUID_REGEX.test(taskId)) {
+      console.error(`Invalid taskId format for non-virtual task: "${taskId}". Skipping delete.`);
+      showError('Invalid task ID format. Cannot delete task.');
+      return false;
+    }
+
     // Delete the task and any sub-tasks associated with it
     const { error } = await supabase
       .from('tasks')
@@ -315,13 +332,27 @@ export const bulkUpdateTasksMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
-  ids.forEach(id => inFlightUpdatesRef.current.add(id));
+  
+  // Filter out any invalid UUIDs before processing
+  const validIds = ids.filter(id => UUID_REGEX.test(id));
+  const invalidIds = ids.filter(id => !UUID_REGEX.test(id));
+
+  if (invalidIds.length > 0) {
+    console.warn(`Skipping bulk update for invalid task IDs: ${invalidIds.join(', ')}`);
+    showError(`Skipped updating ${invalidIds.length} tasks due to invalid ID format.`);
+  }
+
+  if (validIds.length === 0) {
+    return; // No valid IDs to process
+  }
+
+  validIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
   try {
     const { data, error } = await supabase
       .from('tasks')
       .update(updates)
-      .in('id', ids)
+      .in('id', validIds)
       .eq('user_id', userId)
       .select();
 
@@ -342,7 +373,7 @@ export const bulkUpdateTasksMutation = async (
     showError('Failed to bulk update tasks.');
     console.error('Error bulk updating tasks:', error.message);
   } finally {
-    ids.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
+    validIds.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
   }
 };
 
@@ -351,15 +382,29 @@ export const bulkDeleteTasksMutation = async (
   context: MutationContext
 ): Promise<boolean> => {
   const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
-  ids.forEach(id => inFlightUpdatesRef.current.add(id));
+  
+  // Filter out any invalid UUIDs before processing
+  const validIds = ids.filter(id => UUID_REGEX.test(id));
+  const invalidIds = ids.filter(id => !UUID_REGEX.test(id));
+
+  if (invalidIds.length > 0) {
+    console.warn(`Skipping bulk delete for invalid task IDs: ${invalidIds.join(', ')}`);
+    showError(`Skipped deleting ${invalidIds.length} tasks due to invalid ID format.`);
+  }
+
+  if (validIds.length === 0) {
+    return false; // No valid IDs to process
+  }
+
+  validIds.forEach(id => inFlightUpdatesRef.current.add(id));
 
   try {
-    // Fetch all tasks that are either in `ids` or are sub-tasks of tasks in `ids`
+    // Fetch all tasks that are either in `validIds` or are sub-tasks of tasks in `validIds`
     const { data: tasksToDelete, error: fetchError } = await supabase
       .from('tasks')
       .select('id')
       .eq('user_id', userId)
-      .or(`id.in.(${ids.join(',')}),parent_task_id.in.(${ids.join(',')})`);
+      .or(`id.in.(${validIds.join(',')}),parent_task_id.in.(${validIds.join(',')})`);
 
     if (fetchError) throw fetchError;
 
@@ -383,7 +428,7 @@ export const bulkDeleteTasksMutation = async (
     console.error('Error bulk deleting tasks:', error.message);
     return false;
   } finally {
-    ids.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
+    validIds.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
   }
 };
 
@@ -498,6 +543,13 @@ export const updateTaskParentAndOrderMutation = async (
   inFlightUpdatesRef.current.add(activeId);
 
   try {
+    // Validate activeId format for non-virtual tasks
+    if (!activeId.startsWith('virtual-') && !UUID_REGEX.test(activeId)) {
+      console.error(`Invalid activeId format for non-virtual task: "${activeId}". Skipping reorder.`);
+      showError('Invalid task ID format. Cannot reorder task.');
+      return;
+    }
+
     const activeTask = processedTasks.find(t => t.id === activeId);
     if (!activeTask) throw new Error('Active task not found.');
 
@@ -568,6 +620,13 @@ export const toggleDoTodayMutation = async (
   inFlightUpdatesRef.current.add(taskId);
 
   try {
+    // Validate taskId format for non-virtual tasks
+    if (!taskId.startsWith('virtual-') && !UUID_REGEX.test(taskId)) {
+      console.error(`Invalid taskId format for non-virtual task: "${taskId}". Skipping toggle Do Today.`);
+      showError('Invalid task ID format. Cannot toggle "Do Today" status.');
+      return false;
+    }
+
     const isCurrentlyOff = doTodayOffIds.has(taskId);
 
     if (isCurrentlyOff) {
@@ -609,19 +668,29 @@ export const toggleAllDoTodayMutation = async (
   const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
   const tasksToToggle = filteredTasks.filter(task => task.recurring_type === 'none' && task.parent_task_id === null); // Declare outside try block
-  tasksToToggle.forEach(task => inFlightUpdatesRef.current.add(task.original_task_id || task.id));
+  
+  // Filter out any invalid UUIDs before processing
+  const validTasksToToggle = tasksToToggle.filter(task => UUID_REGEX.test(task.original_task_id || task.id));
+  const invalidTasksToToggle = tasksToToggle.filter(task => !UUID_REGEX.test(task.original_task_id || task.id));
+
+  if (invalidTasksToToggle.length > 0) {
+    console.warn(`Skipping toggle all Do Today for invalid task IDs: ${invalidTasksToToggle.map(t => t.original_task_id || t.id).join(', ')}`);
+    showError(`Skipped toggling ${invalidTasksToToggle.length} tasks due to invalid ID format.`);
+  }
+
+  if (validTasksToToggle.length === 0) {
+    showSuccess('No non-recurring tasks to toggle "Do Today" status.');
+    return;
+  }
+
+  validTasksToToggle.forEach(task => inFlightUpdatesRef.current.add(task.original_task_id || task.id));
 
   try {
-    if (tasksToToggle.length === 0) {
-      showSuccess('No non-recurring tasks to toggle "Do Today" status.');
-      return;
-    }
-
-    const allAreOff = tasksToToggle.every(task => doTodayOffIds.has(task.original_task_id || task.id));
+    const allAreOff = validTasksToToggle.every(task => doTodayOffIds.has(task.original_task_id || task.id));
 
     if (allAreOff) {
       // All are off, so turn them all ON (delete from log)
-      const idsToRemove = tasksToToggle.map((task: Task) => task.original_task_id || task.id);
+      const idsToRemove = validTasksToToggle.map((task: Task) => task.original_task_id || task.id);
       const { error } = await supabase
         .from('do_today_off_log')
         .delete()
@@ -632,7 +701,7 @@ export const toggleAllDoTodayMutation = async (
       showSuccess('All tasks added to "Do Today"!');
     } else {
       // Some are on, some are off, or all are on. Turn them all OFF (insert into log)
-      const idsToAdd = tasksToToggle
+      const idsToAdd = validTasksToToggle
         .filter(task => !doTodayOffIds.has(task.original_task_id || task.id))
         .map((task: Task) => task.original_task_id || task.id);
 
@@ -651,6 +720,6 @@ export const toggleAllDoTodayMutation = async (
     showError('Failed to toggle all "Do Today" statuses.');
     console.error('Error toggling all Do Today:', error.message);
   } finally {
-    tasksToToggle.forEach((task: Task) => inFlightUpdatesRef.current.delete(task.original_task_id || task.id));
+    validTasksToToggle.forEach((task: Task) => inFlightUpdatesRef.current.delete(task.original_task_id || task.id));
   }
 };
