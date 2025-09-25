@@ -1,20 +1,15 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'sonner';
-import { isPast, parseISO, isValid } from 'date-fns';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/integrations/supabase/client'; // Keep supabase for potential future use, but remove if truly unused in the context logic. Let's assume it's not used for now based on the error.
-
-interface Reminder {
-  id: string;
-  message: string;
-  remindAt: Date;
-}
+// import { supabase } from '@/integrations/supabase/client'; // Removed as it was unused
+import { toast } from 'sonner';
+import { useSound } from './SoundContext';
+import { useSettings } from './SettingsContext';
 
 interface ReminderContextType {
-  addReminder: (id: string, message: string, remindAt: Date) => void;
-  dismissReminder: (id: string) => void;
+  scheduleReminder: (id: string, title: string, remindAt: Date) => void;
+  cancelReminder: (id: string) => void;
   clearAllReminders: () => void;
 }
 
@@ -22,91 +17,83 @@ const ReminderContext = createContext<ReminderContextType | undefined>(undefined
 
 export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [reminders, setReminders] = useState<Reminder[]>([]);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { playSound } = useSound();
+  const { settings } = useSettings();
+  const [reminders, setReminders] = useState<{ [key: string]: NodeJS.Timeout }>({});
+  const reminderQueue = useRef<{ id: string; title: string; remindAt: Date }[]>([]);
 
-  const addReminder = useCallback((id: string, message: string, remindAt: Date) => {
-    setReminders(prev => {
-      const existingIndex = prev.findIndex(r => r.id === id);
-      const newReminder = { id, message, remindAt };
+  const scheduleReminder = useCallback((id: string, title: string, remindAt: Date) => {
+    if (!user) return;
 
-      if (existingIndex > -1) {
-        // Update existing reminder
-        const updatedReminders = [...prev];
-        updatedReminders[existingIndex] = newReminder;
-        return updatedReminders;
-      } else {
-        // Add new reminder
-        return [...prev, newReminder];
-      }
-    });
-  }, []);
+    // Clear any existing reminder for this ID
+    if (reminders[id]) {
+      clearTimeout(reminders[id]);
+      setReminders(prev => {
+        const newReminders = { ...prev };
+        delete newReminders[id];
+        return newReminders;
+      });
+    }
 
-  const dismissReminder = useCallback((id: string) => {
-    setReminders(prev => prev.filter(r => r.id !== id));
-  }, []);
+    const now = new Date();
+    const delay = remindAt.getTime() - now.getTime();
+
+    if (delay > 0) {
+      const timeoutId = setTimeout(() => {
+        toast.info(title, {
+          description: "It's time for your reminder!",
+          duration: 10000,
+          action: {
+            label: "Dismiss",
+            onClick: () => toast.dismiss(),
+          },
+        });
+        playSound('reminder');
+        setReminders(prev => {
+          const newReminders = { ...prev };
+          delete newReminders[id];
+          return newReminders;
+        });
+      }, delay);
+
+      setReminders(prev => ({ ...prev, [id]: timeoutId }));
+    } else {
+      // If the reminder time is in the past, show it immediately if it's not already completed
+      // This might need more sophisticated logic depending on how tasks are marked completed
+      // For now, we'll just log it or ignore if it's too far in the past
+      console.warn(`Reminder for "${title}" (ID: ${id}) was scheduled for the past.`);
+    }
+  }, [user, playSound, reminders]);
+
+  const cancelReminder = useCallback((id: string) => {
+    if (reminders[id]) {
+      clearTimeout(reminders[id]);
+      setReminders(prev => {
+        const newReminders = { ...prev };
+        delete newReminders[id];
+        return newReminders;
+      });
+    }
+  }, [reminders]);
 
   const clearAllReminders = useCallback(() => {
-    setReminders([]);
-  }, []);
+    Object.values(reminders).forEach(clearTimeout);
+    setReminders({});
+  }, [reminders]);
 
+  // Effect to process the queue when user or settings change
   useEffect(() => {
-    // Load reminders from local storage on mount
-    if (user?.id) {
-      const storedReminders = localStorage.getItem(`reminders-${user.id}`);
-      if (storedReminders) {
-        const parsedReminders: Reminder[] = JSON.parse(storedReminders).map((r: any) => ({
-          ...r,
-          remindAt: parseISO(r.remindAt),
-        }));
-        setReminders(parsedReminders.filter(r => isValid(r.remindAt) && !isPast(r.remindAt)));
-      }
-    } else {
-      setReminders([]); // Clear reminders if user logs out
-    }
-  }, [user?.id]);
-
-  useEffect(() => {
-    // Save reminders to local storage whenever they change
-    if (user?.id) {
-      localStorage.setItem(`reminders-${user.id}`, JSON.stringify(reminders));
-    }
-  }, [reminders, user?.id]);
-
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      setReminders(prevReminders => {
-        const updatedReminders = prevReminders.filter(reminder => {
-          if (isPast(reminder.remindAt)) {
-            toast.info(reminder.message, {
-              description: 'This is a reminder for your task.',
-              duration: 5000,
-              action: {
-                label: 'Dismiss',
-                onClick: () => dismissReminder(reminder.id),
-              },
-            });
-            return false; // Remove past reminder
-          }
-          return true; // Keep future reminder
-        });
-        return updatedReminders;
+    if (user && settings) {
+      // Process any reminders that were queued before user/settings were ready
+      reminderQueue.current.forEach(({ id, title, remindAt }) => {
+        scheduleReminder(id, title, remindAt);
       });
-    }, 1000 * 5); // Check every 5 seconds
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [dismissReminder]);
+      reminderQueue.current = []; // Clear the queue
+    }
+  }, [user, settings, scheduleReminder]);
 
   return (
-    <ReminderContext.Provider value={{ addReminder, dismissReminder, clearAllReminders }}>
+    <ReminderContext.Provider value={{ scheduleReminder, cancelReminder, clearAllReminders }}>
       {children}
     </ReminderContext.Provider>
   );

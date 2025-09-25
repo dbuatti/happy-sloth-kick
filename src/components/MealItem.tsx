@@ -112,7 +112,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
 
   const mealTime = MEAL_TIMES[meal.meal_type];
   const mealDateTime = setMinutes(setHours(mealDate, mealTime.hour), mealTime.minute);
-  const formattedTime = format(mealDateTime, 'h:mm a'); // Still needed for tooltip if desired, but not displayed
+  // const formattedTime = format(mealDateTime, 'h:mm a'); // Removed as it was unused
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
