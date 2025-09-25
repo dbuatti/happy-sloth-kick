@@ -33,8 +33,8 @@ import { Appointment } from '@/hooks/useAppointments';
 
 
 interface TaskListProps {
-  tasks: Task[];
-  processedTasks: Task[];
+  tasks: Task[]; // This is rawTasks from useTasks
+  processedTasks: Task[]; // This is processedTasks from useTaskProcessing
   filteredTasks: Task[];
   loading: boolean;
   handleAddTask: (taskData: any) => Promise<any>;
@@ -330,7 +330,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             onMoveUp={async () => {}}
                             onMoveDown={async () => {}}
                             level={0}
-                            allTasks={tasks}
+                            allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
                             isOverlay={false}
                             expandedTasks={expandedTasks}
                             toggleTask={toggleTask}
@@ -383,7 +383,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                   <div className="rotate-2">
                     <TaskItem
                       task={activeItemData as Task}
-                      allTasks={tasks}
+                      allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
                       onStatusChange={async (taskId, newStatus) => { return await updateTask(taskId, { status: newStatus }); }}
                       onDelete={() => {}}
                       onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
@@ -432,7 +432,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={tasks}
+            allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
           />
         </DialogContent>
       </Dialog>

@@ -7,7 +7,7 @@ interface FocusPanelDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   nextAvailableTask: Task | null;
-  tasks: Task[];
+  allTasks: Task[]; // Renamed from 'tasks' to 'allTasks', assumed to be processedTasks
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
@@ -22,7 +22,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
   onClose,
   nextAvailableTask,
-  tasks,
+  allTasks, // Use allTasks here
   filteredTasks,
   updateTask,
   onOpenDetail,
@@ -41,7 +41,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
         <div className="flex-1 overflow-y-auto py-4">
           <FocusToolsPanel
             nextAvailableTask={nextAvailableTask}
-            tasks={tasks}
+            allTasks={allTasks} // Pass allTasks (processed)
             filteredTasks={filteredTasks}
             updateTask={updateTask}
             onDeleteTask={onDeleteTask}

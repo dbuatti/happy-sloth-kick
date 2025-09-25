@@ -22,7 +22,7 @@ interface CommandPaletteProps {
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { handleAddTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode } = useTasks({ currentDate: new Date() });
+  const { handleAddTask, sections, allCategories, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode, processedTasks } = useTasks({ currentDate: new Date() });
   const isMobile = useIsMobile();
   const { playSound } = useSound();
 
@@ -237,7 +237,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 Fill in the details to add a new task from the command palette.
               </DialogDescription>
             </SheetHeader>
-            <TaskForm onSave={handleNewTaskSubmit} onCancel={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={new Date()} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
+            <TaskForm onSave={handleNewTaskSubmit} onCancel={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={new Date()} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} allTasks={processedTasks} />
           </SheetContent>
         </Sheet>
       ) : (
@@ -249,7 +249,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
                 Fill in the details to add a new task from the command palette.
               </DialogDescription>
             </DialogHeader>
-            <TaskForm onSave={handleNewTaskSubmit} onCancel={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={new Date()} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} />
+            <TaskForm onSave={handleNewTaskSubmit} onCancel={() => setIsAddTaskDialogOpen(false)} sections={sections} allCategories={allCategories} currentDate={new Date()} createSection={createSection} updateSection={updateSection} deleteSection={deleteSection} updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} allTasks={processedTasks} />
           </DialogContent>
         </Dialog>
       )}

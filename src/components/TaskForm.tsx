@@ -91,7 +91,7 @@ interface TaskFormProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   className?: string;
-  allTasks?: Task[];
+  allTasks?: Task[]; // This prop should now receive processedTasks
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -109,7 +109,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   className,
-  allTasks,
+  allTasks, // This is the prop, assumed to be processedTasks
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -144,7 +144,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
 
     let parentTask: Task | undefined;
-    if (parentTaskId && allTasks) {
+    if (parentTaskId && allTasks) { // Use allTasks (processed) here
       parentTask = allTasks.find(t => t.id === parentTaskId);
     }
 

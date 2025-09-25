@@ -13,7 +13,7 @@ import PomodoroTimer from './PomodoroTimer';
 
 interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
-  tasks: Task[];
+  allTasks: Task[]; // Renamed from 'tasks' to 'allTasks', assumed to be processedTasks
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
@@ -26,7 +26,7 @@ interface FocusToolsPanelProps {
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   nextAvailableTask,
-  tasks,
+  allTasks, // Use allTasks here
   filteredTasks,
   updateTask,
   onOpenDetail,
@@ -74,12 +74,12 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     if (!nextAvailableTask) return [];
     const nextTaskAndSubtasksIds = new Set([
       nextAvailableTask.id,
-      ...tasks.filter(t => t.parent_task_id === nextAvailableTask.id).map(t => t.id)
+      ...allTasks.filter(t => t.parent_task_id === nextAvailableTask.id).map(t => t.id)
     ]);
     return filteredTasks
       .filter(t => !nextTaskAndSubtasksIds.has(t.id) && t.parent_task_id === null && t.status === 'to-do')
       .slice(0, 5);
-  }, [nextAvailableTask, filteredTasks, tasks]);
+  }, [nextAvailableTask, filteredTasks, allTasks]); // Updated dependency array
 
   const handleQuickAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,7 +273,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           onDelete={onDeleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={tasks}
+          allTasks={allTasks} // Passed allTasks (processed)
         />
       )}
     </div>

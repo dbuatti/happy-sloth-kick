@@ -29,7 +29,7 @@ interface TaskOverviewDialogProps {
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  allTasks: Task[];
+  allTasks: Task[]; // This prop should now receive processedTasks
 }
 
 const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
@@ -40,7 +40,8 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  allTasks,
+  allCategories,
+  allTasks, // This is the prop, assumed to be processedTasks
 }) => {
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
