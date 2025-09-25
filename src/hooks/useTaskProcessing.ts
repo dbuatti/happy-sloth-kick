@@ -155,23 +155,14 @@ export const useTaskProcessing = ({
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
-        // Always include tasks completed/archived today
-        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
-            const completedAtDate = parseISO(task.completed_at);
-            const isCompletedOnCurrentDate = (
-                isValid(completedAtDate) &&
-                isSameDay(completedAtDate, effectiveCurrentDate)
-            );
-            if (isCompletedOnCurrentDate) {
-                return true;
-            }
-        }
+        const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') &&
+          task.completed_at &&
+          isValid(parseISO(task.completed_at)) &&
+          isSameDay(parseISO(task.completed_at), effectiveCurrentDate);
 
-        // Include all 'to-do' tasks, regardless of created_at or due_date
-        if (task.status === 'to-do') {
-            return true; 
-        }
-        return false;
+        const isToDoAndNotOff = task.status === 'to-do' && !task.isDoTodayOff;
+
+        return isCompletedOrArchivedToday || isToDoAndNotOff;
       });
     }
 
