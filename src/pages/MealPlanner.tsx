@@ -51,14 +51,14 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
   return (
     <div className="flex-1 flex flex-col">
       <main className="flex-grow p-4 flex justify-center">
-        <Card className="w-full max-w-xl mx-auto shadow-lg rounded-xl p-4">
-          <CardHeader className="pb-2">
+        <Card className="w-full max-w-xl mx-auto shadow-lg rounded-xl">
+          <CardHeader className="px-6 pb-2">
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
               <UtensilsCrossed className="h-7 w-7 text-primary" /> Meal Planner
             </CardTitle>
             <p className="text-sm text-muted-foreground text-center">Plan your next 9 meals (3 days) and track ingredients.</p>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="p-6">
             <Tabs defaultValue="meals" className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="meals">
@@ -69,7 +69,7 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="meals" className="mt-4">
+              <TabsContent value="meals" className="mt-4 p-6">
                 {loading ? (
                   <div className="space-y-4">
                     {[...Array(9)].map((_, i) => (
@@ -106,7 +106,7 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
                   </div>
                 )}
               </TabsContent>
-              <TabsContent value="staples" className="mt-4">
+              <TabsContent value="staples" className="mt-4 p-6">
                 <StaplesInventory isDemo={isDemo} demoUserId={demoUserId} />
               </TabsContent>
             </Tabs>
