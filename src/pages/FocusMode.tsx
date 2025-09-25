@@ -14,8 +14,7 @@ interface FocusModeProps {
 }
 
 const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const { settings } = useSettings();
+  // Removed unused 'user' and 'settings' variables
   const [currentDate] = useState(new Date());
   const navigate = useNavigate();
 

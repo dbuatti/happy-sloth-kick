@@ -13,8 +13,7 @@ interface TimeBlockScheduleProps {
 }
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const { settings } = useSettings();
+  // Removed unused 'user' and 'settings' variables
   const [currentDate, setCurrentDate] = useState(new Date());
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly'>('daily');
 

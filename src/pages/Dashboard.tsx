@@ -63,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     reorderCustomCards,
   } = useDashboardData({ userId });
 
-  const { settings: userSettings, loading: userSettingsLoading, updateSettings } = useSettings({ userId });
+  const { settings: userSettings, loading: userSettingsLoading, updateSettings } = useSettings(); // Removed userId prop
 
   const {
     tasksDue,
@@ -95,7 +95,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
       if ((dashboardSettings?.dashboard_layout as Record<string, boolean>)?.[config.key] !== false) {
         items.push({
           id: config.key,
-          component: config.component,
+          component: config.component as React.ComponentType<AnyCardProps>, // Cast to AnyCardProps
           props: config.defaultProps,
           isCustom: false,
           order: 0, // Built-in cards don't have a DB order, assign a temporary one
@@ -108,7 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
       if (card.is_visible) {
         items.push({
           id: card.id,
-          component: CustomCard,
+          component: CustomCard as React.ComponentType<AnyCardProps>, // Cast to AnyCardProps
           props: { card, isOverlay: false },
           isCustom: true,
           order: card.card_order,

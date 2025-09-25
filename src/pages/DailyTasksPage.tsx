@@ -143,7 +143,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         filteredTasks={filteredTasks}
         sections={sections}
         allCategories={allCategories}
-        userId={userId || null} {/* Ensure userId is string | null */}
+        userId={userId || null}
         setIsFocusPanelOpen={setIsFocusPanelOpen}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
