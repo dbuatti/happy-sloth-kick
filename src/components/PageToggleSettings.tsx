@@ -4,19 +4,32 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useSettings } from '@/context/SettingsContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard } from 'lucide-react'; // Keep LayoutDashboard for the card title icon
-import { navItemsConfig } from '@/config/navItems'; // Import the new config
+import { LayoutDashboard, UtensilsCrossed } from 'lucide-react'; // Import UtensilsCrossed
 
 const PageToggleSettings: React.FC = () => {
   const { settings, loading, updateSettings } = useSettings();
 
-  // Filter navItemsConfig to get only toggleable pages
-  const toggleablePages = navItemsConfig.filter(item => item.toggleable);
+  // Define navItems locally or import them if they are a shared constant
+  const localNavItems = [
+    { name: "Dashboard", path: "dashboard", icon: LayoutDashboard, toggleable: true },
+    { name: "Daily Tasks", path: "dailyTasks", icon: LayoutDashboard, toggleable: true },
+    { name: "Schedule", path: "schedule", icon: LayoutDashboard, toggleable: true },
+    { name: "Projects", path: "projects", icon: LayoutDashboard, toggleable: true },
+    { name: "Meal Planner", path: "mealPlanner", icon: UtensilsCrossed, toggleable: true }, // New entry
+    { name: "Sleep", path: "sleep", icon: LayoutDashboard, toggleable: true },
+    { name: "Dev Space", path: "devSpace", icon: LayoutDashboard, toggleable: true },
+    { name: "Settings", path: "settings", icon: LayoutDashboard, toggleable: true },
+    { name: "Analytics", path: "analytics", icon: LayoutDashboard, toggleable: true },
+    { name: "Archive", path: "archive", icon: LayoutDashboard, toggleable: true },
+    { name: "Help", path: "help", icon: LayoutDashboard, toggleable: true },
+  ];
+
+  const toggleablePages = localNavItems.filter(item => item.toggleable);
 
   const handleToggle = (path: string, checked: boolean) => {
     const newVisiblePages = {
       ...(settings?.visible_pages || {}),
-      [path]: checked,
+      [path]: checked, // Use the path directly as the key
     };
     updateSettings({ visible_pages: newVisiblePages });
   };

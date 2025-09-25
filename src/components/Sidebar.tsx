@@ -3,12 +3,21 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  LayoutDashboard,
+  ListTodo,
+  CalendarDays,
+  Settings,
+  BarChart3,
+  Archive,
+  HelpCircle,
+  Moon,
+  Code,
   Menu,
   Palette,
   Sun,
   Monitor,
-  Moon, // Keep Moon for theme selection
-  ListTodo, // Added ListTodo for app logo
+  UtensilsCrossed,
+  Sparkles, // Import Sparkles icon for Resonance Goals
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -26,7 +35,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { navItemsConfig, NavItem } from "@/config/navItems"; // Import the new config
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -39,32 +47,93 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { settings } = useSettings();
 
-  const getFilteredNavItems = (isBottomSection: boolean) => {
-    return navItemsConfig.filter(item => {
-      const isVisibleInSettings = settings?.visible_pages?.[item.path] !== false;
-      const isCoreItem = ['dashboard', 'dailyTasks', 'schedule', 'projects', 'mealPlanner', 'resonanceGoals', 'sleep', 'devSpace'].includes(item.path);
-      const isBottomItem = ['settings', 'analytics', 'archive', 'help'].includes(item.path);
+  const navItems = [
+    {
+      name: "Dashboard",
+      href: isDemo ? "/demo/dashboard" : "/dashboard",
+      icon: LayoutDashboard,
+      visible: settings?.visible_pages?.dashboard !== false,
+    },
+    {
+      name: "Daily Tasks",
+      href: isDemo ? "/demo/daily-tasks" : "/daily-tasks",
+      icon: ListTodo,
+      visible: settings?.visible_pages?.dailyTasks !== false,
+    },
+    {
+      name: "Schedule",
+      href: isDemo ? "/demo/schedule" : "/schedule",
+      icon: CalendarDays,
+      visible: settings?.visible_pages?.schedule !== false,
+    },
+    {
+      name: "Projects",
+      href: isDemo ? "/demo/projects" : "/projects",
+      icon: BarChart3,
+      visible: settings?.visible_pages?.projects !== false,
+    },
+    {
+      name: "Meal Planner",
+      href: isDemo ? "/demo/meal-planner" : "/meal-planner",
+      icon: UtensilsCrossed,
+      visible: settings?.visible_pages?.mealPlanner !== false,
+    },
+    {
+      name: "Resonance Goals", // New Nav Item
+      href: isDemo ? "/demo/resonance-goals" : "/resonance-goals",
+      icon: Sparkles, // Using Sparkles for Resonance Goals
+      visible: settings?.visible_pages?.resonanceGoals !== false, // New setting for visibility
+    },
+    {
+      name: "Sleep",
+      href: isDemo ? "/demo/sleep" : "/sleep",
+      icon: Moon,
+      visible: settings?.visible_pages?.sleep !== false,
+    },
+    {
+      name: "Dev Space",
+      href: isDemo ? "/demo/dev-space" : "/dev-space",
+      icon: Code,
+      visible: settings?.visible_pages?.devSpace !== false,
+    },
+  ].filter(item => item.visible);
 
-      if (isBottomSection) {
-        return isBottomItem && isVisibleInSettings;
-      } else {
-        return isCoreItem && isVisibleInSettings;
-      }
-    });
-  };
+  const bottomNavItems = [
+    {
+      name: "Settings",
+      href: isDemo ? "/demo/settings" : "/settings",
+      icon: Settings,
+      visible: settings?.visible_pages?.settings !== false,
+    },
+    {
+      name: "Analytics",
+      href: isDemo ? "/demo/analytics" : "/analytics",
+      icon: BarChart3,
+      visible: settings?.visible_pages?.analytics !== false,
+    },
+    {
+      name: "Archive",
+      href: isDemo ? "/demo/archive" : "/archive",
+      icon: Archive,
+      visible: settings?.visible_pages?.archive !== false,
+    },
+    {
+      name: "Help",
+      href: isDemo ? "/demo/help" : "/help",
+      icon: HelpCircle,
+      visible: settings?.visible_pages?.help !== false,
+    },
+  ].filter(item => item.visible);
 
-  const topNavItems = getFilteredNavItems(false);
-  const bottomNavItems = getFilteredNavItems(true);
-
-  const renderNavItems = (items: NavItem[]) => (
+  const renderNavItems = (items: typeof navItems) => (
     <nav className="grid items-start gap-2">
       {items.map((item) => {
         const Icon = item.icon;
-        const isActive = location.pathname === (isDemo ? `/demo/${item.path}` : `/${item.path}`);
+        const isActive = location.pathname === item.href;
         return (
           <Link
             key={item.name}
-            to={isDemo ? `/demo/${item.path}` : `/${item.path}`}
+            to={item.href}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
               isActive && "bg-muted text-primary",
@@ -83,13 +152,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) =>
     <div className="flex h-full max-h-screen flex-col gap-2">
       <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
         <Link to={isDemo ? "/demo/dashboard" : "/dashboard"} className="flex items-center gap-2 font-semibold">
-          <ListTodo className="h-6 w-6" /> {/* Keep ListTodo for app logo */}
+          <ListTodo className="h-6 w-6" />
           <span className="">TaskMaster</span>
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-2">
         <div className="grid items-start px-4 text-sm font-medium">
-          {renderNavItems(topNavItems)}
+          {renderNavItems(navItems)}
           <Separator className="my-4" />
           {renderNavItems(bottomNavItems)}
         </div>
