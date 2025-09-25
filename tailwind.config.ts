@@ -75,6 +75,8 @@ export default {
         'priority-urgent': 'hsl(var(--priority-urgent))',
         'border-status-due-today': 'hsl(var(--border-status-due-today))',
         'border-status-overdue': 'hsl(var(--border-status-overdue))',
+        'task-completed-text': 'hsl(var(--task-completed-text))', // Added
+        'task-completed-bg': 'hsl(var(--task-completed-bg))',     // Added
       },
       borderRadius: {
         lg: "var(--radius-lg)",
