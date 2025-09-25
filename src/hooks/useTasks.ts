@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
-import { parseISO, isValid, format, startOfDay, isAfter, isBefore } from 'date-fns';
+import { parseISO, isValid, format, startOfDay, isAfter, isBefore, isSameDay } from 'date-fns'; // Added isSameDay
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
@@ -466,7 +466,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             
             const isCompletedOnCurrentDate = (
                 completedAtDate && isValid(completedAtDate) &&
-                isSameDay(completedAtDate, effectiveCurrentDate)
+                isSameDay(completedAtDate, effectiveCurrentDate) // Fixed: Used isSameDay
             );
             
             if (isCompletedOnCurrentDate) {
@@ -506,7 +506,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       
       const isCompletedOnCurrentDate = (
           completedAtDate && isValid(completedAtDate) &&
-          isSameDay(completedAtDate, effectiveCurrentDate)
+          isSameDay(completedAtDate, effectiveCurrentDate) // Fixed: Used isSameDay
       );
 
       const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isCompletedOnCurrentDate;

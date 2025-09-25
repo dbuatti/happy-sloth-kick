@@ -111,7 +111,7 @@ export const useTaskProcessing = ({
         if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
             const completedAtDate = parseISO(task.completed_at);
             const isCompletedOnCurrentDate = (
-                isValid(completed(completedAtDate)) &&
+                isValid(completedAtDate) && // Fixed: Removed 'completed' typo
                 isSameDay(completedAtDate, effectiveCurrentDate)
             );
             if (isCompletedOnCurrentDate) {
