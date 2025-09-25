@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -36,10 +36,11 @@ interface TaskListProps {
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
   filteredTasks: Task[];
   loading: boolean;
-  handleAddTask: (taskData: any) => Promise<any>;
+  handleAddTask: (taskData: NewTaskData) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   deleteTask: (taskId: string) => void;
   bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
+  bulkDeleteTasks: (ids: string[]) => Promise<boolean>; // Added this prop
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;

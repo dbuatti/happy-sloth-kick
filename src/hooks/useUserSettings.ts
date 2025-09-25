@@ -15,6 +15,8 @@ export interface UserSettings {
   visible_pages?: Record<string, boolean>;
   schedule_show_focus_tasks_only: boolean;
   dashboard_panel_sizes: number[] | null; // New: Stores the sizes of resizable panels
+  expanded_sections?: Record<string, boolean>; // New: Stores expanded state of task sections
+  expanded_tasks?: Record<string, boolean>; // New: Stores expanded state of parent tasks
 }
 
 const defaultSettings: Omit<UserSettings, 'user_id'> = {
@@ -39,6 +41,8 @@ const defaultSettings: Omit<UserSettings, 'user_id'> = {
   },
   schedule_show_focus_tasks_only: true,
   dashboard_panel_sizes: [66, 34], // Default sizes for the two main dashboard panels
+  expanded_sections: {}, // Default to empty object
+  expanded_tasks: {}, // Default to empty object
 };
 
 export const useUserSettings = (props?: { userId?: string }) => {
@@ -69,6 +73,8 @@ export const useUserSettings = (props?: { userId?: string }) => {
           dashboard_layout: { ...defaultSettings.dashboard_layout, ...(data.dashboard_layout || {}) },
           visible_pages: { ...defaultSettings.visible_pages, ...(data.visible_pages || {}) }, // Merge visible_pages
           dashboard_panel_sizes: data.dashboard_panel_sizes || defaultSettings.dashboard_panel_sizes,
+          expanded_sections: data.expanded_sections || defaultSettings.expanded_sections, // Merge expanded_sections
+          expanded_tasks: data.expanded_tasks || defaultSettings.expanded_tasks, // Merge expanded_tasks
         };
       } else {
         // If in demo mode, don't try to insert. Just use defaults.
