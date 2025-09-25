@@ -10,14 +10,13 @@ import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { useSound } from '@/context/SoundContext'; // Import useSound
+import { useSound } from '@/context/SoundContext';
 
 interface MealItemProps {
   meal: Meal;
-  // currentDate: Date; // Removed as it's no longer used directly in this component
   onUpdate: (id: string, updates: Partial<Meal>) => Promise<any>;
   isDemo?: boolean;
-  isPlaceholder: boolean; // New prop
+  isPlaceholder: boolean;
 }
 
 const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
@@ -27,17 +26,15 @@ const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
 };
 
 const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isPlaceholder }) => {
-  const { playSound } = useSound(); // Initialize useSound
+  const { playSound } = useSound();
   const [name, setName] = useState(meal.name);
   const [notes, setNotes] = useState(meal.notes || '');
   const [hasIngredients, setHasIngredients] = useState(meal.has_ingredients);
   const [isCompleted, setIsCompleted] = useState(meal.is_completed);
-  const [showCompletionEffect, setShowCompletionEffect] = useState(false); // New state for animation
+  const [showCompletionEffect, setShowCompletionEffect] = useState(false);
 
-  // Ref to store the last known "saved" state from props
   const lastCommittedMealRef = useRef(meal);
 
-  // Effect to synchronize local state with prop changes
   useEffect(() => {
     if (meal.id !== lastCommittedMealRef.current.id ||
         name !== meal.name ||
@@ -52,7 +49,6 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
     lastCommittedMealRef.current = meal;
   }, [meal]);
 
-  // Debounced effect for saving changes
   useEffect(() => {
     if (isDemo) return;
 
@@ -104,11 +100,11 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
     if (isDemo) return;
     setIsCompleted(checked);
     if (checked) {
-      playSound('success'); // Play sound on completion
+      playSound('success');
       setShowCompletionEffect(true);
       setTimeout(() => setShowCompletionEffect(false), 600);
     } else {
-      playSound('reset'); // Play sound on un-completion
+      playSound('reset');
     }
   };
 
@@ -145,11 +141,11 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-0.5 p-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Reduced vertical padding and gap
+        "relative flex flex-col gap-0 py-1 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed p-2 to py-1 px-2 and gap-0.5 to gap-0
         "border-l-4",
         isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
         !isCompleted && getIngredientStatusClasses(),
-        isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground" // Placeholder styling
+        isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground"
       )}
     >
       <div className="flex items-center justify-between">
@@ -161,7 +157,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
           )}>
             {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
           </span>
-          {name.trim() !== '' && ( // Conditionally render icon if name is not empty
+          {name.trim() !== '' && (
             <UtensilsCrossed className="h-3.5 w-3.5 text-primary/70 ml-1" />
           )}
         </div>
