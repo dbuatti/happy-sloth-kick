@@ -7,6 +7,7 @@ import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -109,18 +110,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleToggleSelectTask = useCallback((taskId: string, isSelected: boolean) => {
-    setSelectedTaskIds(prev => {
-      const newSet = new Set(prev);
-      if (isSelected) {
-        newSet.add(taskId);
-      } else {
-        newSet.delete(taskId);
-      }
-      return newSet;
-    });
-  }, []);
-
   const handleClearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
   }, []);
@@ -154,7 +143,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         filteredTasks={filteredTasks}
         sections={sections}
         allCategories={allCategories}
-        userId={userId}
+        userId={userId || null} {/* Ensure userId is string | null */}
         setIsFocusPanelOpen={setIsFocusPanelOpen}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}

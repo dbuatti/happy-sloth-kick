@@ -21,7 +21,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
 
   const {
     nextAvailableTask,
-    allTasks,
+    processedTasks: allTasks, // Renamed to allTasks for clarity in this component
     filteredTasks,
     updateTask,
     deleteTask,
@@ -46,7 +46,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     setFocusTask(null); // Clear focus when closing the full-screen view
   }, [setFocusTask]);
 
-  const handleOpenDetail = useCallback((task: Task) => {
+  const handleOpenDetail = useCallback((_task: Task) => { // Renamed to _task to mark as intentionally unused
     // In focus mode, we don't open a separate dialog, but rather the panel
     // This function is passed to FocusToolsPanel, which then uses it to open TaskOverviewDialog
     // So, this is just a passthrough.

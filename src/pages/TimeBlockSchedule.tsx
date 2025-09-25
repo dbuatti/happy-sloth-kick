@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
 import { useTasks, Task } from '@/hooks/useTasks';
-import TimeBlockScheduleView from '@/components/TimeBlockScheduleView';
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
 
-const TimeBlockSchedule: React.FC = () => {
+interface TimeBlockScheduleProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const { settings } = useSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -21,16 +24,10 @@ const TimeBlockSchedule: React.FC = () => {
   // The filters are not directly used in TimeBlockSchedule, but the hook needs them.
   const {
     sections,
-    allCategories,
-    allTasks,
     processedTasks,
     updateTask,
     deleteTask,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate });
+  } = useTasks({ currentDate, userId: demoUserId });
 
   const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
@@ -53,6 +50,8 @@ const TimeBlockSchedule: React.FC = () => {
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
               onOpenTaskOverview={handleOpenTaskOverview}
+              isDemo={isDemo}
+              demoUserId={demoUserId}
             />
           </TabsContent>
           <TabsContent value="weekly" className="mt-4">
@@ -60,6 +59,8 @@ const TimeBlockSchedule: React.FC = () => {
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
               onOpenTaskOverview={handleOpenTaskOverview}
+              isDemo={isDemo}
+              demoUserId={demoUserId}
             />
           </TabsContent>
         </Tabs>

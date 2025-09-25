@@ -69,7 +69,7 @@ const AppContent = () => {
               <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} />
+              <Route path="/demo/focus" element={<FocusMode isDemo={true} demoUserId={demoUserId} />} /> {/* Added isDemo and demoUserId */}
               <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
               <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />

@@ -103,18 +103,6 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleToggleSelectTask = useCallback((taskId: string, isSelected: boolean) => {
-    setSelectedTaskIds(prev => {
-      const newSet = new Set(prev);
-      if (isSelected) {
-        newSet.add(taskId);
-      } else {
-        newSet.delete(taskId);
-      }
-      return newSet;
-    });
-  }, []);
-
   const handleClearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
   }, []);
