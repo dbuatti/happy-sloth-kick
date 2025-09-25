@@ -301,7 +301,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
       section_id: newTaskData.section_id ?? null,
       parent_task_id: newTaskData.parent_task_id ?? null,
       original_task_id: newTaskData.original_task_id ?? null,
-      created_at: newTaskData.created_at, // Keep original created_at if provided
+      // created_at: newTaskData.created_at, // Removed this line
       link: newTaskData.link ?? null,
       image_url: newTaskData.image_url ?? null,
     };
