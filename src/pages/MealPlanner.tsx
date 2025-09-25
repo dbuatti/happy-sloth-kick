@@ -53,10 +53,10 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
       <main className="flex-grow p-4 flex justify-center">
         <Card className="w-full max-w-xl mx-auto shadow-lg rounded-xl">
           <CardHeader className="px-6 pb-2">
-            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden text-ellipsis">
               <UtensilsCrossed className="h-7 w-7 text-primary" /> Meal Planner
             </CardTitle>
-            <p className="text-sm text-muted-foreground text-center">Plan your next 9 meals (3 days) and track ingredients.</p>
+            <p className="text-sm text-muted-foreground text-center line-clamp-2">Plan your next 9 meals (3 days) and track ingredients.</p>
           </CardHeader>
           <CardContent className="p-6">
             <Tabs defaultValue="meals" className="w-full">
