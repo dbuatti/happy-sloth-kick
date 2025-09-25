@@ -63,15 +63,35 @@ export const useTaskProcessing = ({
 
       if (templateTask.recurring_type === 'none') {
         allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray' });
-      } else {
+      } else { // Recurring task
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
-        let relevantInstance: Omit<Task, 'category_color'> | null = sortedInstances.find(t => isSameDay(startOfDay(parseISO(t.created_at)), todayStart)) || null;
+        
+        let relevantInstance: Omit<Task, 'category_color'> | null = null;
 
+        // 1. Prioritize an instance completed today
+        relevantInstance = sortedInstances.find(t => 
+          t.status === 'completed' && 
+          t.completed_at && 
+          isValid(parseISO(t.completed_at)) && 
+          isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
+        );
+
+        // 2. If not found, look for an instance created today (to-do or other status, but not archived)
         if (!relevantInstance) {
-          relevantInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do') || null;
+          relevantInstance = sortedInstances.find(t => 
+            isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
+          );
+        }
+
+        // 3. If still not found, look for an uncompleted instance carried over from before today
+        if (!relevantInstance) {
+          relevantInstance = sortedInstances.find(t => 
+            isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do'
+          );
         }
 
         if (!relevantInstance) {
+          // No real instance found for today or carried over, consider creating a virtual one
           const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
           const baseTaskForVirtual = mostRecentRealInstance || templateTask;
 
@@ -111,7 +131,7 @@ export const useTaskProcessing = ({
         if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
             const completedAtDate = parseISO(task.completed_at);
             const isCompletedOnCurrentDate = (
-                isValid(completedAtDate) && // Fixed: Removed 'completed' typo
+                isValid(completedAtDate) &&
                 isSameDay(completedAtDate, effectiveCurrentDate)
             );
             if (isCompletedOnCurrentDate) {

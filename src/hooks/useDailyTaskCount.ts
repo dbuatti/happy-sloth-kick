@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { startOfDay, parseISO, isSameDay, isBefore, format } from 'date-fns';
+import { startOfDay, parseISO, isSameDay, isBefore, format, isValid } from 'date-fns'; // Added isValid
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Define a minimal Task type for this hook, including necessary fields for filtering
@@ -12,11 +12,12 @@ interface DailyCountTask {
   original_task_id: string | null;
   section_id: string | null;
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  parent_task_id: string | null; // Added parent_task_id
+  parent_task_id: string | null;
+  completed_at: string | null; // Added completed_at
 }
 
 // Re-use query functions from useTasks
-import { fetchSections, fetchTasks, fetchDoTodayOffLog } from '@/integrations/supabase/queries'; // Corrected import path
+import { fetchSections, fetchTasks, fetchDoTodayOffLog } from '@/integrations/supabase/queries';
 import { TaskSection, Task } from './useTasks'; // Keep types from useTasks
 
 export const useDailyTaskCount = (props?: { userId?: string }) => {
@@ -79,17 +80,26 @@ export const useDailyTaskCount = (props?: { userId?: string }) => {
 
         let taskToDisplay: DailyCountTask | null = null;
 
-        const instanceForCurrentDay = allInstancesOfThisRecurringTask.find(t =>
-          isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
+        // 1. Prioritize an instance completed today
+        taskToDisplay = allInstancesOfThisRecurringTask.find(t =>
+          t.status === 'completed' &&
+          t.completed_at &&
+          isValid(parseISO(t.completed_at)) &&
+          isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
         );
-        
-        if (instanceForCurrentDay) {
-          taskToDisplay = instanceForCurrentDay;
-        } else {
+
+        // 2. If not found, look for an instance created today (to-do or other status, but not archived)
+        if (!taskToDisplay) {
+          taskToDisplay = allInstancesOfThisRecurringTask.find(t =>
+            isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
+          );
+        }
+
+        // 3. If still not found, look for an uncompleted instance carried over from before today
+        if (!taskToDisplay) {
           const carryOverTask = allInstancesOfThisRecurringTask
             .filter(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do')
-            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0];
-
+            .sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime())[0]; // Get the most recent one
           if (carryOverTask) {
             taskToDisplay = carryOverTask;
           }
