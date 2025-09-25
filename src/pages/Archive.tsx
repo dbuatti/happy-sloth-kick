@@ -1,14 +1,12 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Input } from '@/components/ui/input';
-import { Search, X, ListRestart } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import BulkActionBar from '@/components/BulkActionBar';
-import { useAppointments } from '@/hooks/useAppointments';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
+import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -18,12 +16,11 @@ interface ArchiveProps {
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate] = useState(new Date());
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  const isMobile = useIsMobile();
 
   const {
-    tasks: rawTasks,
     processedTasks,
     filteredTasks,
     updateTask,
@@ -32,21 +29,30 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     bulkDeleteTasks,
     searchFilter,
     setSearchFilter,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sectionFilter,
+    setSectionFilter,
     sections,
     allCategories,
+    updateTaskParentAndOrder,
+    reorderSections,
+    loading: tasksLoading,
+    markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    updateTaskParentAndOrder,
-    reorderSections,
-    loading: tasksLoading,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
   } = useTasks({ currentDate, viewMode: 'archive', userId: demoUserId });
 
-  const { appointments: allAppointments } = useAppointments({ startDate: new Date(0), endDate: new Date(8640000000000000), userId: demoUserId });
+  const { appointments: allAppointments } = useAllAppointments();
 
   const scheduledTasksMap = useMemo(() => {
     const map = new Map<string, Appointment>();
@@ -58,51 +64,62 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     return map;
   }, [allAppointments]);
 
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
-
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: prev[sectionId] === false ? true : false,
-    }));
-  }, []);
-
-  const toggleTask = useCallback((taskId: string) => {
-    setExpandedTasks(prev => ({
-      ...prev,
-      [taskId]: prev[taskId] === false ? true : false,
-    }));
-  }, []);
-
   const handleOpenTaskOverview = useCallback((task: Task) => {
-    setTaskToEdit(task);
+    setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleEditTask = useCallback((task: Task) => {
+  const handleOpenTaskEdit = useCallback((task: Task) => {
     setTaskToEdit(task);
-    setIsTaskOverviewOpen(true); // Re-use overview dialog for editing in archive
+    setIsTaskOverviewOpen(false); // Close overview if open
   }, []);
 
-  const handleToggleSelectTask = useCallback((taskId: string) => {
+  const handleCloseTaskEdit = useCallback(() => {
+    setTaskToEdit(null);
+  }, []);
+
+  const handleUpdateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
+    const result = await updateTask(taskId, updates);
+    if (result) {
+      // If the task being edited is the one in overview, update it
+      if (taskToOverview && taskToOverview.id === taskId) {
+        setTaskToOverview(prev => prev ? { ...prev, ...updates } : null);
+      }
+      // If the task being edited is the one in edit dialog, update it
+      if (taskToEdit && taskToEdit.id === taskId) {
+        setTaskToEdit(prev => prev ? { ...prev, ...updates } : null);
+      }
+    }
+    return result;
+  }, [updateTask, taskToOverview, taskToEdit]);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    deleteTask(taskId);
     setSelectedTasks(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
+      newSet.delete(taskId);
       return newSet;
     });
-  }, []);
+    if (taskToOverview?.id === taskId) {
+      setIsTaskOverviewOpen(false);
+      setTaskToOverview(null);
+    }
+    if (taskToEdit?.id === taskId) {
+      setTaskToEdit(null);
+    }
+  }, [deleteTask, taskToOverview, taskToEdit]);
 
   const handleClearSelection = useCallback(() => {
     setSelectedTasks(new Set());
   }, []);
 
-  const handleBulkRestore = useCallback(async () => {
-    await bulkUpdateTasks({ status: 'to-do' }, Array.from(selectedTasks));
+  const handleBulkComplete = useCallback(async () => {
+    await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTasks));
+    handleClearSelection();
+  }, [bulkUpdateTasks, selectedTasks, handleClearSelection]);
+
+  const handleBulkArchive = useCallback(async () => {
+    await bulkUpdateTasks({ status: 'archived' }, Array.from(selectedTasks));
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTasks, handleClearSelection]);
 
@@ -116,57 +133,24 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTasks, handleClearSelection]);
 
-  const handleClearSearch = () => {
-    setSearchFilter('');
-  };
-
-  const isAnyFilterActive = searchFilter !== '';
-
   return (
-    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+    <div className="flex-1 space-y-4 p-4 md:p-6">
       <Card className="shadow-lg rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-3xl font-bold tracking-tight">Archive</CardTitle>
-          <p className="text-muted-foreground">Review and manage your archived tasks.</p>
+        <CardHeader>
+          <CardTitle className="text-3xl font-bold">Archive</CardTitle>
+          <p className="text-muted-foreground">
+            Tasks you've archived. Restore or permanently delete them here.
+          </p>
         </CardHeader>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-              <Input
-                placeholder="Search archived tasks..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="pl-10 h-9"
-              />
-              {searchFilter && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-                  onClick={handleClearSearch}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </div>
-            {isAnyFilterActive && (
-              <Button variant="outline" onClick={handleClearSearch} className="gap-2 h-9">
-                <ListRestart className="h-4 w-4" />
-                Clear Search
-              </Button>
-            )}
-          </div>
-
+        <CardContent>
           <TaskList
             processedTasks={processedTasks}
             filteredTasks={filteredTasks}
             loading={tasksLoading}
-            handleAddTask={() => Promise.resolve()} // Add task not available in archive
-            updateTask={updateTask}
-            deleteTask={deleteTask}
+            handleAddTask={() => {}} // Not adding tasks directly in archive
+            updateTask={handleUpdateTask}
+            deleteTask={handleDeleteTask}
             bulkUpdateTasks={bulkUpdateTasks}
-            markAllTasksInSectionCompleted={() => Promise.resolve()} // Not applicable in archive
             sections={sections}
             createSection={createSection}
             updateSection={updateSection}
@@ -175,19 +159,20 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
             updateTaskParentAndOrder={updateTaskParentAndOrder}
             reorderSections={reorderSections}
             allCategories={allCategories}
-            setIsAddTaskOpen={() => {}} // Add task not available in archive
+            setIsAddTaskOpen={() => {}}
             onOpenOverview={handleOpenTaskOverview}
             currentDate={currentDate}
-            expandedSections={expandedSections}
-            expandedTasks={expandedTasks}
-            toggleTask={toggleTask}
-            toggleSection={toggleSection}
-            toggleAllSections={() => {}} // Not applicable in archive
+            expandedSections={{}}
+            expandedTasks={{}}
+            toggleTask={() => {}}
+            toggleSection={() => {}}
+            toggleAllSections={() => {}}
             setFocusTask={setFocusTask}
             doTodayOffIds={doTodayOffIds}
             toggleDoToday={toggleDoToday}
             scheduledTasksMap={scheduledTasksMap}
             isDemo={isDemo}
+            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           />
         </CardContent>
       </Card>
@@ -196,20 +181,33 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
         <BulkActionBar
           selectedCount={selectedTasks.size}
           onClearSelection={handleClearSelection}
-          onComplete={handleBulkRestore} // Use complete button for restore in archive
-          onArchive={() => {}} // Archive not applicable in archive
+          onComplete={handleBulkComplete}
+          onArchive={handleBulkArchive}
           onDelete={handleBulkDelete}
           onChangePriority={handleBulkChangePriority}
+        />
+      )}
+
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleOpenTaskEdit}
+          onUpdate={handleUpdateTask}
+          onDelete={handleDeleteTask}
+          sections={sections}
+          allTasks={processedTasks}
         />
       )}
 
       {taskToEdit && (
         <TaskDetailDialog
           task={taskToEdit}
-          isOpen={isTaskOverviewOpen}
-          onClose={() => setIsTaskOverviewOpen(false)}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
+          isOpen={!!taskToEdit}
+          onClose={handleCloseTaskEdit}
+          onUpdate={handleUpdateTask}
+          onDelete={handleDeleteTask}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}

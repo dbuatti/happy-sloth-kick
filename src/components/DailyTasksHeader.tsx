@@ -45,6 +45,8 @@ interface DailyTasksHeaderProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   onToggleAllSections: () => void;
+  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
+  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -79,11 +81,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   toggleDoToday,
   onToggleAllSections,
+  setIsManageCategoriesOpen, // Destructured
+  setIsManageSectionsOpen, // Destructured
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
-  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
