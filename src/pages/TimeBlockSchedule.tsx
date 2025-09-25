@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSettings } from '@/context/SettingsContext';
-import { useTasks } from '@/hooks/useTasks';
+import { CalendarDays } from 'lucide-react'; // Changed from CalendarWeek
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CalendarDays, CalendarWeek } from 'lucide-react';
+import { useTasks, Task } from '@/hooks/useTasks';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import TaskForm from '@/components/TaskForm';
+import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -13,48 +20,74 @@ interface TimeBlockScheduleProps {
 }
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const userId = demoUserId || user?.id;
+  const { settings } = useSettings();
+
   const [currentDate, setCurrentDate] = useState(new Date());
-  const { settings } = useSettings(); // Renamed to settings as it's used in ScheduleGridContent
   const [activeTab, setActiveTab] = useState('daily');
 
-  const {
-    processedTasks, // Used for TaskOverviewDialog
-    updateTask, // Used for TaskOverviewDialog
-    deleteTask, // Used for TaskOverviewDialog
-    sections, // Used for TaskOverviewDialog
-    allCategories, // Used for TaskOverviewDialog
-    createSection, // Used for TaskOverviewDialog
-    updateSection, // Used for TaskOverviewDialog
-    deleteSection, // Used for TaskOverviewDialog
-    updateSectionIncludeInFocusMode, // Used for TaskOverviewDialog
-  } = useTasks({ currentDate, userId: demoUserId });
-
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<any>(null);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const handleOpenTaskOverview = (task: any) => {
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
+
+  const {
+    processedTasks,
+    sections,
+    allCategories,
+    handleAddTask,
+    updateTask,
+    deleteTask,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+  } = useTasks({ currentDate, userId, viewMode: 'daily' });
+
+  const { appointments: allAppointments } = useAllAppointments();
+
+  const scheduledTasksMap = new Map<string, Appointment>();
+  allAppointments.forEach(app => {
+    if (app.task_id) {
+      scheduledTasksMap.set(app.task_id, app);
+    }
+  });
+
+  const handleOpenTaskOverview = (task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   };
 
+  const handleEditTaskClick = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleNewTaskSubmit = async (taskData: any) => {
+    const success = await handleAddTask(taskData);
+    if (success) {
+      setIsAddTaskOpen(false);
+    }
+    return success;
+  };
+
   return (
-    <div className="flex-1 overflow-auto p-4 lg:p-6">
-      <Card className="w-full shadow-lg rounded-xl">
+    <div className="flex-1 flex flex-col p-4 md:p-6">
+      <Card className="flex-1 flex flex-col shadow-lg rounded-xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-2xl font-bold flex items-center gap-2">
-            <CalendarDays className="h-6 w-6 text-primary" /> Schedule
+          <CardTitle className="text-3xl font-bold flex items-center gap-2">
+            <CalendarDays className="h-7 w-7 text-primary" /> Schedule
           </CardTitle>
         </CardHeader>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full px-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="daily" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" /> Daily
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="flex items-center gap-2">
-              <CalendarWeek className="h-4 w-4" /> Weekly
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="daily" className="mt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <div className="px-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="daily">Daily</TabsTrigger>
+              <TabsTrigger value="weekly">Weekly</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="daily" className="flex-1 flex flex-col mt-0">
             <DailyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -63,7 +96,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               onOpenTaskOverview={handleOpenTaskOverview}
             />
           </TabsContent>
-          <TabsContent value="weekly" className="mt-4">
+          <TabsContent value="weekly" className="flex-1 flex flex-col mt-0">
             <WeeklyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -74,18 +107,45 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           </TabsContent>
         </Tabs>
       </Card>
+
+      <FloatingAddTaskButton onClick={() => setIsAddTaskOpen(true)} isDemo={isDemo} />
+
       {taskToOverview && (
         <TaskOverviewDialog
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleOpenTaskOverview} // Pass the same handler for edit
+          onEditClick={handleEditTaskClick}
           onUpdate={updateTask}
           onDelete={deleteTask}
           sections={sections}
           allTasks={processedTasks}
         />
       )}
+
+      <Dialog open={isAddTaskOpen} onOpenChange={setIsAddTaskOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+            <DialogDescription className="sr-only">
+              Fill in the details to add a new task.
+            </DialogDescription>
+          </DialogHeader>
+          <TaskForm
+            onSave={handleNewTaskSubmit}
+            onCancel={() => setIsAddTaskOpen(false)}
+            sections={sections}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            autoFocus
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            allTasks={processedTasks}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
