@@ -154,12 +154,16 @@ export const useTaskProcessing = ({
             }
         }
 
-        // Include 'to-do' tasks that are due today or before, or created today or before
+        // Include 'to-do' tasks
         if (task.status === 'to-do') {
             const createdAt = startOfDay(parseISO(task.created_at));
             const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
-            const isRelevantByDate = (dueDate && !isAfter(dueDate, todayStart)) || (!dueDate && !isAfter(createdAt, todayStart));
+            const isCreatedOnEffectiveDate = isSameDay(createdAt, effectiveCurrentDate);
+            const isDueOnEffectiveDateOrPast = dueDate && !isAfter(dueDate, effectiveCurrentDate);
+            const isUndatedAndCreatedOnEffectiveDateOrPast = !dueDate && !isAfter(createdAt, effectiveCurrentDate);
+
+            const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
 
             // Check if the task is marked as "Do Today" (not in doTodayOffIds)
             const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);

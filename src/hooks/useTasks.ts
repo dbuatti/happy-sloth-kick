@@ -472,11 +472,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
             const createdAt = startOfDay(parseISO(task.created_at));
             const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
 
-            if (dueDate && !isAfter(dueDate, todayStart)) {
-                return true;
-            }
-            
-            if (!dueDate && !isAfter(createdAt, todayStart)) {
+            const isCreatedOnEffectiveDate = isSameDay(createdAt, effectiveCurrentDate);
+            const isDueOnEffectiveDateOrPast = dueDate && !isAfter(dueDate, effectiveCurrentDate);
+            const isUndatedAndCreatedOnEffectiveDateOrPast = !dueDate && !isAfter(createdAt, effectiveCurrentDate);
+
+            const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
+
+            if (isRelevantByDate) {
                 return true;
             }
         }

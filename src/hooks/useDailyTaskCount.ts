@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { startOfDay, parseISO, isSameDay, isBefore, format, isValid } from 'date-fns'; // Added isValid
+import { startOfDay, parseISO, isSameDay, isBefore, format, isValid, isAfter } from 'date-fns'; // Added isValid, isAfter
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Define a minimal Task type for this hook, including necessary fields for filtering
@@ -111,10 +111,15 @@ export const useDailyTaskCount = (props?: { userId?: string }) => {
         }
         processedOriginalIds.add(originalId);
       } else {
-        const isTaskCreatedOnCurrentDate = isSameDay(taskCreatedAt, todayStart);
-        if (isTaskCreatedOnCurrentDate && task.status !== 'archived') {
-          relevantTasksForToday.push(task);
-        } else if (isBefore(taskCreatedAt, todayStart) && task.status === 'to-do') {
+        // New logic for non-recurring tasks
+        const isCreatedToday = isSameDay(taskCreatedAt, todayStart);
+        const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
+        const isDueTodayOrPast = dueDate && !isAfter(dueDate, todayStart);
+        const isUndatedAndCreatedTodayOrPast = !dueDate && !isAfter(taskCreatedAt, todayStart);
+
+        const isRelevantByDate = isCreatedToday || isDueTodayOrPast || isUndatedAndCreatedTodayOrPast;
+
+        if (isRelevantByDate && task.status !== 'archived') {
           relevantTasksForToday.push(task);
         }
       }
