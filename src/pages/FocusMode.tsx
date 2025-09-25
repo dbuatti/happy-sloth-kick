@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTasks, Task } from '@/hooks/useTasks';
+import React, { useState, useMemo } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useTasks, Task, TaskSection, Category } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
-import FocusToolsPanel from '@/components/FocusToolsPanel';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
+import FocusToolsPanel from '@/components/FocusToolsPanel';
+import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import { CheckCircle2 } from 'lucide-react'; // Imported CheckCircle2
 import { Appointment } from '@/hooks/useAppointments';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
 
 interface FocusModeProps {
   demoUserId?: string;
@@ -16,27 +18,29 @@ interface FocusModeProps {
 const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
   const { user } = useAuth();
   const userId = demoUserId || user?.id;
-
   const [currentDate] = useState(new Date());
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  // Removed unused isTaskOverviewOpen and taskToOverview states
   const [isFullScreenFocusViewOpen, setIsFullScreenFocusViewOpen] = useState(false);
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
 
   const {
     processedTasks,
     filteredTasks,
+    nextAvailableTask,
     loading,
     handleAddTask,
     updateTask,
     deleteTask,
     sections,
     allCategories,
-    nextAvailableTask,
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
   } = useTasks({ currentDate, userId, viewMode: 'focus' });
 
   const { appointments: allAppointments } = useAllAppointments();
 
-  const scheduledTasksMap = React.useMemo(() => {
+  const scheduledTasksMap = useMemo(() => {
     const map = new Map<string, Appointment>();
     allAppointments.forEach(app => {
       if (app.task_id) {
@@ -46,74 +50,64 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     return map;
   }, [allAppointments]);
 
-  const handleOpenTaskOverview = useCallback((task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
-  }, []);
+  const handleOpenFocusView = () => {
+    setIsFullScreenFocusViewOpen(true);
+  };
 
-  const handleMarkDoneFromFocusView = async () => {
+  const handleMarkDoneFromFullScreen = async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
       setIsFullScreenFocusViewOpen(false);
     }
   };
 
-  const handleOpenFocusView = () => {
-    setIsFullScreenFocusViewOpen(true);
+  const handleOpenTaskOverview = (task: Task) => {
+    // This function is passed to FocusToolsPanel, which then uses TaskOverviewDialog
+    // The state for TaskOverviewDialog is managed within FocusToolsPanel
+    // So, no need for isTaskOverviewOpen and taskToOverview here.
+    console.log("Opening task overview for:", task.description);
   };
 
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+    <div className="flex-1 p-4 overflow-auto">
       <Card className="w-full shadow-lg rounded-xl">
         <CardHeader className="pb-2">
           <CardTitle className="text-2xl font-bold">Focus Mode</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <h2 className="text-xl font-semibold mb-4">Your Focus Tasks</h2>
-              {loading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="rounded-xl p-4 bg-muted/50 animate-pulse h-24" />
-                  ))}
+          <div className="flex flex-col items-center justify-center space-y-6 py-8">
+            {nextAvailableTask ? (
+              <>
+                <h2 className="text-4xl font-extrabold text-center tracking-tight">
+                  Your Next Focus:
+                </h2>
+                <div className="flex items-center gap-2">
+                  <div className={`w-4 h-4 rounded-full ${nextAvailableTask.priority === 'urgent' ? 'bg-priority-urgent' : nextAvailableTask.priority === 'high' ? 'bg-priority-high' : nextAvailableTask.priority === 'medium' ? 'bg-priority-medium' : 'bg-priority-low'}`} />
+                  <p className="text-2xl font-semibold text-foreground">
+                    {nextAvailableTask.description}
+                  </p>
                 </div>
-              ) : filteredTasks.length === 0 ? (
-                <div className="text-center text-muted-foreground py-8">
-                  No tasks currently in focus. Add some tasks or adjust your sections!
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredTasks.map(task => (
-                    <div
-                      key={task.id}
-                      className="p-4 rounded-xl bg-card shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => handleOpenTaskOverview(task)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${task.priority === 'urgent' ? 'bg-red-500' : task.priority === 'high' ? 'bg-orange-500' : task.priority === 'medium' ? 'bg-yellow-500' : 'bg-blue-500'}`} />
-                        <span className="font-medium text-lg">{task.description}</span>
-                      </div>
-                      {task.status === 'completed' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="lg:col-span-1">
-              <FocusToolsPanel
-                nextAvailableTask={nextAvailableTask}
-                allTasks={processedTasks}
-                filteredTasks={filteredTasks}
-                updateTask={updateTask}
-                onDeleteTask={deleteTask}
-                sections={sections}
-                allCategories={allCategories}
-                onOpenDetail={handleOpenTaskOverview}
-                handleAddTask={handleAddTask}
-                currentDate={currentDate}
-              />
-            </div>
+                <button
+                  onClick={handleOpenFocusView}
+                  className="px-6 py-3 bg-primary text-primary-foreground rounded-lg text-lg font-semibold shadow-md hover:bg-primary/90 transition-colors"
+                >
+                  Start Deep Work
+                </button>
+              </>
+            ) : (
+              <div className="text-center text-muted-foreground text-lg py-8">
+                <p>No tasks currently set for focus.</p>
+                <p>Add some tasks or set a task as focus to begin!</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -122,9 +116,24 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
         <FullScreenFocusView
           taskDescription={nextAvailableTask.description}
           onClose={() => setIsFullScreenFocusViewOpen(false)}
-          onMarkDone={handleMarkDoneFromFocusView}
+          onMarkDone={handleMarkDoneFromFullScreen}
         />
       )}
+
+      <FocusPanelDrawer
+        isOpen={isFocusPanelOpen}
+        onClose={() => setIsFocusPanelOpen(false)}
+        nextAvailableTask={nextAvailableTask}
+        allTasks={processedTasks}
+        filteredTasks={filteredTasks}
+        updateTask={updateTask}
+        onOpenDetail={handleOpenTaskOverview}
+        onDeleteTask={deleteTask}
+        sections={sections}
+        allCategories={allCategories}
+        handleAddTask={handleAddTask}
+        currentDate={currentDate}
+      />
     </div>
   );
 };
