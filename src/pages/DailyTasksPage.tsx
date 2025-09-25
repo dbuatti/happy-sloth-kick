@@ -58,6 +58,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     toggleAllDoToday,
     dailyProgress,
     archiveAllCompletedTasks,
+    markAllTasksInSectionCompleted, // Destructure the correct function
   } = useTasks({ currentDate, viewMode: 'daily', userId });
 
   const { appointments: allAppointments } = useAllAppointments();
@@ -217,7 +218,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           updateTask={updateTask}
           deleteTask={deleteTask}
           bulkUpdateTasks={bulkUpdateTasks}
-          markAllTasksInSectionCompleted={markAllTasksInSectionInSectionCompleted}
+          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted} {/* Corrected prop name here */}
           sections={sections}
           createSection={createSection}
           updateSection={updateSection}
