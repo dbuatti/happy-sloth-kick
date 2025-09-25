@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { format, parseISO, setHours, setMinutes } from 'date-fns';
+import { parseISO, setHours, setMinutes } from 'date-fns'; // Removed 'format'
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -111,8 +111,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   const mealDate = parseISO(meal.meal_date);
 
   const mealTime = MEAL_TIMES[meal.meal_type];
-  const mealDateTime = setMinutes(setHours(mealDate, mealTime.hour), mealTime.minute);
-  // const formattedTime = format(mealDateTime, 'h:mm a'); // Removed as it was unused
+  // const mealDateTime = setMinutes(setHours(mealDate, mealTime.hour), mealTime.minute); // Removed as it was unused
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
