@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
@@ -532,15 +532,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     bulkUpdateTasks,
     bulkDeleteTasks,
     searchFilter,
-    setSearchFilter: (value: string) => setSearchFilter(value), // Added setter
     statusFilter,
-    setStatusFilter: (value: string) => setStatusFilter(value), // Added setter
     categoryFilter,
-    setCategoryFilter: (value: string) => setCategoryFilter(value), // Added setter
     priorityFilter,
-    setPriorityFilter: (value: string) => setPriorityFilter(value), // Added setter
     sectionFilter,
-    setSectionFilter: (value: string) => setSectionFilter(value), // Added setter
     sections,
     allCategories,
     updateTaskParentAndOrder,

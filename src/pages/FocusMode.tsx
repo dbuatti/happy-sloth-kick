@@ -1,25 +1,28 @@
-import React, { useState } from 'react';
-import { useTasks, Task } from '@/hooks/useTasks';
+import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
+import { useTasks, Task } from '@/hooks/useTasks';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
-import useKeyboardShortcuts from '@/hooks/useKeyboardShortcuts';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 interface FocusModeProps {
+  isDemo?: boolean;
   demoUserId?: string;
 }
 
-const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
+const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-  const { settings, updateSettings } = useSettings();
+  const { settings } = useSettings();
   const [currentDate] = useState(new Date());
+  const navigate = useNavigate();
 
   const {
-    processedTasks,
-    filteredTasks,
     nextAvailableTask,
+    allTasks,
+    filteredTasks,
     updateTask,
     deleteTask,
     sections,
@@ -28,71 +31,67 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
-  } = useTasks({ currentDate, userId, viewMode: 'focus' });
+  } = useTasks({ currentDate, viewMode: 'focus', userId: demoUserId });
 
-  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
-  const [isFullScreenFocus, setIsFullScreenFocus] = useState(false);
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true);
 
-  const handleOpenTaskOverview = (task: Task) => {
-    // In focus mode, we don't open a separate dialog, but rather the panel
-    // and potentially set the task as the next available task.
-    // For now, we'll just open the panel.
-    setIsFocusPanelOpen(true);
-    // If we wanted to highlight this task in the panel, we'd need more state.
-  };
-
-  const handleOpenFocusView = () => {
-    if (nextAvailableTask) {
-      setIsFullScreenFocus(true);
-    }
-  };
-
-  const handleCloseFocusView = () => {
-    setIsFullScreenFocus(false);
-  };
-
-  const handleMarkDoneFromFullScreen = async () => {
+  const handleMarkDone = async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
-      setIsFullScreenFocus(false);
+      setFocusTask(null); // Clear focus after completing
     }
   };
 
-  useKeyboardShortcuts({
-    'f': () => handleOpenFocusView(),
-    'escape': () => handleCloseFocusView(),
-    'd': () => handleMarkDoneFromFullScreen(),
-  });
+  const handleCloseFocusView = useCallback(() => {
+    setFocusTask(null); // Clear focus when closing the full-screen view
+  }, [setFocusTask]);
 
-  if (isFullScreenFocus && nextAvailableTask) {
-    return (
-      <FullScreenFocusView
-        taskDescription={nextAvailableTask.description}
-        onClose={handleCloseFocusView}
-        onMarkDone={handleMarkDoneFromFullScreen}
-      />
-    );
-  }
+  const handleOpenDetail = useCallback((task: Task) => {
+    // In focus mode, we don't open a separate dialog, but rather the panel
+    // This function is passed to FocusToolsPanel, which then uses it to open TaskOverviewDialog
+    // So, this is just a passthrough.
+    // The TaskOverviewDialog will be rendered inside the FocusPanelDrawer.
+    // For now, we'll just ensure the panel is open and the task is set for overview.
+    setIsFocusPanelOpen(true);
+    // The FocusToolsPanel will handle setting the task for its internal TaskOverviewDialog
+  }, []);
+
+  const handleExitFocusMode = () => {
+    setFocusTask(null); // Clear focus task when exiting
+    navigate(isDemo ? '/demo/dashboard' : '/dashboard');
+  };
 
   return (
-    <div className="flex-1 flex flex-col p-4 overflow-hidden">
-      <div className="flex-1 flex items-center justify-center">
-        <h2 className="text-2xl font-bold text-center text-muted-foreground">
-          Focus Mode is active.
-        </h2>
-      </div>
+    <div className="relative h-screen w-screen overflow-hidden">
+      {nextAvailableTask ? (
+        <FullScreenFocusView
+          taskDescription={nextAvailableTask.description}
+          onClose={handleCloseFocusView}
+          onMarkDone={handleMarkDone}
+        />
+      ) : (
+        <div className="flex items-center justify-center h-full w-full bg-accent text-accent-foreground p-8 text-center">
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">No Focus Task Set</h1>
+            <p className="text-xl md:text-2xl">Select a task from the panel to begin focusing.</p>
+            <Button size="lg" onClick={handleExitFocusMode} className="mt-8">
+              <X className="mr-2 h-6 w-6" /> Exit Focus Mode
+            </Button>
+          </div>
+        </div>
+      )}
 
       <FocusPanelDrawer
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
         nextAvailableTask={nextAvailableTask}
-        allTasks={processedTasks}
+        allTasks={allTasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
+        onOpenDetail={handleOpenDetail}
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
-        onOpenDetail={handleOpenTaskOverview}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
         setFocusTask={setFocusTask}
