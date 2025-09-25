@@ -34,12 +34,25 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Se
 };
 
 export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
+  console.log(`fetchTasks: Querying for user_id: ${userId}`);
   const { data, error } = await supabase
     .from('tasks')
     .select('*') // Select all columns, category_color will be added in useTasks
     .eq('user_id', userId);
 
-  if (error) throw error;
+  if (error) {
+    console.error('fetchTasks: Supabase query error:', error);
+    throw error;
+  }
   
+  const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
+  const foundTargetTask = (data || []).find(task => task.id === targetTaskId);
+  if (foundTargetTask) {
+    console.log(`fetchTasks: Target task ${targetTaskId} WAS found in Supabase response!`, foundTargetTask);
+  } else {
+    console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in Supabase response for user ${userId}.`);
+  }
+  console.log('fetchTasks: Full data received from Supabase:', data);
+
   return data || [];
 };
