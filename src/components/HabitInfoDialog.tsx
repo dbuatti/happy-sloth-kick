@@ -5,6 +5,7 @@ import { HabitWithLogs } from '@/hooks/useHabits';
 import { format, parseISO } from 'date-fns';
 import { Flame, CalendarDays, Target, Clock, Repeat } from 'lucide-react';
 import HabitIconDisplay from './HabitIconDisplay';
+import { getUnitDisplay } from '@/lib/utils/habit-helpers'; // Import from habit-helpers
 
 interface HabitInfoDialogProps {
   isOpen: boolean;
@@ -14,28 +15,6 @@ interface HabitInfoDialogProps {
 
 const HabitInfoDialog: React.FC<HabitInfoDialogProps> = ({ isOpen, onClose, habit }) => {
   if (!habit) return null;
-
-  const getUnitDisplay = (value: number | null, unit: string | null) => {
-    if (value === null || unit === null || unit === '') return '';
-    
-    let formattedUnit = unit;
-    if (value > 1 && !unit.endsWith('s') && unit !== 'reps' && unit !== 'times') {
-      formattedUnit += 's';
-    }
-
-    switch (unit.toLowerCase()) {
-      case 'minutes': return `${value} min`;
-      case 'kilometers': return `${value} km`;
-      case 'miles': return `${value} mi`;
-      case 'liters': return `${value} L`;
-      case 'milliliters': return `${value} ml`;
-      case 'glasses': return `${value} glasses`;
-      case 'reps': return `${value} reps`;
-      case 'pages': return `${value} pages`;
-      case 'times': return `${value} times`;
-      default: return `${value} ${formattedUnit}`;
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
