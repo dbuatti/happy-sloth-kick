@@ -68,46 +68,53 @@ export const useTaskProcessing = ({
         
         let relevantInstance: Omit<Task, 'category_color'> | null = null;
 
-        // 1. Check for an instance completed today
+        // 1. Look for an instance that was completed on the effectiveCurrentDate
         relevantInstance = sortedInstances.find(t => 
-            t.completed_at && isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
+            t.status === 'completed' && t.completed_at && isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
         ) || null;
 
-        // 2. If not found, check for an instance created today (and not yet completed/archived)
+        // 2. If no completed instance for today, look for an active (to-do) instance that was created today.
         if (!relevantInstance) {
             relevantInstance = sortedInstances.find(t => 
-                isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'completed' && t.status !== 'archived'
+                t.status === 'to-do' && isSameDay(startOfDay(parseISO(t.created_at)), todayStart)
             ) || null;
         }
 
-        // 3. If still not found, look for an uncompleted instance from before today
+        // 3. If still no instance for today, look for an active (to-do) instance from a previous day (carry-over).
+        //    We pick the most recent one if multiple exist.
         if (!relevantInstance) {
-          relevantInstance = sortedInstances.find(t => 
-            isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do'
-          ) || null;
+            relevantInstance = sortedInstances.find(t => 
+                t.status === 'to-do' && isBefore(startOfDay(parseISO(t.created_at)), todayStart)
+            ) || null;
         }
 
-        // If still no relevant instance (real or carried over), create a virtual one if applicable
+        // 4. If no real instance (completed today, created today, or carried over) is found,
+        //    then consider creating a virtual task for today if it's a recurring task.
         if (!relevantInstance) {
-          const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
-          const baseTaskForVirtual = mostRecentRealInstance || templateTask;
+          const templateCreatedAt = startOfDay(parseISO(templateTask.created_at)); // Normalize template creation date
+          
+          // Only generate a virtual task if the effectiveCurrentDate is on or after the template's creation date
+          if (isBefore(todayStart, templateCreatedAt)) {
+              // The recurring task hasn't "started" yet relative to today.
+              // Do not generate a virtual task.
+              return; 
+          }
 
-          const templateCreatedAt = parseISO(templateTask.created_at);
           const isDailyMatch = templateTask.recurring_type === 'daily';
           const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
           const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getUTCDate() === templateCreatedAt.getUTCDate();
 
           if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
             const virtualTask: Task = {
-              ...baseTaskForVirtual,
+              ...templateTask, // Use templateTask as base for virtual
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
               created_at: todayStart.toISOString(),
-              status: 'to-do', // Virtual tasks are always 'to-do' initially
+              status: 'to-do',
               original_task_id: templateTask.id,
-              remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
-              due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
-              category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
-              completed_at: null, // Virtual tasks are never completed_at initially
+              remind_at: templateTask.remind_at ? format(parseISO(templateTask.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
+              due_date: templateTask.due_date ? todayStart.toISOString() : null, // If template has due date, virtual task is due today
+              category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray',
+              completed_at: null,
             };
             allProcessedTasks.push(virtualTask);
           }
