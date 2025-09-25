@@ -4,7 +4,7 @@ import { Task, TaskSection } from './useTasks'; // Import types
 import { UserSettings } from './useUserSettings'; // Import UserSettings type
 
 interface UseTaskProcessingProps {
-  rawTasks: Omit<Task, 'category_color'>[];
+  rawTasks: Omit<Task, 'category_color' | 'isDoTodayOff'>[];
   categoriesMap: Map<string, string>;
   effectiveCurrentDate: Date;
   viewMode: 'daily' | 'archive' | 'focus';
@@ -52,8 +52,8 @@ export const useTaskProcessing = ({
       return true;
     });
 
-    const taskSeriesMap = new Map<string, Omit<Task, 'category_color'>[]>();
-    validRawTasks.forEach((task: Omit<Task, 'category_color'>) => { // Use validRawTasks here
+    const taskSeriesMap = new Map<string, Omit<Task, 'category_color' | 'isDoTodayOff'>[]>();
+    validRawTasks.forEach((task: Omit<Task, 'category_color' | 'isDoTodayOff'>) => { // Use validRawTasks here
       const seriesKey = task.original_task_id || task.id;
       if (!taskSeriesMap.has(seriesKey)) {
         taskSeriesMap.set(seriesKey, []);
@@ -65,21 +65,29 @@ export const useTaskProcessing = ({
       if (processedSeriesKeys.has(seriesKey)) return;
       processedSeriesKeys.add(seriesKey);
 
-      const templateTask: Omit<Task, 'category_color'> | undefined = validRawTasks.find((t: Omit<Task, 'category_color'>) => t.id === seriesKey);
+      const templateTask: Omit<Task, 'category_color' | 'isDoTodayOff'> | undefined = validRawTasks.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === seriesKey);
 
       if (!templateTask) {
         seriesInstances.forEach(orphanTask => {
-            allProcessedTasks.push({ ...orphanTask, category_color: categoriesMapLocal.get(orphanTask.category || '') || 'gray' });
+            allProcessedTasks.push({ 
+              ...orphanTask, 
+              category_color: categoriesMapLocal.get(orphanTask.category || '') || 'gray',
+              isDoTodayOff: doTodayOffIds.has(orphanTask.original_task_id || orphanTask.id) && orphanTask.recurring_type === 'none',
+            });
         });
         return;
       }
 
       if (templateTask.recurring_type === 'none') {
-        allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray' });
+        allProcessedTasks.push({ 
+          ...templateTask, 
+          category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray',
+          isDoTodayOff: doTodayOffIds.has(templateTask.original_task_id || templateTask.id) && templateTask.recurring_type === 'none',
+        });
       } else { // Recurring task
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
         
-        let relevantInstance: Omit<Task, 'category_color'> | null = null;
+        let relevantInstance: Omit<Task, 'category_color' | 'isDoTodayOff'> | null = null;
 
         // 1. Prioritize an instance completed today
         relevantInstance = sortedInstances.find(t => 
@@ -126,16 +134,21 @@ export const useTaskProcessing = ({
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
               completed_at: null,
+              isDoTodayOff: false, // Recurring tasks are never "off" via doTodayOffIds
             };
             allProcessedTasks.push(virtualTask);
           }
         } else {
-          allProcessedTasks.push({ ...relevantInstance, category_color: categoriesMapLocal.get(relevantInstance.category || '') || 'gray' });
+          allProcessedTasks.push({ 
+            ...relevantInstance, 
+            category_color: categoriesMapLocal.get(relevantInstance.category || '') || 'gray',
+            isDoTodayOff: false, // Recurring tasks are never "off" via doTodayOffIds
+          });
         }
       }
     });
     return allProcessedTasks;
-  }, [rawTasks, todayStart, categoriesMap]);
+  }, [rawTasks, todayStart, categoriesMap, doTodayOffIds]);
 
   const filtered = useMemo(() => {
     let filteredTasks = processedTasks;
@@ -165,10 +178,9 @@ export const useTaskProcessing = ({
 
             const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
 
-            // Check if the task is marked as "Do Today" (not in doTodayOffIds)
-            const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
-
-            if (isRelevantByDate && isDoToday) {
+            // We no longer filter out based on isDoToday here.
+            // The `isDoTodayOff` property will be used by the UI for styling.
+            if (isRelevantByDate) {
                 return true;
             }
         }
@@ -244,9 +256,7 @@ export const useTaskProcessing = ({
     viewMode,
     effectiveCurrentDate,
     userSettings,
-    todayStart,
     sections,
-    doTodayOffIds,
   ]);
 
   return { processedTasks, filteredTasks: filtered };

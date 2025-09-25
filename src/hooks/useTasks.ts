@@ -52,6 +52,7 @@ export interface Task {
   parent_task_id: string | null;
   link: string | null;
   image_url: string | null;
+  isDoTodayOff?: boolean; // Added for UI styling
 }
 
 export interface TaskSection {
@@ -70,7 +71,7 @@ export interface Category {
   created_at: string;
 }
 
-export type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
+export type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color' | 'isDoTodayOff'>>;
 
 export interface NewTaskData {
   description: string;
@@ -288,7 +289,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order: number | null } = {
+    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color' | 'isDoTodayOff'> & { order: number | null } = {
       ...newTaskData,
       description: newTaskData.description || '',
       status: newTaskData.status || 'to-do',
