@@ -74,20 +74,20 @@ export const useTaskProcessing = ({
           t.completed_at && 
           isValid(parseISO(t.completed_at)) && 
           isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
-        );
+        ) ?? null; // Fixed: Add ?? null
 
         // 2. If not found, look for an instance created today (to-do or other status, but not archived)
         if (!relevantInstance) {
           relevantInstance = sortedInstances.find(t => 
             isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'archived'
-          );
+          ) ?? null; // Fixed: Add ?? null
         }
 
         // 3. If still not found, look for an uncompleted instance carried over from before today
         if (!relevantInstance) {
           relevantInstance = sortedInstances.find(t => 
             isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do'
-          );
+          ) ?? null; // Fixed: Add ?? null
         }
 
         if (!relevantInstance) {
