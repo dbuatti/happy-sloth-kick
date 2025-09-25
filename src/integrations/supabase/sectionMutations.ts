@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/toast';
 import { QueryClient } from '@tanstack/react-query';
-import { Task, TaskSection } from '@/hooks/useTasks';
+import { TaskSection } from '@/hooks/useTasks'; // Removed unused 'Task' import
 import { v4 as uuidv4 } from 'uuid';
 
 // Define MutationContext for section mutations

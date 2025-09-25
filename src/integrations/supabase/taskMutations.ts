@@ -1,8 +1,9 @@
 import { showSuccess, showError } from '@/utils/toast';
-import { format, parseISO, startOfDay, addDays, addWeeks, addMonths, setHours, setMinutes, isValid } from 'date-fns';
+import { format, parseISO, startOfDay, addDays, addMonths, setHours, setMinutes, isValid } from 'date-fns';
 import { QueryClient } from '@tanstack/react-query';
 import { Task, NewTaskData, TaskSection } from '@/hooks/useTasks';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client'; // Import supabase
 
 // Define MutationContext
 interface MutationContext {
@@ -233,7 +234,7 @@ export const bulkUpdateTasksMutation = async (
     showSuccess('Tasks updated successfully!');
     invalidateTasksQueries();
 
-    data.forEach(task => {
+    data.forEach((task: Task) => {
       if (task.remind_at && task.status === 'to-do') {
         const d = parseISO(task.remind_at);
         if (isValid(d)) addReminder(task.id, `Reminder: ${task.description}`, d);
@@ -266,7 +267,7 @@ export const bulkDeleteTasksMutation = async (
 
     if (fetchError) throw fetchError;
 
-    const allIdsToDelete = tasksToDelete.map(t => t.id);
+    const allIdsToDelete = tasksToDelete.map((t: { id: string }) => t.id);
 
     const { error } = await supabase
       .from('tasks')
@@ -278,7 +279,7 @@ export const bulkDeleteTasksMutation = async (
 
     showSuccess('Tasks deleted successfully!');
     invalidateTasksQueries();
-    allIdsToDelete.forEach(id => dismissReminder(id));
+    allIdsToDelete.forEach((id: string) => dismissReminder(id));
 
     return true;
   } catch (error: any) {
@@ -305,7 +306,7 @@ export const archiveAllCompletedTasksMutation = async (
 
     if (fetchError) throw fetchError;
 
-    idsToArchive = completedTasks.map(task => task.id); // Assign to the outer-scoped variable
+    idsToArchive = completedTasks.map((task: { id: string }) => task.id); // Assign to the outer-scoped variable
     if (idsToArchive.length === 0) {
       showSuccess('No completed tasks to archive.');
       return;
@@ -323,7 +324,7 @@ export const archiveAllCompletedTasksMutation = async (
 
     showSuccess('All completed tasks archived!');
     invalidateTasksQueries();
-    completedTasks.forEach(task => dismissReminder(task.id));
+    completedTasks.forEach((task: { id: string }) => dismissReminder(task.id));
   } catch (error: any) {
     showError('Failed to archive completed tasks.');
     console.error('Error archiving completed tasks:', error.message);
@@ -359,7 +360,7 @@ export const markAllTasksInSectionCompletedMutation = async (
 
     if (fetchError) throw fetchError;
 
-    idsToComplete = tasksToComplete.map(task => task.id); // Assign to the outer-scoped variable
+    idsToComplete = tasksToComplete.map((task: { id: string }) => task.id); // Assign to the outer-scoped variable
     if (idsToComplete.length === 0) {
       showSuccess('No pending tasks in this section to mark as completed.');
       return;
@@ -377,7 +378,7 @@ export const markAllTasksInSectionCompletedMutation = async (
 
     showSuccess('All tasks in section marked as completed!');
     invalidateTasksQueries();
-    tasksToComplete.forEach(task => dismissReminder(task.id));
+    tasksToComplete.forEach((task: { id: string }) => dismissReminder(task.id));
   } catch (error: any) {
     showError('Failed to mark all tasks in section as completed.');
     console.error('Error marking all tasks in section as completed:', error.message);
@@ -524,7 +525,7 @@ export const toggleAllDoTodayMutation = async (
 
     if (allAreOff) {
       // All are off, so turn them all ON (delete from log)
-      const idsToRemove = tasksToToggle.map(task => task.original_task_id || task.id);
+      const idsToRemove = tasksToToggle.map((task: Task) => task.original_task_id || task.id);
       const { error } = await supabase
         .from('do_today_off_log')
         .delete()
@@ -537,7 +538,7 @@ export const toggleAllDoTodayMutation = async (
       // Some are on, some are off, or all are on. Turn them all OFF (insert into log)
       const idsToAdd = tasksToToggle
         .filter(task => !doTodayOffIds.has(task.original_task_id || task.id))
-        .map(task => task.original_task_id || task.id);
+        .map((task: Task) => task.original_task_id || task.id);
 
       if (idsToAdd.length > 0) {
         const { error } = await supabase
