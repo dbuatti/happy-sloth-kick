@@ -1,8 +1,11 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Sparkles, Users, LayoutGrid } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useDashboardData, CustomCard } from '@/hooks/useDashboardData';
+import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { usePeopleMemory } from '@/hooks/usePeopleMemory';
+import { useUserSettings, UserSettings } from '@/hooks/useUserSettings'; // Import UserSettings type
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
@@ -12,29 +15,11 @@ import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
 import PomodoroCard from '@/components/dashboard/PomodoroCard';
 import AddCustomCardDialog from '@/components/dashboard/AddCustomCardDialog';
 import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
-import { useDashboardData, CustomCard as CustomCardType } from '@/hooks/useDashboardData';
-import { useUserSettings } from '@/hooks/useUserSettings';
-
-import {
-  DndContext,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  UniqueIdentifier,
-  PointerSensor,
-  closestCorners,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-} from '@dnd-kit/sortable';
-import { createPortal } from 'react-dom';
+import { DndContext, DragEndEvent, closestCorners } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
-import CustomCard from '@/components/dashboard/CustomCard'; // Ensure CustomCard is imported for DragOverlay
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { cn } from '@/lib/utils';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -43,149 +28,95 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const userId = demoUserId || user?.id;
+  const currentUserId = demoUserId || user?.id;
 
-  const { settings, updateSettings, loading: settingsLoading } = useUserSettings({ userId: demoUserId });
   const {
+    loading: dashboardDataLoading,
     weeklyFocus,
     customCards,
-    loading: dashboardDataLoading,
+    settings: dashboardSettings,
     updateWeeklyFocus,
-    addCustomCard,
     updateCustomCard,
-    deleteCustomCard,
     reorderCustomCards,
-  } = useDashboardData({ userId: demoUserId });
+  } = useDashboardData({ userId: currentUserId });
 
-  const loading = settingsLoading || dashboardDataLoading;
+  const { settings: userSettings, loading: userSettingsLoading, updateSettings } = useUserSettings({ userId: currentUserId });
+  const { loading: peopleLoading } = usePeopleMemory({ userId: currentUserId });
+  const { loading: statsLoading } = useDashboardStats({ userId: currentUserId });
+
+  const loading = dashboardDataLoading || userSettingsLoading || peopleLoading || statsLoading;
 
   const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
   const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
 
-  // DND state
-  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  const [activeCardData, setActiveCardData] = useState<CustomCardType | null>(null); // Only for custom cards
+  const visibleCards = useMemo(() => {
+    if (!userSettings || !dashboardSettings) return [];
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-      enabled: !isDemo,
-    })
-  );
+    const builtInCards = [
+      { key: 'dailyBriefingVisible', component: <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} /> },
+      { key: 'dailyScheduleVisible', component: <DailySchedulePreview /> },
+      { key: 'weeklyFocusVisible', component: <WeeklyFocusCard weeklyFocus={weeklyFocus} updateWeeklyFocus={updateWeeklyFocus} loading={dashboardDataLoading} /> },
+      { key: 'peopleMemoryVisible', component: <PeopleMemoryCard /> },
+      { key: 'meditationNotesVisible', component: <MeditationNotesCard settings={userSettings} updateSettings={updateSettings} loading={userSettingsLoading} /> },
+      { key: 'pomodoroTimerVisible', component: <PomodoroCard /> },
+    ];
 
-  const builtInCardKeys = useMemo(() => [
-    'dailyBriefing',
-    'dailySchedule',
-    'weeklyFocus',
-    'peopleMemory',
-    'meditationNotes',
-    'pomodoro',
-  ], []);
+    const activeBuiltInCards = builtInCards
+      .filter(card => dashboardSettings.dashboard_layout?.[card.key] !== false)
+      .map(card => ({ id: card.key, component: card.component, isCustom: false, order: 0 })); // Assign a temporary order
 
-  const getCardVisibility = useCallback((key: string) => {
-    // Default to true if settings or layout is not yet loaded/defined
-    if (loading || !settings?.dashboard_layout) return true;
-    
-    // Map built-in keys to their corresponding settings properties
-    const layoutKeyMap: { [key: string]: keyof UserSettings['dashboard_layout'] } = {
-      'dailyBriefing': 'dailyBriefingVisible',
-      'dailySchedule': 'dailyScheduleVisible',
-      'weeklyFocus': 'weeklyFocusVisible',
-      'peopleMemory': 'peopleMemoryVisible',
-      'meditationNotes': 'meditationNotesVisible',
-      'pomodoro': 'pomodoroVisible', // Assuming you'll add this to UserSettings
-    };
+    const activeCustomCards = customCards
+      .filter(card => card.is_visible)
+      .map(card => ({ id: card.id, component: <CustomCard card={card} />, isCustom: true, order: card.card_order || 0 }));
 
-    const settingKey = layoutKeyMap[key];
-    return settingKey ? settings.dashboard_layout[settingKey] !== false : true; // Default to visible if setting not found
-  }, [settings, loading]);
+    // Combine and sort, custom cards will use their `card_order`
+    const combinedCards = [...activeBuiltInCards, ...activeCustomCards];
 
-  const allVisibleCardIds = useMemo(() => {
-    const ids: UniqueIdentifier[] = [];
+    // For built-in cards, assign a stable order if custom order is not available
+    // This is a simple approach, more complex logic might be needed for specific ordering
+    const sortedCards = combinedCards.sort((a, b) => {
+      if (a.isCustom && b.isCustom) {
+        return a.order - b.order;
+      }
+      if (a.isCustom) return -1; // Custom cards before built-in
+      if (b.isCustom) return 1;
+      return 0; // Keep original order for built-in if no custom order
+    });
 
-    // Add built-in cards if visible
-    if (getCardVisibility('dailyBriefing')) ids.push('dailyBriefing');
-    if (getCardVisibility('dailySchedule')) ids.push('dailySchedule');
-    if (getCardVisibility('weeklyFocus')) ids.push('weeklyFocus');
-    if (getCardVisibility('peopleMemory')) ids.push('peopleMemory');
-    if (getCardVisibility('meditationNotes')) ids.push('meditationNotes');
-    if (getCardVisibility('pomodoro')) ids.push('pomodoro');
-
-    // Add visible custom cards
-    customCards.filter(card => card.is_visible).forEach(card => ids.push(card.id));
-
-    return ids;
-  }, [customCards, getCardVisibility]);
-
-  const renderCardComponent = useCallback((id: UniqueIdentifier) => {
-    switch (id) {
-      case 'dailyBriefing':
-        return <DailyBriefingCard key="dailyBriefing" isDemo={isDemo} demoUserId={demoUserId} />;
-      case 'dailySchedule':
-        return <DailySchedulePreview key="dailySchedule" />;
-      case 'weeklyFocus':
-        return <WeeklyFocusCard key="weeklyFocus" weeklyFocus={weeklyFocus} updateWeeklyFocus={updateWeeklyFocus} loading={loading} />;
-      case 'peopleMemory':
-        return <PeopleMemoryCard key="peopleMemory" />;
-      case 'meditationNotes':
-        return <MeditationNotesCard key="meditationNotes" settings={settings} updateSettings={updateSettings} loading={loading} />;
-      case 'pomodoro':
-        return <PomodoroCard key="pomodoro" />;
-      default:
-        const customCard = customCards.find(card => card.id === id);
-        return customCard ? <SortableCustomCard key={customCard.id} card={customCard} /> : null;
-    }
-  }, [isDemo, demoUserId, weeklyFocus, updateWeeklyFocus, loading, settings, updateSettings, customCards]);
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id);
-    const customCard = customCards.find(card => card.id === event.active.id);
-    if (customCard) {
-      setActiveCardData(customCard);
-    }
-  };
+    return sortedCards;
+  }, [userSettings, dashboardSettings, customCards, weeklyFocus, updateWeeklyFocus, dashboardDataLoading, updateSettings, userSettingsLoading, isDemo, demoUserId]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveId(null);
-    setActiveCardData(null);
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
       return;
     }
 
-    const oldIndex = allVisibleCardIds.indexOf(active.id);
-    const newIndex = allVisibleCardIds.indexOf(over.id);
+    const oldIndex = customCards.findIndex(card => card.id === active.id);
+    const newIndex = customCards.findIndex(card => card.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const newOrderedIds = [...allVisibleCardIds];
-    const [movedItem] = newOrderedIds.splice(oldIndex, 1);
-    newOrderedIds.splice(newIndex, 0, movedItem);
+    const newOrderedCustomCards = [...customCards];
+    const [movedCard] = newOrderedCustomCards.splice(oldIndex, 1);
+    newOrderedCustomCards.splice(newIndex, 0, movedCard);
 
-    // Separate built-in cards from custom cards for reordering
-    const newCustomCardOrder = newOrderedIds
-      .filter(id => !builtInCardKeys.includes(String(id)))
-      .map(id => String(id));
-
-    await reorderCustomCards(newCustomCardOrder);
+    const orderedIds = newOrderedCustomCards.map(card => card.id);
+    await reorderCustomCards(orderedIds);
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  const handlePanelResize = (sizes: number[]) => {
+    updateSettings({ dashboard_panel_sizes: sizes });
+  };
+
+  const panelSizes = userSettings?.dashboard_panel_sizes || [66, 34];
+
+  const leftColumnCards = visibleCards.filter((_, index) => index % 2 === 0);
+  const rightColumnCards = visibleCards.filter((_, index) => index % 2 !== 0);
 
   return (
-    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8 md:pt-12">
+    <div className="flex-1 p-4 overflow-auto">
       <DashboardHeader
         onAddCard={() => setIsAddCardDialogOpen(true)}
         onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
@@ -193,44 +124,59 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         demoUserId={demoUserId}
       />
 
-      <Card className="flex-1 p-0">
-        <CardContent className="p-6">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={allVisibleCardIds} strategy={verticalListSortingStrategy}>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {allVisibleCardIds.map(id => (
-                  <React.Fragment key={id}>
-                    {renderCardComponent(id)}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="h-48 w-full shadow-lg rounded-xl">
+              <CardContent className="flex items-center justify-center h-full">
+                <LayoutGrid className="h-12 w-12 text-muted-foreground animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <ResizablePanelGroup
+          direction="horizontal"
+          className="min-h-[calc(100vh-180px)] rounded-xl"
+          onLayout={handlePanelResize}
+        >
+          <ResizablePanel defaultSize={panelSizes[0]} minSize={30}>
+            <div className="grid grid-cols-1 gap-6 p-2">
+              {leftColumnCards.map(card => (
+                card.isCustom ? (
+                  <DndContext key={card.id} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+                    <SortableContext items={customCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      <SortableCustomCard card={customCards.find(c => c.id === card.id)!} />
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  <React.Fragment key={card.id}>
+                    {card.component}
                   </React.Fragment>
-                ))}
-              </div>
-            </SortableContext>
-            {createPortal(
-              <DragOverlay dropAnimation={null}>
-                {activeId && (
-                  activeCardData ? (
-                    <div className="rotate-2">
-                      <CustomCard card={activeCardData} isOverlay={true} />
-                    </div>
-                  ) : (
-                    // Render a placeholder for built-in cards if needed, or nothing
-                    <Card className="h-full shadow-xl ring-2 ring-primary bg-card rounded-xl p-4 flex items-center justify-center">
-                      <LayoutGrid className="h-8 w-8 text-primary" />
-                      <span className="ml-2 text-lg font-semibold">{activeId}</span>
-                    </Card>
-                  )
-                )}
-              </DragOverlay>,
-              document.body
-            )}
-          </DndContext>
-        </CardContent>
-      </Card>
+                )
+              ))}
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle className="w-3 bg-border/50 hover:bg-border transition-colors duration-200" />
+          <ResizablePanel defaultSize={panelSizes[1]} minSize={30}>
+            <div className="grid grid-cols-1 gap-6 p-2">
+              {rightColumnCards.map(card => (
+                card.isCustom ? (
+                  <DndContext key={card.id} onDragEnd={handleDragEnd} collisionDetection={closestCorners}>
+                    <SortableContext items={customCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
+                      <SortableCustomCard card={customCards.find(c => c.id === card.id)!} />
+                    </SortableContext>
+                  </DndContext>
+                ) : (
+                  <React.Fragment key={card.id}>
+                    {card.component}
+                  </React.Fragment>
+                )
+              ))}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      )}
 
       <AddCustomCardDialog
         isOpen={isAddCardDialogOpen}
@@ -240,7 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
       <DashboardLayoutSettings
         isOpen={isLayoutSettingsOpen}
         onClose={() => setIsLayoutSettingsOpen(false)}
-        settings={settings}
+        settings={userSettings}
         customCards={customCards}
         updateSettings={updateSettings}
         updateCustomCard={updateCustomCard}
