@@ -108,9 +108,14 @@ interface UseTasksProps {
   currentDate: Date;
   viewMode?: 'daily' | 'archive' | 'focus';
   userId?: string;
+  searchFilter?: string; // Added
+  statusFilter?: string; // Added
+  categoryFilter?: string; // Added
+  priorityFilter?: string; // Added
+  sectionFilter?: string; // Added
 }
 
-export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }: UseTasksProps) => {
+export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, searchFilter = '', statusFilter = 'all', categoryFilter = 'all', priorityFilter = 'all', sectionFilter = 'all' }: UseTasksProps) => {
   const { user, loading: authLoading } = useAuth();
   const userId = propUserId ?? user?.id ?? undefined; // Fixed: Ensure userId is string | undefined
   const { settings: userSettings, updateSettings } = useSettings();
@@ -118,12 +123,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   const queryClient = useQueryClient();
 
   const inFlightUpdatesRef = useRef<Set<string>>(new Set());
-
-  const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-  const [sectionFilter, setSectionFilter] = useState('all');
 
   const effectiveCurrentDate = currentDate;
   const todayStart = startOfDay(effectiveCurrentDate);
@@ -533,15 +532,15 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     bulkUpdateTasks,
     bulkDeleteTasks,
     searchFilter,
-    setSearchFilter,
+    setSearchFilter: (value: string) => setSearchFilter(value), // Added setter
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: (value: string) => setStatusFilter(value), // Added setter
     categoryFilter,
-    setCategoryFilter,
+    setCategoryFilter: (value: string) => setCategoryFilter(value), // Added setter
     priorityFilter,
-    setPriorityFilter,
+    setPriorityFilter: (value: string) => setPriorityFilter(value), // Added setter
     sectionFilter,
-    setSectionFilter,
+    setSectionFilter: (value: string) => setSectionFilter(value), // Added setter
     sections,
     allCategories,
     updateTaskParentAndOrder,

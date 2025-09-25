@@ -11,7 +11,7 @@ export interface UserSettings {
   focused_task_id: string | null;
   future_tasks_days_visible: number;
   meditation_notes: string | null;
-  dashboard_layout: any | null; // jsonb can be any
+  dashboard_layout: Record<string, boolean> | null; // jsonb can be any // Updated type here
   visible_pages?: Record<string, boolean>;
   schedule_show_focus_tasks_only: boolean;
   dashboard_panel_sizes: number[] | null; // New: Stores the sizes of resizable panels

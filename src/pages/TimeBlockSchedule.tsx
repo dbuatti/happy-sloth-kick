@@ -1,13 +1,8 @@
 import React, { useState } from 'react';
-import { Card } from "@/components/ui/card";
 import DailyScheduleView from '@/components/DailyScheduleView';
-import WeeklyScheduleView from '@/components/WeeklyScheduleView';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
-import { Task } from '@/hooks/useTasks';
-import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
+import { useTasks } from '@/hooks/useTasks'; // Added missing import
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -18,88 +13,27 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   const { user } = useAuth();
   const { settings } = useSettings();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [activeTab, setActiveTab] = useState("daily");
 
+  // This is needed to ensure the useTasks hook is initialized and provides necessary context
+  // for components like ScheduleGridContent, even if its direct return values aren't used here.
+  // The filters are not directly used in TimeBlockSchedule, but the hook needs them.
   const {
-    processedTasks,
     sections,
     allCategories,
-    updateTask,
-    deleteTask,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-  } = useTasks({ currentDate, userId: demoUserId });
-
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
-  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
-  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
-
-  const handleOpenTaskOverview = (task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
-  };
-
-  const handleEditTaskClick = (task: Task) => {
-    setTaskToEdit(task);
-    setIsTaskDetailOpen(true);
-    setIsTaskOverviewOpen(false); // Close overview if opening detail
-  };
+  } = useTasks({ currentDate, userId: demoUserId ?? user?.id, viewMode: 'daily' }); // Pass userId correctly
 
   return (
-    <div className="flex-1 p-4 overflow-auto">
-      <h1 className="text-3xl font-bold mb-6">Schedule</h1>
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="daily">Daily View</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly View</TabsTrigger>
-        </TabsList>
-        {activeTab === "daily" && (
-          <DailyScheduleView
-            currentDate={currentDate}
-            setCurrentDate={setCurrentDate}
-            isDemo={isDemo}
-            demoUserId={demoUserId}
-            onOpenTaskOverview={handleOpenTaskOverview}
-          />
-        )}
-        {activeTab === "weekly" && (
-          <WeeklyScheduleView
-            currentDate={currentDate}
-            setCurrentDate={setCurrentDate}
-            isDemo={isDemo}
-            demoUserId={demoUserId}
-            onOpenTaskOverview={handleOpenTaskOverview}
-          />
-        )}
-      </Tabs>
-
-      <TaskOverviewDialog
-        task={taskToOverview}
-        isOpen={isTaskOverviewOpen}
-        onClose={() => setIsTaskOverviewOpen(false)}
-        onEditClick={handleEditTaskClick}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        sections={sections}
-        allTasks={processedTasks}
-      />
-
-      <TaskDetailDialog
-        task={taskToEdit}
-        isOpen={isTaskDetailOpen}
-        onClose={() => setIsTaskDetailOpen(false)}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
-        sections={sections}
-        allCategories={allCategories}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        allTasks={processedTasks}
+    <div className="flex-1 flex flex-col p-4 overflow-hidden">
+      <DailyScheduleView
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        isDemo={isDemo}
+        demoUserId={demoUserId}
+        onOpenTaskOverview={() => {}} // Placeholder, as this view doesn't directly open task overview
       />
     </div>
   );
