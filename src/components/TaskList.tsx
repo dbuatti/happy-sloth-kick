@@ -52,7 +52,7 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
-  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
+  // setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // Removed as it's not used directly by TaskList
   expandedSections: Record<string, boolean>;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;

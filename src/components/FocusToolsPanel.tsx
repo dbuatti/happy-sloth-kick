@@ -22,7 +22,7 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>;
-  onOpenFocusView: () => void; // Added onOpenFocusView prop
+  // onOpenFocusView: () => void; // Removed onOpenFocusView prop
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -36,7 +36,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   allCategories,
   currentDate,
   handleAddTask,
-  onOpenFocusView, // Destructure onOpenFocusView
+  // onOpenFocusView, // Destructure onOpenFocusView
 }) => {
   const navigate = useNavigate();
   
