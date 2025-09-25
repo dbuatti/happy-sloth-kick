@@ -112,7 +112,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
 
   const mealTime = MEAL_TIMES[meal.meal_type];
   const mealDateTime = setMinutes(setHours(mealDate, mealTime.hour), mealTime.minute);
-  const formattedTime = format(mealDateTime, 'h:mm a');
+  const formattedTime = format(mealDateTime, 'h:mm a'); // Still needed for tooltip if desired, but not displayed
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
@@ -133,22 +133,22 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-0 py-1 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed py-0 to py-1 for slight overall padding
+        "relative flex flex-col gap-0 py-1 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out",
         "border-l-4",
         isCompleted && "opacity-70 bg-muted/30 border-muted-foreground/20",
         isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground",
-        !isCompleted && !isPlaceholder && (hasIngredients ? "bg-green-500/5 border-green-500/30" : "bg-red-500/5 border-red-500/30"), // Apply background based on hasIngredients
-        !isCompleted && !isPlaceholder && "hover:shadow-md" // Apply hover shadow only if not completed and not placeholder
+        !isCompleted && !isPlaceholder && (hasIngredients ? "bg-green-500/5 border-green-500/30" : "bg-red-500/5 border-red-500/30"),
+        !isCompleted && !isPlaceholder && "hover:shadow-md"
       )}
     >
       <div className="flex items-center justify-between py-[2px]">
         <div className="flex items-center gap-1">
           {getMealIcon(meal.meal_type)}
           <span className={cn(
-            "text-sm font-bold", // Made meal type text larger and bolder
+            "text-xs font-semibold", // Adjusted font size and weight
             isPlaceholder ? "text-muted-foreground/70" : "text-foreground"
           )}>
-            {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
+            {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}
           </span>
           {name.trim() !== '' && (
             <UtensilsCrossed className="h-3 w-3 text-primary/70 ml-0.5" />
@@ -197,7 +197,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
       <Textarea
         value={notes}
         onChange={handleNotesChange}
-        placeholder="Add notes..." // Shortened placeholder text
+        placeholder="Add notes..."
         rows={2}
         className={cn(
           "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 resize-none leading-tight",
