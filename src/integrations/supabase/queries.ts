@@ -34,8 +34,17 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Se
 };
 
 export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
-  console.log(`fetchTasks: Querying for user_id: ${userId}`);
+  console.log(`fetchTasks: Called with userId from hook: ${userId}`);
   
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) {
+    console.error('fetchTasks: Error getting session:', sessionError);
+  } else if (session) {
+    console.log(`fetchTasks: Supabase client session user ID: ${session.user.id}`);
+  } else {
+    console.log('fetchTasks: No active Supabase client session.');
+  }
+
   const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
 
   // Attempt to fetch the specific task directly
@@ -70,7 +79,6 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
   } else {
     console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in the ALL tasks response for user ${userId}.`);
   }
-  console.log('fetchTasks: Full data received from Supabase for all tasks (first 5):', (data || []).slice(0, 5));
   console.log('fetchTasks: Total tasks received:', (data || []).length);
 
   return data || [];
