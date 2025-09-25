@@ -116,17 +116,17 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
-      case 'breakfast': return <Coffee className="h-3 w-3 text-muted-foreground" />; // Further reduced icon size
-      case 'lunch': return <Soup className="h-3 w-3 text-muted-foreground" />; // Further reduced icon size
-      case 'dinner': return <UtensilsCrossed className="h-3 w-3 text-muted-foreground" />; // Further reduced icon size
+      case 'breakfast': return <Coffee className="h-3.5 w-3.5 text-muted-foreground" />; // Reduced icon size
+      case 'lunch': return <Soup className="h-3.5 w-3.5 text-muted-foreground" />; // Reduced icon size
+      case 'dinner': return <UtensilsCrossed className="h-3.5 w-3.5 text-muted-foreground" />; // Reduced icon size
     }
   };
 
   const getIngredientStatusIcon = () => {
     if (hasIngredients) {
-      return <CheckCircle2 className="h-3 w-3 text-green-500" />; // Further reduced icon size
+      return <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />; // Reduced icon size
     } else {
-      return <ShoppingCart className="h-3 w-3 text-red-500" />; // Further reduced icon size
+      return <ShoppingCart className="h-3.5 w-3.5 text-red-500" />; // Reduced icon size
     }
   };
 
@@ -141,33 +141,33 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-0 py-0 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Main container padding set to py-0
+        "relative flex flex-col gap-0 py-0 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed py-px to py-0
         "border-l-4",
         isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
         !isCompleted && getIngredientStatusClasses(),
         isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground"
       )}
     >
-      <div className="flex items-center justify-between py-0"> {/* Reduced vertical padding to py-0 */}
-        <div className="flex items-center gap-0.5"> {/* Reduced gap */}
+      <div className="flex items-center justify-between py-0.5"> {/* Added py-0.5 for minimal top/bottom spacing */}
+        <div className="flex items-center gap-1"> {/* Reduced gap */}
           {getMealIcon(meal.meal_type)}
           <span className={cn(
-            "text-[0.7rem] font-semibold", // Reduced font size
+            "text-xs font-semibold", // Reduced font size
             isPlaceholder ? "text-muted-foreground/70" : "text-foreground"
           )}>
             {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
           </span>
           {name.trim() !== '' && (
-            <UtensilsCrossed className="h-2.5 w-2.5 text-primary/70 ml-0.5" /> // Further reduced icon size
+            <UtensilsCrossed className="h-3 w-3 text-primary/70 ml-0.5" /> // Reduced icon size and margin
           )}
         </div>
-        <div className="flex items-center gap-0.5"> {/* Reduced gap */}
+        <div className="flex items-center gap-1"> {/* Reduced gap */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("h-4 w-4", isDemo && "cursor-not-allowed")} // Reduced button size
+                className={cn("h-5 w-5", isDemo && "cursor-not-allowed")} // Reduced button size
                 onClick={() => handleHasIngredientsChange(!hasIngredients)}
                 disabled={isDemo || isCompleted}
               >
@@ -183,7 +183,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
             checked={isCompleted}
             onCheckedChange={handleIsCompletedChange}
             disabled={isDemo}
-            className="h-3 w-3" // Reduced checkbox size
+            className="h-3.5 w-3.5" // Reduced checkbox size
           />
           <label htmlFor={`completed-${meal.id}`} className="sr-only">Mark as completed</label>
         </div>
@@ -194,7 +194,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         onChange={handleNameChange}
         placeholder={`Add ${meal.meal_type} meal name...`}
         className={cn(
-          "text-sm font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto leading-tight", // Reduced font size
+          "text-base font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto leading-tight", // Reduced font size, added leading-tight
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
@@ -207,7 +207,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         placeholder="Add notes or short description..."
         rows={1}
         className={cn(
-          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none leading-tight", // Reduced font size
+          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none leading-tight", // Reduced font size, added leading-tight
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
