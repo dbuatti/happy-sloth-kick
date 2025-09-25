@@ -178,8 +178,20 @@ export const useTaskProcessing = ({
 
             const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
 
-            // We no longer filter out based on isDoToday here.
-            // The `isDoTodayOff` property will be used by the UI for styling.
+            // TEMPORARY DEBUG LOG
+            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
+              console.log('DEBUG Task:', task.description);
+              console.log('  task.created_at (raw):', task.created_at);
+              console.log('  createdAt (startOfDay):', createdAt);
+              console.log('  effectiveCurrentDate (startOfDay):', effectiveCurrentDate);
+              console.log('  isCreatedOnEffectiveDate:', isCreatedOnEffectiveDate);
+              console.log('  dueDate:', dueDate);
+              console.log('  isDueOnEffectiveDateOrPast:', isDueOnEffectiveDateOrPast);
+              console.log('  isUndatedAndCreatedOnEffectiveDateOrPast:', isUndatedAndCreatedOnEffectiveDateOrPast);
+              console.log('  isRelevantByDate:', isRelevantByDate);
+            }
+            // END TEMPORARY DEBUG LOG
+
             if (isRelevantByDate) {
                 return true;
             }
