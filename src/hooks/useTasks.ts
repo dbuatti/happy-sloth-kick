@@ -155,7 +155,14 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const { data: rawTasks = [], isLoading: tasksLoading } = useQuery<Omit<Task, 'category_color'>[], Error>({
     queryKey: ['tasks', userId],
-    queryFn: () => fetchTasks(userId!),
+    queryFn: async () => {
+      const fetchedData = await fetchTasks(userId!);
+      // --- TEMPORARY DEBUG LOG ---
+      const specificTask = fetchedData.find(t => t.id === '4f6da17d-0d76-4d9a-9fe4-8ef2874c4aff');
+      console.log(`DEBUG: Task 4f6da17d-0d76-4d9a-9fe4-8ef2874c4aff found in rawTasks:`, !!specificTask);
+      // --- END TEMPORARY DEBUG LOG ---
+      return fetchedData;
+    },
     enabled: !!userId && !authLoading,
     staleTime: 60 * 1000,
     select: (data) => {
