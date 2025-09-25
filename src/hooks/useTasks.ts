@@ -258,12 +258,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     };
   }, [userId, addReminder, dismissReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]);
 
-  console.log('useTasks: userId:', userId);
-  console.log('useTasks: rawTasks count:', rawTasks.length);
-  console.log('useTasks: rawTasks (first 5):', rawTasks.slice(0, 5));
-  console.log('useTasks: effectiveCurrentDate:', effectiveCurrentDate);
-  console.log('useTasks: doTodayOffIds:', doTodayOffIds);
-
   const { processedTasks, filteredTasks: finalFilteredTasks } = useTaskProcessing({
     rawTasks,
     categoriesMap,
@@ -476,20 +470,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
         }
 
         if (task.status === 'to-do') {
-            const createdAt = startOfDay(parseISO(task.created_at));
-            const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
-
-            const isCreatedOnEffectiveDate = isSameDay(createdAt, effectiveCurrentDate);
-            const isDueOnEffectiveDateOrPast = dueDate && !isAfter(dueDate, effectiveCurrentDate);
-            const isUndatedAndCreatedOnEffectiveDateOrPast = !dueDate && !isAfter(createdAt, effectiveCurrentDate);
-
-            const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
-
-            if (isRelevantByDate) {
-                return true;
-            }
+            return true; 
         }
-
         return false;
     });
 

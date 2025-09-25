@@ -35,35 +35,43 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Se
 
 export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
   console.log(`fetchTasks: Querying for user_id: ${userId}`);
+  
+  const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
+
+  // Attempt to fetch the specific task directly
+  const { data: specificTaskData, error: specificTaskError } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', targetTaskId)
+    .single();
+
+  if (specificTaskError && specificTaskError.code !== 'PGRST116') { // PGRST116 means no rows found
+    console.error(`fetchTasks: Error fetching specific task ${targetTaskId}:`, specificTaskError);
+  } else if (specificTaskData) {
+    console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} SUCCEEDED!`, specificTaskData);
+  } else {
+    console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} FAILED (not found or RLS issue).`);
+  }
+
+  // Now fetch all tasks for the user
   const { data, error } = await supabase
     .from('tasks')
     .select('*') // Select all columns, category_color will be added in useTasks
     .eq('user_id', userId);
 
   if (error) {
-    console.error('fetchTasks: Supabase query error:', error);
+    console.error('fetchTasks: Supabase query error for all tasks:', error);
     throw error;
   }
   
-  const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
-  let foundTargetTask = null;
-
-  if (data && data.length > 0) {
-    console.log('fetchTasks: Inspecting received data...');
-    for (const task of data) {
-      // Log every task ID and its type
-      console.log(`fetchTasks: Task ID: ${task.id}, Type: ${typeof task.id}`);
-      if (task.id === targetTaskId) {
-        foundTargetTask = task;
-        console.log(`fetchTasks: Target task ${targetTaskId} WAS found in Supabase response!`, foundTargetTask);
-      }
-    }
-    if (!foundTargetTask) {
-      console.log(`fetchTasks: Target task ${targetTaskId} was NOT found after iterating through all ${data.length} records for user ${userId}.`);
-    }
+  const foundTargetTaskInAll = (data || []).find(task => task.id === targetTaskId);
+  if (foundTargetTaskInAll) {
+    console.log(`fetchTasks: Target task ${targetTaskId} WAS found in the ALL tasks response!`, foundTargetTaskInAll);
   } else {
-    console.log(`fetchTasks: No data received from Supabase for user ${userId}.`);
+    console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in the ALL tasks response for user ${userId}.`);
   }
+  console.log('fetchTasks: Full data received from Supabase for all tasks (first 5):', (data || []).slice(0, 5));
+  console.log('fetchTasks: Total tasks received:', (data || []).length);
 
   return data || [];
 };
