@@ -320,7 +320,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const result = await addTaskMutation(dataWithDefaults, mutationContext);
     console.log('handleAddTask: Result from addTaskMutation:', result);
     return result;
-  }, [userId, mutationContext, allCategories]); // Add allCategories to dependencies
+  }, [userId, mutationContext, allCategories]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
     if (!userId) { showError('User not authenticated.'); return null; }
