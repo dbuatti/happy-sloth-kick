@@ -62,12 +62,11 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} FAILED (not found or RLS issue).`);
   }
 
-  // Now fetch all tasks for the user with explicit column selection and ordering
+  // Now fetch all tasks for the user
   const { data, error } = await supabase
     .from('tasks')
-    .select('id, description, status, created_at, user_id, priority, due_date, notes, remind_at, section_id, "order", parent_task_id, recurring_type, original_task_id, category, link, image_url, updated_at, completed_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true }); // Add a default order
+    .select('*') // Select all columns, category_color will be added in useTasks
+    .eq('user_id', userId);
 
   if (error) {
     console.error('fetchTasks: Supabase query error for all tasks:', error);
