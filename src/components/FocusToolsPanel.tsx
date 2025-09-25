@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'; // Added useCallback
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
@@ -6,14 +6,15 @@ import { cn } from '@/lib/utils';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import TaskOverviewDialog from './TaskOverviewDialog';
 import { Input } from './ui/input';
-import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
+import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import PomodoroTimer from './PomodoroTimer';
+import DoTodaySwitch from './DoTodaySwitch'; // Import DoTodaySwitch
 
 interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
-  allTasks: Task[]; // Renamed from 'tasks' to 'allTasks', assumed to be processedTasks
+  allTasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
@@ -22,12 +23,14 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>;
-  // onOpenFocusView: () => void; // Removed onOpenFocusView prop
+  setFocusTask: (taskId: string | null) => Promise<void>; // New prop
+  doTodayOffIds: Set<string>; // New prop
+  toggleDoToday: (task: Task) => void; // New prop
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   nextAvailableTask,
-  allTasks, // Use allTasks here
+  allTasks,
   filteredTasks,
   updateTask,
   onOpenDetail,
@@ -36,7 +39,9 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   allCategories,
   currentDate,
   handleAddTask,
-  // onOpenFocusView, // Destructure onOpenFocusView
+  setFocusTask, // Destructure new prop
+  doTodayOffIds, // Destructure new prop
+  toggleDoToday, // Destructure new prop
 }) => {
   const navigate = useNavigate();
   
@@ -81,7 +86,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     return filteredTasks
       .filter(t => !nextTaskAndSubtasksIds.has(t.id) && t.parent_task_id === null && t.status === 'to-do')
       .slice(0, 5);
-  }, [nextAvailableTask, filteredTasks, allTasks]); // Updated dependency array
+  }, [nextAvailableTask, filteredTasks, allTasks]);
 
   const handleQuickAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +96,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     }
     setIsAddingQuickTask(true);
     const loadingToastId = showLoading('Getting AI suggestions...');
-    const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
+    const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
     const suggestions: AISuggestionResult | null = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
     dismissToast(loadingToastId);
     if (!suggestions) {
@@ -101,7 +106,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
       return;
     }
     const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories.find(cat => cat.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || '';
-    // Fix: Ensure suggestions.section is a string before comparison
     const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''))?.id || null;
     const success = await handleAddTask({
       description: suggestions.cleanedDescription,
@@ -130,6 +134,14 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     { name: 'Sensory', icon: Home, path: '/mindfulness/sensory-tool' },
     { name: 'Thought Diffusion', icon: MessageSquare, path: '/mindfulness/thought-diffusion' },
   ];
+
+  const isNextTaskDoToday = nextAvailableTask ? !doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id) : false;
+
+  const handleToggleDoTodaySwitch = () => {
+    if (nextAvailableTask) {
+      toggleDoToday(nextAvailableTask);
+    }
+  };
 
   return (
     <div className="h-full flex flex-col space-y-3">
@@ -186,7 +198,14 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
         <CardContent className="flex-grow flex flex-col justify-between pt-0">
           {nextAvailableTask ? (
             <div className="flex-grow flex flex-col justify-center items-center text-center space-y-3 p-2">
-              <div className={cn("w-3 h-3 rounded-full", getPriorityDotColor(nextAvailableTask.priority))} />
+              <div className="flex items-center gap-2">
+                <div className={cn("w-3 h-3 rounded-full", getPriorityDotColor(nextAvailableTask.priority))} />
+                <DoTodaySwitch
+                  isOn={isNextTaskDoToday}
+                  onToggle={handleToggleDoTodaySwitch}
+                  taskId={nextAvailableTask.id}
+                />
+              </div>
               <h3 className="text-lg font-semibold leading-tight text-foreground line-clamp-3">
                 {nextAvailableTask.description}
               </h3>
@@ -270,11 +289,11 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
+          onEditClick={onOpenDetail} // Pass onOpenDetail to open TaskDetailDialog
           onUpdate={updateTask}
           onDelete={onDeleteTask}
           sections={sections}
-          allTasks={allTasks} // Passed allTasks (processed)
+          allTasks={allTasks}
         />
       )}
     </div>

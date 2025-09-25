@@ -1,11 +1,12 @@
-"use client";
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/context/AuthContext';
+import { Task } from '@/hooks/useTasks';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useTasks } from '@/hooks/useTasks'; // Import useTasks to pass to TaskOverviewDialog
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -13,49 +14,81 @@ interface TimeBlockScheduleProps {
 }
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-    const today = new Date();
-    const day = today.getDay();
-    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
-    return new Date(today.setDate(diff));
-  });
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+
+  const {
+    updateTask,
+    deleteTask,
+    sections,
+    allCategories,
+    processedTasks: allTasks, // Use processedTasks for TaskOverviewDialog
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+  } = useTasks({ currentDate, userId: demoUserId });
+
+  const handleOpenTaskOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
+
+  const handleEditTaskFromOverview = (task: Task) => {
+    // In schedule view, we just want to open the overview, not directly edit.
+    // The TaskOverviewDialog itself has an edit button that will open TaskDetailDialog.
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  };
 
   return (
-    <div className="flex-1 p-4 overflow-auto">
-      <Card className="w-full shadow-lg rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-2xl font-bold">Time Block Schedule</CardTitle>
-        </CardHeader>
-        <Tabs defaultValue="daily" className="w-full">
-          <div className="flex justify-center p-4">
-            <TabsList className="grid w-full max-w-sm grid-cols-2">
-              <TabsTrigger value="daily">Daily View</TabsTrigger>
-              <TabsTrigger value="weekly">Weekly View</TabsTrigger>
+    <div className="flex-1 space-y-4 p-4 md:p-6">
+      <Card className="shadow-lg rounded-xl">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-2xl font-bold">Schedule</CardTitle>
+          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'day' | 'week')}>
+            <TabsList>
+              <TabsTrigger value="day">Day</TabsTrigger>
+              <TabsTrigger value="week">Week</TabsTrigger>
             </TabsList>
-          </div>
-          <TabsContent value="daily">
+          </Tabs>
+        </CardHeader>
+        <Tabs value={viewMode} className="w-full">
+          <TabsContent value="day">
             <DailyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
               isDemo={isDemo}
-              demoUserId={userId}
-              onOpenTaskOverview={() => {}} // Placeholder, as TaskOverviewDialog is not directly used here
+              demoUserId={demoUserId}
+              onOpenTaskOverview={handleOpenTaskOverview}
             />
           </TabsContent>
-          <TabsContent value="weekly">
+          <TabsContent value="week">
             <WeeklyScheduleView
-              currentWeekStart={currentWeekStart}
-              setCurrentWeekStart={setCurrentWeekStart}
+              currentDate={currentDate}
+              setCurrentDate={setCurrentDate}
               isDemo={isDemo}
-              demoUserId={userId}
-              onOpenTaskOverview={() => {}} // Placeholder, as TaskOverviewDialog is not directly used here
+              demoUserId={demoUserId}
+              onOpenTaskOverview={handleOpenTaskOverview}
             />
           </TabsContent>
         </Tabs>
       </Card>
+
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allTasks={allTasks}
+        />
+      )}
     </div>
   );
 };

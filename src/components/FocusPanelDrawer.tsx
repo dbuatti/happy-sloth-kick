@@ -16,6 +16,9 @@ interface FocusPanelDrawerProps {
   allCategories: Category[];
   handleAddTask: (taskData: any) => Promise<any>;
   currentDate: Date;
+  setFocusTask: (taskId: string | null) => Promise<void>; // New prop
+  doTodayOffIds: Set<string>; // New prop
+  toggleDoToday: (task: Task) => void; // New prop
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
@@ -31,6 +34,9 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   allCategories,
   handleAddTask,
   currentDate,
+  setFocusTask, // Destructure new prop
+  doTodayOffIds, // Destructure new prop
+  toggleDoToday, // Destructure new prop
 }) => {
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -50,6 +56,9 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
             onOpenDetail={onOpenDetail}
             handleAddTask={handleAddTask}
             currentDate={currentDate}
+            setFocusTask={setFocusTask} // Pass new prop
+            doTodayOffIds={doTodayOffIds} // Pass new prop
+            toggleDoToday={toggleDoToday} // Pass new prop
           />
         </div>
       </SheetContent>
