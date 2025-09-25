@@ -62,24 +62,19 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} FAILED (not found or RLS issue).`);
   }
 
-  // Now fetch all tasks for the user, explicitly requesting to bypass the default 1000-row limit
+  // Now fetch all tasks for the user, without explicit client-side limits or problematic options
   const { data, error } = await supabase
     .from('tasks')
     .select('*') // Select all columns, category_color will be added in useTasks
     .eq('user_id', userId)
-    .order('created_at', { ascending: true }) // Add a default order for consistent results
-    .options({
-      headers: {
-        'Prefer': 'count=exact,max-rows=none', // Request exact count and no max rows
-      },
-    });
+    .order('created_at', { ascending: true }); // Add a default order for consistent results
 
   if (error) {
     console.error('fetchTasks: Supabase query error for all tasks:', error);
     throw error; // Re-throw the error to be caught by react-query
   }
   
-  const foundTargetTaskInAll = (data || []).find(task => task.id === targetTaskId);
+  const foundTargetTaskInAll = (data || []).find((task: Omit<Task, 'category_color'>) => task.id === targetTaskId);
   if (foundTargetTaskInAll) {
     console.log(`fetchTasks: Target task ${targetTaskId} WAS found in the ALL tasks response!`, foundTargetTaskInAll);
   } else {

@@ -4,7 +4,7 @@ import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
-import { parseISO, isValid, format, startOfDay, isAfter, isBefore, isSameDay } from 'date-fns';
+import { parseISO, isValid, format, startOfDay, isBefore, isSameDay } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
