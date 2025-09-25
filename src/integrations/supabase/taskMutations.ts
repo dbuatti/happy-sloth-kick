@@ -5,6 +5,9 @@ import { Task, NewTaskData, TaskUpdate, TaskSection } from '@/hooks/useTasks';
 import { MutationContext } from '@/hooks/useTasks'; // Import MutationContext
 import { trackInFlight } from './utils';
 
+// Regex to validate UUID format
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Helper to get the next order value for a new task in a section
 const getNextTaskOrder = (tasks: Task[], sectionId: string | null, parentTaskId: string | null): number => {
   const relevantTasks = tasks.filter(t => t.section_id === sectionId && t.parent_task_id === parentTaskId);
@@ -72,7 +75,16 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   try {
     // If it's a virtual task, we need to create a real instance first
     if (taskId.startsWith('virtual-')) {
-      const originalTaskId = taskId.split('-')[1]; // This extracts the ID of the *template* task
+      // Correctly extract the originalTaskId (which is a full UUID)
+      const firstHyphenIndex = taskId.indexOf('-');
+      // The date part is YYYY-MM-DD, which is 10 characters.
+      // So, the UUID part ends 11 characters before the end of the string (including the last hyphen).
+      const originalTaskId = taskId.substring(firstHyphenIndex + 1, taskId.length - 11); 
+      
+      // Validate the extracted ID to be safe
+      if (!UUID_REGEX.test(originalTaskId)) {
+        throw new Error(`Invalid UUID extracted from virtual task ID: ${originalTaskId}`);
+      }
       
       // Fetch the original template task directly from the database
       const { data: fetchedOriginalTask, error: fetchOriginalError } = await supabase
