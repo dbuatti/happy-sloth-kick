@@ -70,7 +70,7 @@ export interface Category {
   created_at: string;
 }
 
-type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
+export type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
 
 export interface NewTaskData {
   description: string;
