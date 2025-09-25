@@ -36,34 +36,6 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Se
 const BATCH_SIZE = 1000; // Define a batch size for fetching
 
 export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
-  console.log(`fetchTasks: Called with userId from hook: ${userId}`);
-  
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-  if (sessionError) {
-    console.error('fetchTasks: Error getting session:', sessionError);
-  } else if (session) {
-    console.log(`fetchTasks: Supabase client session user ID: ${session.user.id}`);
-  } else {
-    console.log('fetchTasks: No active Supabase client session.');
-  }
-
-  const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
-
-  // Attempt to fetch the specific task directly
-  const { data: specificTaskData, error: specificTaskError } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('id', targetTaskId)
-    .single();
-
-  if (specificTaskError && specificTaskError.code !== 'PGRST116') { // PGRST116 means no rows found
-    console.error(`fetchTasks: Error fetching specific task ${targetTaskId}:`, specificTaskError);
-  } else if (specificTaskData) {
-    console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} SUCCEEDED!`, specificTaskData);
-  } else {
-    console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} FAILED (not found or RLS issue).`);
-  }
-
   let allTasks: Omit<Task, 'category_color'>[] = [];
   let offset = 0;
   let hasMore = true;
@@ -90,13 +62,5 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     }
   }
   
-  const foundTargetTaskInAll = allTasks.find(task => task.id === targetTaskId);
-  if (foundTargetTaskInAll) {
-    console.log(`fetchTasks: Target task ${targetTaskId} WAS found in the ALL tasks response!`, foundTargetTaskInAll);
-  } else {
-    console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in the ALL tasks response for user ${userId}.`);
-  }
-  console.log('fetchTasks: Total tasks received:', allTasks.length);
-
   return allTasks;
 };
