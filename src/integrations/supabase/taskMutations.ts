@@ -72,18 +72,31 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   try {
     // If it's a virtual task, we need to create a real instance first
     if (taskId.startsWith('virtual-')) {
-      const originalTaskId = taskId.split('-')[1];
-      const originalTask = context.processedTasks.find((t: Task) => t.id === originalTaskId || t.original_task_id === originalTaskId);
-      if (!originalTask) {
-        throw new Error('Original task not found for virtual task.');
+      const originalTaskId = taskId.split('-')[1]; // This extracts the ID of the *template* task
+      
+      // Fetch the original template task directly from the database
+      const { data: fetchedOriginalTask, error: fetchOriginalError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', originalTaskId)
+        .eq('user_id', userId) // Ensure user ownership
+        .single();
+
+      if (fetchOriginalError) {
+        throw fetchOriginalError;
+      }
+      if (!fetchedOriginalTask) {
+        throw new Error('Original template task not found in database for virtual task.');
       }
 
+      const originalTask = fetchedOriginalTask; // Rename for clarity
+      
       const newRealTaskData: NewTaskData = {
         description: originalTask.description,
         status: updates.status || originalTask.status,
         recurring_type: originalTask.recurring_type,
         category: originalTask.category,
-        priority: originalTask.priority,
+        priority: updates.priority || originalTask.priority, // Use updates.priority if provided
         due_date: updates.due_date || originalTask.due_date,
         notes: updates.notes || originalTask.notes,
         remind_at: updates.remind_at || originalTask.remind_at,
