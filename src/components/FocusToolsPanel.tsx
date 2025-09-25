@@ -10,7 +10,7 @@ import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integratio
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import PomodoroTimer from './PomodoroTimer';
-import DoTodaySwitch from './DoTodaySwitch'; // Import DoTodaySwitch
+import DoTodaySwitch from './DoTodaySwitch';
 
 interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
@@ -23,9 +23,9 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>;
-  setFocusTask: (taskId: string | null) => Promise<void>; // New prop
-  doTodayOffIds: Set<string>; // New prop
-  toggleDoToday: (task: Task) => void; // New prop
+  setFocusTask: (taskId: string | null) => Promise<void>;
+  doTodayOffIds: Set<string>;
+  toggleDoToday: (task: Task) => void;
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -39,9 +39,9 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   allCategories,
   currentDate,
   handleAddTask,
-  setFocusTask, // Destructure new prop
-  doTodayOffIds, // Destructure new prop
-  toggleDoToday, // Destructure new prop
+  setFocusTask,
+  doTodayOffIds,
+  toggleDoToday,
 }) => {
   const navigate = useNavigate();
   
@@ -71,11 +71,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
-
-  const handleEditTaskFromOverview = useCallback((task: Task) => {
-    setIsTaskOverviewOpen(false);
-    onOpenDetail(task);
-  }, [onOpenDetail]);
 
   const upcomingTasks = useMemo(() => {
     if (!nextAvailableTask) return [];
@@ -289,7 +284,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={onOpenDetail} // Pass onOpenDetail to open TaskDetailDialog
+          onEditClick={onOpenDetail}
           onUpdate={updateTask}
           onDelete={onDeleteTask}
           sections={sections}

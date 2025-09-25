@@ -1,11 +1,11 @@
 import React from 'react';
 import { CardContent } from "@/components/ui/card";
-import DateNavigator from '@/components/DateNavigator'; // Reusing DateNavigator for now
+import DateNavigator from '@/components/DateNavigator';
 import { useWorkHours, WorkHour } from '@/hooks/useWorkHours';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useTasks, Task } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import { format, startOfWeek, addWeeks, eachDayOfInterval } from 'date-fns';
+import { startOfWeek, addWeeks } from 'date-fns';
 import ScheduleGridContent from './ScheduleGridContent';
 
 interface WeeklyScheduleViewProps {
@@ -26,7 +26,7 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday as start of week
   const weekEnd = addWeeks(weekStart, 1); // End of the week (Sunday)
 
-  const daysInGrid = eachDayOfInterval({ start: weekStart, end: addWeeks(weekStart, 0) }); // Just one week for now
+  const daysInGrid = Array.from({ length: 7 }).map((_, i) => addWeeks(weekStart, 0)); // Just one week for now
 
   const { workHours: allWorkHours, loading: workHoursLoading, saveWorkHours } = useWorkHours({ userId: demoUserId });
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments({ startDate: weekStart, endDate: weekEnd });
@@ -45,14 +45,14 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
         onPreviousDay={() => setCurrentDate(prevDate => addWeeks(prevDate, -1))}
         onNextDay={() => setCurrentDate(prevDate => addWeeks(prevDate, 1))}
         onGoToToday={() => setCurrentDate(new Date())}
-        setCurrentDate={(date) => setCurrentDate(startOfWeek(date, { weekStartsOn: 1 }))}
+        setCurrentDate={(date: Date) => setCurrentDate(startOfWeek(date, { weekStartsOn: 1 }))}
       />
       <ScheduleGridContent
         isDemo={isDemo}
         onOpenTaskOverview={onOpenTaskOverview}
         currentViewDate={currentDate}
         daysInGrid={daysInGrid}
-        allWorkHours={allWorkHours as WorkHour[]} // Cast to array
+        allWorkHours={allWorkHours as WorkHour[]}
         saveWorkHours={saveWorkHours}
         appointments={appointments}
         addAppointment={addAppointment}

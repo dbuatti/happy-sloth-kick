@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { useReminders } from '@/context/ReminderContext';
-import { parseISO, isValid, format, startOfDay, isAfter, isBefore, isSameDay } from 'date-fns'; // Added isSameDay
+import { parseISO, isValid, format, startOfDay, isAfter, isBefore, isSameDay } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
@@ -27,13 +27,13 @@ import {
   deleteSectionMutation,
   updateSectionIncludeInFocusModeMutation,
   reorderSectionsMutation,
-} from '@/integrations/supabase/sectionMutations'; // Updated import path
-import { useTaskProcessing } from './useTaskProcessing'; // Import the new hook
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+} from '@/integrations/supabase/sectionMutations';
+import { useTaskProcessing } from './useTaskProcessing';
+import { useAuth } from '@/context/AuthContext';
 
 export interface Task {
   id: string;
-  description: string; // Changed to non-nullable string
+  description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   created_at: string;
@@ -70,7 +70,6 @@ export interface Category {
   created_at: string;
 }
 
-// Omit category_color from TaskUpdate as it's a derived client-side property, not a database column
 type TaskUpdate = Partial<Omit<Task, 'id' | 'user_id' | 'created_at' | 'category_color'>>;
 
 export interface NewTaskData {
@@ -85,13 +84,12 @@ export interface NewTaskData {
   section_id?: string | null;
   parent_task_id?: string | null;
   original_task_id?: string | null;
-  created_at?: string; // Allow created_at to be passed for virtual tasks
+  created_at?: string;
   link?: string | null;
   image_url?: string | null;
   order?: number | null;
 }
 
-// Define a more comprehensive MutationContext interface
 interface MutationContext {
   userId: string;
   queryClient: QueryClient;
@@ -104,7 +102,6 @@ interface MutationContext {
   sections: TaskSection[];
   addReminder: (id: string, message: string, date: Date) => void;
   dismissReminder: (id: string) => void;
-  // bulkUpdateTasksMutation is an external function, not a property of this context object
 }
 
 interface UseTasksProps {
@@ -115,7 +112,7 @@ interface UseTasksProps {
 
 export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }: UseTasksProps) => {
   const { user, loading: authLoading } = useAuth();
-  const userId = propUserId || user?.id;
+  const userId = propUserId ?? user?.id ?? undefined; // Fixed: Ensure userId is string | undefined
   const { settings: userSettings, updateSettings } = useSettings();
   const { addReminder, dismissReminder } = useReminders();
   const queryClient = useQueryClient();
@@ -292,23 +289,22 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    // Ensure status and recurring_type are explicitly set for addTaskMutation
     const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
       ...newTaskData,
-      description: newTaskData.description || '', // Ensure description is string
+      description: newTaskData.description || '',
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
-      category: newTaskData.category || 'general', // Ensure category is not null
-      priority: newTaskData.priority ?? 'medium', // Ensure priority is not undefined using nullish coalescing
-      due_date: newTaskData.due_date ?? null, // Fix: Add nullish coalescing for due_date
-      notes: newTaskData.notes ?? null, // Fix: Add nullish coalescing for notes
-      remind_at: newTaskData.remind_at ?? null, // Fix: Add nullish coalescing for remind_at
-      section_id: newTaskData.section_id ?? null, // Fix: Add nullish coalescing for section_id
-      order: newTaskData.order ?? null, // Fix: Add nullish coalescing for order
-      original_task_id: newTaskData.original_task_id ?? null, // Fix: Add nullish coalescing for original_task_id
-      parent_task_id: newTaskData.parent_task_id ?? null, // Fix: Add nullish coalescing for parent_task_id
-      link: newTaskData.link ?? null, // Fix: Add nullish coalescing for link
-      image_url: newTaskData.image_url ?? null, // Fix: Add nullish coalescing for image_url
+      category: newTaskData.category || 'general',
+      priority: newTaskData.priority ?? 'medium',
+      due_date: newTaskData.due_date ?? null,
+      notes: newTaskData.notes ?? null,
+      remind_at: newTaskData.remind_at ?? null,
+      section_id: newTaskData.section_id ?? null,
+      order: newTaskData.order ?? null,
+      original_task_id: newTaskData.original_task_id ?? null,
+      parent_task_id: newTaskData.parent_task_id ?? null,
+      link: newTaskData.link ?? null,
+      image_url: newTaskData.image_url ?? null,
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
@@ -465,7 +461,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
             
             const isCompletedOnCurrentDate = (
                 completedAtDate && isValid(completedAtDate) &&
-                isSameDay(completedAtDate, effectiveCurrentDate) // Fixed: Used isSameDay
+                isSameDay(completedAtDate, effectiveCurrentDate)
             );
             
             if (isCompletedOnCurrentDate) {
@@ -505,7 +501,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       
       const isCompletedOnCurrentDate = (
           completedAtDate && isValid(completedAtDate) &&
-          isSameDay(completedAtDate, effectiveCurrentDate) // Fixed: Used isSameDay
+          isSameDay(completedAtDate, effectiveCurrentDate)
       );
 
       const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isCompletedOnCurrentDate;

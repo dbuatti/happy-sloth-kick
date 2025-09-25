@@ -1,28 +1,22 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, UniqueIdentifier, PointerSensor, KeyboardSensor, closestCorners } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
+import React, { useState, useMemo } from 'react';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, UniqueIdentifier, PointerSensor, KeyboardSensor, closestCorners, useSensor, useSensors } from '@dnd-kit/core';
 import { createPortal } from 'react-dom';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from 'react-resizable-panels';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from '@/components/ui/button';
-import { Plus, Settings as SettingsIcon, CheckCircle2, CalendarDays, Users, Leaf, Clock, Sparkles } from 'lucide-react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
 import WeeklyFocusCard from '@/components/dashboard/WeeklyFocus';
 import PeopleMemoryCard from '@/components/dashboard/PeopleMemoryCard';
 import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
 import PomodoroCard from '@/components/dashboard/PomodoroCard';
-import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
-import StatCard from '@/components/dashboard/StatCard';
 import AddCustomCardDialog from '@/components/dashboard/AddCustomCardDialog';
 import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
+import { useDashboardData, CustomCard as CustomCardType } from '@/hooks/useDashboardData';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
-import CustomCard from '@/components/dashboard/CustomCard'; // Import the component itself
-import { useDashboardData, CustomCard as CustomCardType } from '@/hooks/useDashboardData'; // Import CustomCardType
-import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { useSettings } from '@/context/SettingsContext';
-import { useAuth } from '@/context/AuthContext';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove } from '@dnd-kit/sortable';
+import { cn } from '@/lib/utils';
 
 interface DashboardProps {
   isDemo?: boolean;
@@ -30,10 +24,6 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-  const isMobile = useIsMobile();
-
   const {
     loading: dashboardDataLoading,
     weeklyFocus,
@@ -44,19 +34,12 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     updateCustomCard,
     deleteCustomCard,
     reorderCustomCards,
-  } = useDashboardData({ userId });
+  } = useDashboardData({ userId: demoUserId });
 
-  const {
-    tasksDue,
-    tasksCompleted,
-    appointmentsToday,
-    loading: statsLoading,
-  } = useDashboardStats({ userId });
-
-  const { settings: userSettings, updateSettings } = useSettings({ userId });
+  const { settings: userSettings, updateSettings } = useUserSettings(); // Fixed: Removed userId argument
 
   const [isAddCardDialogOpen, setIsAddCardDialogOpen] = useState(false);
-  const [isLayoutSettingsOpen, setIsLayoutSettingsOpen] = useState(false);
+  const [isCustomizeLayoutOpen, setIsCustomizeLayoutOpen] = useState(false);
 
   // DND state
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -73,6 +56,27 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     })
   );
 
+  const visibleCards = useMemo(() => {
+    const builtIn = [
+      { key: 'dailyBriefingVisible', component: <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} /> },
+      { key: 'dailyScheduleVisible', component: <DailySchedulePreview /> },
+      { key: 'weeklyFocusVisible', component: <WeeklyFocusCard weeklyFocus={weeklyFocus} updateWeeklyFocus={updateWeeklyFocus} loading={dashboardDataLoading} /> },
+      { key: 'peopleMemoryVisible', component: <PeopleMemoryCard /> },
+      { key: 'meditationNotesVisible', component: <MeditationNotesCard settings={userSettings} updateSettings={updateSettings} loading={dashboardDataLoading} /> },
+      { key: 'pomodoroTimerVisible', component: <PomodoroCard /> },
+    ];
+
+    const custom = customCards
+      .filter(card => card.is_visible)
+      .map(card => ({ key: card.id, component: <SortableCustomCard card={card} /> }));
+
+    const allCards = [...builtIn, ...custom];
+
+    return allCards.filter(card => userSettings?.dashboard_layout?.[card.key] !== false);
+  }, [customCards, weeklyFocus, updateWeeklyFocus, dashboardDataLoading, userSettings, isDemo, demoUserId, updateSettings]);
+
+  const cardIds = useMemo(() => visibleCards.map(card => card.key), [visibleCards]);
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id);
     const card = customCards.find(c => c.id === event.active.id);
@@ -80,46 +84,22 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
     setActiveId(null);
     setActiveCard(null);
-    const { active, over } = event;
 
     if (!over || active.id === over.id) {
       return;
     }
 
-    const oldIndex = customCards.findIndex(card => card.id === active.id);
-    const newIndex = customCards.findIndex(card => card.id === over.id);
+    const oldIndex = cardIds.indexOf(active.id);
+    const newIndex = cardIds.indexOf(over.id);
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const newOrder = arrayMove(customCards, oldIndex, newIndex).map(card => card.id);
-    await reorderCustomCards(newOrder);
+    const newOrderedIds = arrayMove(cardIds, oldIndex, newIndex);
+    await reorderCustomCards(newOrderedIds as string[]);
   };
-
-  const visibleBuiltInCards = useMemo(() => {
-    const layout = userSettings?.dashboard_layout || {};
-    const builtInCards = [
-      { key: 'dailyBriefingVisible', label: 'Daily Briefing', component: <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />, icon: Sparkles },
-      { key: 'dailyScheduleVisible', label: 'Daily Schedule Preview', component: <DailySchedulePreview />, icon: CalendarDays },
-      { key: 'weeklyFocusVisible', label: "This Week's Focus", component: <WeeklyFocusCard weeklyFocus={weeklyFocus} updateWeeklyFocus={updateWeeklyFocus} loading={dashboardDataLoading} />, icon: Sparkles },
-      { key: 'peopleMemoryVisible', label: 'People Memory', component: <PeopleMemoryCard />, icon: Users },
-      { key: 'meditationNotesVisible', label: 'Meditation Notes', component: <MeditationNotesCard settings={userSettings} updateSettings={updateSettings} loading={dashboardDataLoading} />, icon: Leaf },
-      { key: 'pomodoroTimerVisible', label: 'Pomodoro Timer', component: <PomodoroCard />, icon: Clock },
-    ];
-    return builtInCards.filter(card => layout[card.key] !== false);
-  }, [userSettings, weeklyFocus, updateWeeklyFocus, dashboardDataLoading, isDemo, demoUserId, updateSettings]);
-
-  const visibleCustomCards = useMemo(() => {
-    return customCards.filter(card => card.is_visible);
-  }, [customCards]);
-
-  const allVisibleCardIds = useMemo(() => {
-    return [
-      ...visibleBuiltInCards.map(card => card.key),
-      ...visibleCustomCards.map(card => card.id),
-    ];
-  }, [visibleBuiltInCards, visibleCustomCards]);
 
   const handlePanelLayoutChange = (sizes: number[]) => {
     updateSettings({ dashboard_panel_sizes: sizes });
@@ -129,106 +109,71 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-6">
-      <DashboardHeader
-        onAddCard={() => setIsAddCardDialogOpen(true)}
-        onCustomizeLayout={() => setIsLayoutSettingsOpen(true)}
-        isDemo={isDemo}
-        demoUserId={demoUserId}
-      />
+      <DashboardHeader onAddCard={() => setIsAddCardDialogOpen(true)} onCustomizeLayout={() => setIsCustomizeLayoutOpen(true)} isDemo={isDemo} demoUserId={demoUserId} />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Tasks Due Today"
-          value={tasksDue}
-          icon={CalendarDays}
-          description="Don't miss your deadlines!"
-          loading={statsLoading}
-        />
-        <StatCard
-          title="Tasks Completed Today"
-          value={tasksCompleted}
-          icon={CheckCircle2}
-          description="Great job on your progress!"
-          loading={statsLoading}
-        />
-        <StatCard
-          title="Appointments Today"
-          value={appointmentsToday}
-          icon={CalendarDays}
-          description="Stay on top of your schedule."
-          loading={statsLoading}
-        />
-        <StatCard
-          title="Daily Focus Score"
-          value="85%" // Placeholder for now
-          icon={Sparkles}
-          description="Keep up the great work!"
-          loading={statsLoading}
-        />
-      </div>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <ResizablePanelGroup
-          direction={isMobile ? "vertical" : "horizontal"}
-          className="min-h-[500px] rounded-xl border"
-          onLayout={handlePanelLayoutChange}
-        >
-          <ResizablePanel defaultSize={defaultPanelSizes[0]}>
-            <div className="flex h-full items-center justify-center p-2">
-              <SortableContext items={allVisibleCardIds} strategy={verticalListSortingStrategy}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full h-full">
-                  {visibleBuiltInCards.map(card => (
+      {dashboardDataLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="h-48 w-full shadow-lg rounded-xl">
+              <CardHeader className="pb-2">
+                <CardTitle><div className="h-6 w-3/4 bg-muted rounded" /></CardTitle>
+              </CardHeader>
+              <CardContent><div className="h-24 w-full bg-muted rounded" /></CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <SortableContext items={cardIds} strategy={verticalListSortingStrategy}>
+            <ResizablePanelGroup direction="horizontal" className="min-h-[600px] rounded-lg border" onLayout={handlePanelLayoutChange}>
+              <ResizablePanel defaultSize={defaultPanelSizes[0]}>
+                <div className="grid gap-4 p-4">
+                  {visibleCards.filter(card => card.key === 'dailyBriefingVisible').map(card => (
                     <div key={card.key} className="h-full">
                       {card.component}
                     </div>
                   ))}
-                  {visibleCustomCards.map(card => (
-                    <SortableCustomCard key={card.id} card={card} />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {visibleCards.filter(card => card.key !== 'dailyBriefingVisible' && card.key !== 'pomodoroTimerVisible').map(card => (
+                      <div key={card.key} className="h-full">
+                        {card.component}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={defaultPanelSizes[1]}>
+                <div className="grid gap-4 p-4">
+                  {visibleCards.filter(card => card.key === 'pomodoroTimerVisible').map(card => (
+                    <div key={card.key} className="h-full">
+                      {card.component}
+                    </div>
+                  ))}
+                  {visibleCards.filter(card => card.key.startsWith('custom-')).map(card => (
+                    <SortableCustomCard key={card.key} card={customCards.find(c => c.id === card.key)!} />
                   ))}
                 </div>
-              </SortableContext>
-            </div>
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={defaultPanelSizes[1]}>
-            <div className="flex h-full items-center justify-center p-2">
-              <Card className="h-full w-full shadow-lg rounded-xl">
-                <CardHeader>
-                  <CardTitle>Quick Access</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground">Your frequently used tools and information.</p>
-                </CardContent>
-              </Card>
-            </div>
-          </ResizablePanel>
-        </ResizablePanelGroup>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </SortableContext>
+          {createPortal(
+            <DragOverlay dropAnimation={null}>
+              {activeCard ? (
+                <div className="rotate-2">
+                  <CustomCard card={activeCard} isOverlay={true} />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body
+          )}
+        </DndContext>
+      )}
 
-        {createPortal(
-          <DragOverlay dropAnimation={null}>
-            {activeCard ? (
-              <div className="rotate-2">
-                <CustomCard card={activeCard} isOverlay={true} />
-              </div>
-            ) : null}
-          </DragOverlay>,
-          document.body
-        )}
-      </DndContext>
-
-      <AddCustomCardDialog
-        isOpen={isAddCardDialogOpen}
-        onClose={() => setIsAddCardDialogOpen(false)}
-      />
-
+      <AddCustomCardDialog isOpen={isAddCardDialogOpen} onClose={() => setIsAddCardDialogOpen(false)} />
       <DashboardLayoutSettings
-        isOpen={isLayoutSettingsOpen}
-        onClose={() => setIsLayoutSettingsOpen(false)}
+        isOpen={isCustomizeLayoutOpen}
+        onClose={() => setIsCustomizeLayoutOpen(false)}
         settings={userSettings}
         customCards={customCards}
         updateSettings={updateSettings}

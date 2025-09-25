@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Task } from '@/hooks/useTasks';
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from '@/context/AuthContext';
-import { Task } from '@/hooks/useTasks';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks } from '@/hooks/useTasks'; // Import useTasks to pass to TaskOverviewDialog
+import { useTasks } from '@/hooks/useTasks';
+import { useAuth } from '@/context/AuthContext';
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -15,20 +15,20 @@ interface TimeBlockScheduleProps {
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [activeTab, setActiveTab] = useState('daily');
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
   const {
-    updateTask,
-    deleteTask,
+    tasks: allTasks,
     sections,
     allCategories,
-    processedTasks: allTasks, // Use processedTasks for TaskOverviewDialog
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    updateTask,
+    deleteTask,
   } = useTasks({ currentDate, userId: demoUserId });
 
   const handleOpenTaskOverview = (task: Task) => {
@@ -37,26 +37,26 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
   };
 
   const handleEditTaskFromOverview = (task: Task) => {
-    // In schedule view, we just want to open the overview, not directly edit.
-    // The TaskOverviewDialog itself has an edit button that will open TaskDetailDialog.
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+    setIsTaskOverviewOpen(false);
+    // This will open the TaskDetailDialog, which is handled by the parent component
+    // For now, we'll just close the overview. If a separate edit dialog is needed,
+    // it would be triggered here.
   };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-6">
-      <Card className="shadow-lg rounded-xl">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <Card className="w-full shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
           <CardTitle className="text-2xl font-bold">Schedule</CardTitle>
-          <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'day' | 'week')}>
-            <TabsList>
-              <TabsTrigger value="day">Day</TabsTrigger>
-              <TabsTrigger value="week">Week</TabsTrigger>
-            </TabsList>
-          </Tabs>
         </CardHeader>
-        <Tabs value={viewMode} className="w-full">
-          <TabsContent value="day">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="flex justify-center border-b px-4">
+            <TabsList className="grid w-full grid-cols-2 max-w-md">
+              <TabsTrigger value="daily">Daily</TabsTrigger>
+              <TabsTrigger value="weekly">Weekly</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="daily" className="mt-0">
             <DailyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -65,7 +65,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               onOpenTaskOverview={handleOpenTaskOverview}
             />
           </TabsContent>
-          <TabsContent value="week">
+          <TabsContent value="weekly" className="mt-0">
             <WeeklyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
