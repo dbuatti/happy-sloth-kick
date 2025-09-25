@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { parseISO, isValid, isSameDay, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
+import { parseISO, isSameDay, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
 import { Task, TaskSection } from './useTasks'; // Import types
 import { UserSettings } from './useUserSettings'; // Import UserSettings type
 
@@ -107,6 +107,7 @@ export const useTaskProcessing = ({
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
+        const taskDueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
         const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
 
         // --- TEMPORARY DEBUG LOG ---
@@ -121,7 +122,7 @@ export const useTaskProcessing = ({
         }
         // --- END TEMPORARY DEBUG LOG ---
 
-        // 1. Always include tasks completed/archived today
+        // 1. Include tasks completed/archived today
         const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, todayStart);
         if (isCompletedOrArchivedToday) {
             if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed by isCompletedOrArchivedToday`);

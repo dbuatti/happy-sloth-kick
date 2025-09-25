@@ -162,7 +162,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     enabled: !!userId && !authLoading,
     staleTime: 60 * 1000,
     select: (data) => {
-      console.log('useTasks: rawTasks updated:', data); // Add this log
       return data;
     }
   });
@@ -176,7 +175,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   }, [allCategories]);
 
   const invalidateTasksQueries = useCallback(() => {
-    console.log('useTasks: Invalidating tasks queries...'); // Add this log
     queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
     queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] });
     queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] });
@@ -212,7 +210,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
               dismissReminder(newOrOldTask.id);
             }
           } else if (payload.eventType === 'DELETE') {
-            dismissReminder(newOrOrOldTask.id);
+            dismissReminder(newOrOldTask.id);
           }
         }
       )
@@ -324,9 +322,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       image_url: newTaskData.image_url ?? null, // Fix: Add nullish coalescing for image_url
     };
 
-    console.log('handleAddTask: Data being sent to addTaskMutation:', dataWithDefaults);
     const result = await addTaskMutation(dataWithDefaults, mutationContext);
-    console.log('handleAddTask: Result from addTaskMutation:', result);
     return result;
   }, [userId, mutationContext, allCategories]);
 
