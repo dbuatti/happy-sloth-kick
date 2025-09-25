@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -45,7 +45,9 @@ interface DailyTasksHeaderProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   onToggleAllSections: () => void;
+  isManageCategoriesOpen: boolean; // Added
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
+  isManageSectionsOpen: boolean; // Added
   setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
 }
 
@@ -81,7 +83,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   toggleDoToday,
   onToggleAllSections,
+  isManageCategoriesOpen, // Destructured
   setIsManageCategoriesOpen, // Destructured
+  isManageSectionsOpen, // Destructured
   setIsManageSectionsOpen, // Destructured
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
