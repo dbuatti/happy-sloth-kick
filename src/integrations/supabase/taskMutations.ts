@@ -2,7 +2,7 @@ import { format, parseISO, isValid } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
 import { Task, NewTaskData, TaskUpdate, TaskSection } from '@/hooks/useTasks';
-import { MutationContext } from '@/hooks/useTasks'; // Import MutationContext
+import { MutationContext } from '@/hooks/useTasks';
 import { trackInFlight } from './utils';
 
 // Regex to validate UUID format
@@ -21,13 +21,13 @@ const getNextTaskOrder = (tasks: Task[], sectionId: string | null, parentTaskId:
 // --- Task Mutations ---
 
 export const addTaskMutation = async (newTaskData: NewTaskData, context: MutationContext): Promise<boolean> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder } = context;
   const cleanup = trackInFlight('add-task', inFlightUpdatesRef);
 
   try {
     const taskToInsert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order: number | null } = {
       ...newTaskData,
-      user_id: userId, // user_id is already part of NewTaskData, but we ensure it's set here
+      user_id: userId,
       status: newTaskData.status || 'to-do',
       priority: newTaskData.priority || 'medium',
       recurring_type: newTaskData.recurring_type || 'none',
@@ -53,7 +53,7 @@ export const addTaskMutation = async (newTaskData: NewTaskData, context: Mutatio
 
     if (data.remind_at && data.status === 'to-do') {
       const d = parseISO(data.remind_at);
-      if (isValid(d)) addReminder(data.id, `Reminder: ${data.description}`, d);
+      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
     }
 
     showSuccess('Task added successfully!');
@@ -69,7 +69,7 @@ export const addTaskMutation = async (newTaskData: NewTaskData, context: Mutatio
 };
 
 export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, context: MutationContext): Promise<string | null> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
   const cleanup = trackInFlight(taskId, inFlightUpdatesRef);
 
   try {
@@ -151,9 +151,9 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 
     if (data.remind_at && data.status === 'to-do') {
       const d = parseISO(data.remind_at);
-      if (isValid(d)) addReminder(data.id, `Reminder: ${data.description}`, d);
+      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
     } else if (data.status === 'completed' || data.status === 'archived' || data.remind_at === null) {
-      dismissReminder(data.id);
+      cancelReminder(data.id);
     }
 
     showSuccess('Task updated successfully!');
@@ -169,7 +169,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
   const cleanup = trackInFlight(taskId, inFlightUpdatesRef);
 
   try {
@@ -182,7 +182,7 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
 
     if (error) throw error;
 
-    dismissReminder(taskId);
+    cancelReminder(taskId);
     showSuccess('Task deleted successfully!');
     invalidateTasksQueries();
   } catch (error: any) {
@@ -194,7 +194,7 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
 };
 
 export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: string[], context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
   const cleanup = trackInFlight('bulk-update-tasks', inFlightUpdatesRef);
 
   try {
@@ -218,9 +218,9 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
       if (task) {
         if (updates.remind_at && updates.status === 'to-do') {
           const d = parseISO(updates.remind_at);
-          if (isValid(d)) addReminder(id, `Reminder: ${task.description}`, d);
+          if (isValid(d)) scheduleReminder(id, `Reminder: ${task.description}`, d);
         } else if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
-          dismissReminder(id);
+          cancelReminder(id);
         }
       }
     });
@@ -236,7 +236,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
 };
 
 export const bulkDeleteTasksMutation = async (ids: string[], context: MutationContext): Promise<boolean> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
   const cleanup = trackInFlight('bulk-delete-tasks', inFlightUpdatesRef);
 
   try {
@@ -263,7 +263,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
 
     if (error) throw error;
 
-    idsToDelete.forEach(id => dismissReminder(id));
+    idsToDelete.forEach(id => cancelReminder(id));
     showSuccess('Tasks deleted successfully!');
     invalidateTasksQueries();
     return true;
@@ -277,7 +277,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
 };
 
 export const archiveAllCompletedTasksMutation = async (context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
   const cleanup = trackInFlight('archive-all-completed-tasks', inFlightUpdatesRef);
 
   try {
@@ -300,7 +300,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
 
       if (updateError) throw updateError;
 
-      completedTaskIds.forEach(id => dismissReminder(id));
+      completedTaskIds.forEach(id => cancelReminder(id));
       showSuccess('All completed tasks archived!');
       invalidateTasksQueries();
     } else {
@@ -315,7 +315,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
 };
 
 export const markAllTasksInSectionCompletedMutation = async (sectionId: string | null, context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
   const cleanup = trackInFlight(`mark-all-in-section-completed-${sectionId}`, inFlightUpdatesRef);
 
   try {
@@ -339,7 +339,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
 
       if (updateError) throw updateError;
 
-      tasksToComplete.forEach(task => dismissReminder(task.id));
+      tasksToComplete.forEach(task => cancelReminder(task.id));
       showSuccess(`All tasks in section ${sectionId === null ? '"No Section"' : context.sections.find((s: TaskSection) => s.id === sectionId)?.name || ''} marked completed!`);
       invalidateTasksQueries();
     } else {
