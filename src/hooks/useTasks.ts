@@ -288,7 +288,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
+    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order: number | null } = {
       ...newTaskData,
       description: newTaskData.description || '',
       status: newTaskData.status || 'to-do',
@@ -301,9 +301,9 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
       section_id: newTaskData.section_id ?? null,
       parent_task_id: newTaskData.parent_task_id ?? null,
       original_task_id: newTaskData.original_task_id ?? null,
-      // created_at: newTaskData.created_at, // Removed this line
       link: newTaskData.link ?? null,
       image_url: newTaskData.image_url ?? null,
+      order: newTaskData.order ?? null, // Explicitly ensure order is number | null
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
