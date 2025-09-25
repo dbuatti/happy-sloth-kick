@@ -1,6 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useSettings } from '@/context/SettingsContext';
 import { useTasks, Task } from '@/hooks/useTasks';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import FullScreenFocusView from '@/components/FullScreenFocusView';

@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useAuth } from "@/context/AuthContext";
-import { useSettings } from "@/context/SettingsContext";
 import { useTasks, Task } from '@/hooks/useTasks';
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
