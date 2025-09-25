@@ -1,12 +1,12 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTasks, Task } from '@/hooks/useTasks';
-import TaskList from '@/components/TaskList';
-import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskFilter from '@/components/TaskFilter';
+import TaskList from '@/components/TaskList';
+import { Archive as ArchiveIcon, ListTodo } from 'lucide-react';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
+import TaskDetailDialog from '@/components/TaskDetailDialog'; // Import TaskDetailDialog
 import BulkActionBar from '@/components/BulkActionBar';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -15,18 +15,19 @@ interface ArchiveProps {
 
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate] = useState(new Date()); // Current date is not directly used for filtering in archive, but needed for useTasks hook
+  const searchInputRef = useRef<HTMLInputElement>(null); // Added useRef for search input
+
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-
-  // UI state for section and task expansion
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
 
   const {
     processedTasks,
     filteredTasks,
     loading,
+    handleAddTask,
     updateTask,
     deleteTask,
     bulkUpdateTasks,
@@ -44,36 +45,47 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     sections,
     allCategories,
     updateTaskParentAndOrder,
-    reorderSections,
+    markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    reorderSections,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
   } = useTasks({ currentDate, viewMode: 'archive', userId: demoUserId });
 
-  const { appointments: allAppointments } = useAllAppointments();
-
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    allAppointments.forEach(app => {
-      if (app.task_id) {
-        map.set(app.task_id, app);
-      }
-    });
-    return map;
-  }, [allAppointments]);
-
-  const handleOpenOverview = useCallback((task: Task) => {
+  const handleOpenTaskOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
   const handleEditTaskClick = useCallback((task: Task) => {
-    setTaskToOverview(task);
-    setIsTaskOverviewOpen(true);
+    setTaskToEdit(task);
+    setIsEditTaskDialogOpen(true);
+    setIsTaskOverviewOpen(false); // Close overview if opening edit
+  }, []);
+
+  const handleSaveTask = async (taskId: string, updates: Partial<Task>) => {
+    const result = await updateTask(taskId, updates);
+    if (result) {
+      setIsEditTaskDialogOpen(false);
+      setTaskToEdit(null);
+    }
+    return result;
+  };
+
+  const handleToggleSelectTask = useCallback((taskId: string) => {
+    setSelectedTasks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
   }, []);
 
   const handleClearSelection = useCallback(() => {
@@ -100,43 +112,18 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTasks, handleClearSelection]);
 
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: prev[sectionId] === undefined ? false : !prev[sectionId],
-    }));
-  }, []);
-
-  const toggleTask = useCallback((taskId: string) => {
-    setExpandedTasks(prev => ({
-      ...prev,
-      [taskId]: prev[taskId] === undefined ? false : !prev[taskId],
-    }));
-  }, []);
-
-  const toggleAllSections = useCallback(() => {
-    const allCollapsed = Object.values(expandedSections).every(val => val === false);
-    const newExpandedState: Record<string, boolean> = {};
-    sections.forEach(section => {
-      newExpandedState[section.id] = allCollapsed;
-    });
-    newExpandedState['no-section-header'] = allCollapsed; // Also toggle 'No Section'
-    setExpandedSections(newExpandedState);
-  }, [expandedSections, sections]);
-
   return (
     <div className="flex-1 space-y-4 p-4 md:p-6">
-      <Card className="shadow-lg rounded-xl">
+      <Card className="h-full">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Archived Tasks</CardTitle>
-          <p className="text-muted-foreground">
-            Tasks that are no longer active but kept for reference.
-          </p>
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <ArchiveIcon className="h-6 w-6 text-primary" /> Archived Tasks
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <TaskFilter
             currentDate={currentDate}
-            setCurrentDate={() => {}} // Not relevant for archive, but required by prop
+            setCurrentDate={() => {}} // Not applicable for archive view
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             statusFilter={statusFilter}
@@ -149,41 +136,56 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
             setSectionFilter={setSectionFilter}
             sections={sections}
             allCategories={allCategories}
-            searchRef={null} // Not using a ref here
+            searchRef={searchInputRef}
           />
-          <div className="mt-4">
-            <TaskList
-              processedTasks={processedTasks}
-              filteredTasks={filteredTasks}
-              loading={loading}
-              handleAddTask={() => Promise.resolve()} // Not adding tasks directly in archive
-              updateTask={updateTask}
-              deleteTask={deleteTask}
-              bulkUpdateTasks={bulkUpdateTasks}
-              markAllTasksInSectionCompleted={() => Promise.resolve()} // Not marking all complete in archive
-              sections={sections}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-              updateTaskParentAndOrder={updateTaskParentAndOrder}
-              reorderSections={reorderSections}
-              allCategories={allCategories}
-              setIsAddTaskOpen={() => {}} // Not adding tasks directly in archive
-              onOpenOverview={handleOpenOverview}
-              currentDate={currentDate}
-              expandedSections={expandedSections}
-              expandedTasks={expandedTasks}
-              toggleTask={toggleTask}
-              toggleSection={toggleSection}
-              toggleAllSections={toggleAllSections}
-              setFocusTask={setFocusTask}
-              doTodayOffIds={doTodayOffIds}
-              toggleDoToday={toggleDoToday}
-              scheduledTasksMap={scheduledTasksMap}
-              isDemo={isDemo}
-            />
-          </div>
+
+          {loading ? (
+            <div className="space-y-3 mt-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-20 w-full bg-muted rounded-xl animate-pulse" />
+              ))}
+            </div>
+          ) : filteredTasks.length === 0 ? (
+            <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+              <ListTodo className="h-12 w-12 text-muted-foreground" />
+              <p className="text-lg font-medium mb-2">No archived tasks found.</p>
+              <p className="text-sm">Your archive is empty, or no tasks match the current filters.</p>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <TaskList
+                processedTasks={processedTasks}
+                filteredTasks={filteredTasks}
+                loading={loading}
+                handleAddTask={handleAddTask}
+                updateTask={updateTask}
+                deleteTask={deleteTask}
+                bulkUpdateTasks={bulkUpdateTasks}
+                markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                sections={sections}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                updateTaskParentAndOrder={updateTaskParentAndOrder}
+                reorderSections={reorderSections}
+                allCategories={allCategories}
+                setIsAddTaskOpen={() => {}}
+                onOpenOverview={handleOpenTaskOverview}
+                currentDate={currentDate}
+                expandedSections={{}}
+                expandedTasks={{}}
+                toggleTask={() => {}}
+                toggleSection={() => {}}
+                toggleAllSections={() => {}}
+                setFocusTask={setFocusTask}
+                doTodayOffIds={doTodayOffIds}
+                toggleDoToday={toggleDoToday}
+                scheduledTasksMap={new Map()} // No scheduled tasks in archive view
+                isDemo={isDemo}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -198,11 +200,22 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
         />
       )}
 
-      <TaskDetailDialog
+      <TaskOverviewDialog
         task={taskToOverview}
         isOpen={isTaskOverviewOpen}
         onClose={() => setIsTaskOverviewOpen(false)}
+        onEditClick={handleEditTaskClick}
         onUpdate={updateTask}
+        onDelete={deleteTask}
+        sections={sections}
+        allTasks={processedTasks}
+      />
+
+      <TaskDetailDialog
+        task={taskToEdit}
+        isOpen={isEditTaskDialogOpen}
+        onClose={() => setIsEditTaskDialogOpen(false)}
+        onUpdate={handleSaveTask}
         onDelete={deleteTask}
         sections={sections}
         allCategories={allCategories}
@@ -211,7 +224,6 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         allTasks={processedTasks}
-        onEditClick={handleEditTaskClick}
       />
     </div>
   );
