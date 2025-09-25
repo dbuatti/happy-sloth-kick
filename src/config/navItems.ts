@@ -21,7 +21,7 @@ export const navItemsConfig = [
   },
   {
     name: "Daily Tasks",
-    path: "dailyTasks",
+    path: "daily-tasks", // Changed from "dailyTasks"
     icon: ListTodo,
     toggleable: true,
   },
@@ -39,25 +39,25 @@ export const navItemsConfig = [
   },
   {
     name: "Meal Planner",
-    path: "mealPlanner",
+    path: "meal-planner", // Changed from "mealPlanner"
     icon: UtensilsCrossed,
     toggleable: true,
   },
   {
     name: "Resonance Goals",
-    path: "resonanceGoals",
+    path: "resonance-goals", // Changed from "resonanceGoals"
     icon: Sparkles,
     toggleable: true,
   },
   {
     name: "Sleep",
     path: "sleep",
-    icon: Bed, // Changed from Moon to Bed for sleep
+    icon: Bed,
     toggleable: true,
   },
   {
     name: "Dev Space",
-    path: "devSpace",
+    path: "dev-space", // Changed from "devSpace"
     icon: Code,
     toggleable: true,
   },
