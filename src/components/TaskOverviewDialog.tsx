@@ -40,7 +40,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  allCategories,
+  allCategories, // This prop is not directly used in this component
   allTasks, // This is the prop, assumed to be processedTasks
 }) => {
   const { playSound } = useSound();

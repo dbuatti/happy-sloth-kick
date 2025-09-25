@@ -68,7 +68,7 @@ interface TaskListProps {
 
 const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
   const {
-    tasks,
+    // tasks, // Removed unused 'tasks' prop
     processedTasks,
     filteredTasks,
     loading,
