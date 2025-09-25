@@ -158,6 +158,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     queryFn: () => fetchTasks(userId!),
     enabled: !!userId && !authLoading,
     staleTime: 60 * 1000,
+    select: (data) => {
+      console.log('useTasks: rawTasks updated:', data); // Add this log
+      return data;
+    }
   });
 
   const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || tasksLoading;
@@ -169,6 +173,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   }, [allCategories]);
 
   const invalidateTasksQueries = useCallback(() => {
+    console.log('useTasks: Invalidating tasks queries...'); // Add this log
     queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
     queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] });
     queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] });
@@ -217,7 +222,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
         (payload) => {
           const newOrOldSection = (payload.new || payload.old) as TaskSection;
-          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return;
+          if (inFlightUpdatesRef.current.has(newOrOrOldSection.id)) return;
           invalidateSectionsQueries();
           if (payload.eventType === 'DELETE') {
             invalidateTasksQueries();

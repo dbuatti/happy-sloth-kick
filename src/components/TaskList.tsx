@@ -64,6 +64,7 @@ interface TaskListProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  userId: string | null; // Added userId prop
 }
 
 const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
@@ -96,9 +97,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     toggleDoToday,
     scheduledTasksMap,
     isDemo = false,
+    userId, // Destructure userId prop
   } = props;
-
-  const userId = ''; // Removed useAuth, so userId is hardcoded or passed from parent
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -128,12 +128,12 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId,
+      user_id: userId || '', // Use the userId prop here
       order: sections.length,
       include_in_focus_mode: true,
     };
     return [...sections, noSection];
-  }, [sections, userId]);
+  }, [sections, userId]); // Add userId to dependencies
 
   const allVisibleItemIds = useMemo(() => {
     const ids: UniqueIdentifier[] = [];
@@ -162,6 +162,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             addSubtasksRecursively(topLevelTasksInSection);
         }
     });
+    console.log('TaskList: allVisibleItemIds updated:', ids); // Add this log
     return ids;
   }, [allSortableSections, expandedSections, filteredTasks, expandedTasks]);
 
