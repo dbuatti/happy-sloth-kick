@@ -3,16 +3,13 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
-  Settings,
-  BarChart3,
-  Archive,
-  HelpCircle,
-  Moon,
   Menu,
   Palette,
   Sun,
   Monitor,
-} from "lucide-react"; // Removed individual icons that are now in navItemsConfig
+  Moon, // Keep Moon for theme selection
+  ListTodo, // Added ListTodo for app logo
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";

@@ -6,7 +6,6 @@ import {
   BarChart3,
   Archive,
   HelpCircle,
-  Moon,
   Code,
   UtensilsCrossed,
   Sparkles,
