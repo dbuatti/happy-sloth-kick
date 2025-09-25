@@ -44,8 +44,8 @@ export const useTaskProcessing = ({
 
     // Filter out tasks with invalid IDs first
     const validRawTasks = rawTasks.filter(task => {
-      // Allow virtual tasks (client-side generated IDs) and valid UUIDs
-      if (!task.id.startsWith('virtual-') && !UUID_REGEX.test(task.id)) {
+      // Allow virtual tasks (client-side generated IDs), temporary optimistic update IDs, and valid UUIDs
+      if (!task.id.startsWith('virtual-') && !task.id.startsWith('temp-') && !UUID_REGEX.test(task.id)) {
         console.warn(`Skipping task with invalid ID format: "${task.id}". It will not be displayed or interactable.`);
         return false;
       }
