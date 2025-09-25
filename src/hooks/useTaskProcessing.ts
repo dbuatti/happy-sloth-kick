@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { isSameDay, parseISO, isValid, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
+import { parse, getMinutes, getHours, parseISO, isValid, isSameDay, differenceInMinutes, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
 import { Task, TaskSection } from './useTasks'; // Import types
 import { UserSettings } from './useUserSettings'; // Import UserSettings type
 
@@ -35,6 +35,7 @@ export const useTaskProcessing = ({
   const todayStart = startOfDay(effectiveCurrentDate);
 
   const processedTasks = useMemo(() => {
+    console.log('useTaskProcessing: rawTasks length:', rawTasks.length);
     const allProcessedTasks: Task[] = [];
     const processedSeriesKeys = new Set<string>();
     const categoriesMapLocal = categoriesMap;
@@ -99,11 +100,13 @@ export const useTaskProcessing = ({
         }
       }
     });
+    console.log('useTaskProcessing: processedTasks length:', allProcessedTasks.length);
     return allProcessedTasks;
   }, [rawTasks, todayStart, categoriesMap]);
 
   const filtered = useMemo(() => {
     let filteredTasks = processedTasks;
+    console.log('useTaskProcessing: Starting filter with processedTasks length:', filteredTasks.length);
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
@@ -196,6 +199,10 @@ export const useTaskProcessing = ({
       });
     }
 
+    console.log('useTaskProcessing: Final filteredTasks length:', filteredTasks.length);
+    if (filteredTasks.length > 0) {
+        console.log('useTaskProcessing: First filtered task:', filteredTasks[0]);
+    }
     return filteredTasks;
   }, [
     processedTasks,
@@ -209,7 +216,7 @@ export const useTaskProcessing = ({
     userSettings,
     todayStart,
     sections,
-    doTodayOffIds, // Added doTodayOffIds to dependency array
+    doTodayOffIds,
   ]);
 
   return { processedTasks, filteredTasks: filtered };
