@@ -1,13 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import { useIsMobile } from '@/hooks/use-mobile';
-import FullScreenFocusView from '@/components/FullScreenFocusView';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import FullScreenFocusView from '@/components/FullScreenFocusView';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { Brain } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Target } from 'lucide-react';
 
 interface FocusModeProps {
   demoUserId?: string;
@@ -15,87 +13,86 @@ interface FocusModeProps {
 
 const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
   const [currentDate] = useState(new Date());
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const isMobile = useIsMobile();
 
   const {
-    processedTasks: allTasks,
+    processedTasks,
     filteredTasks,
+    nextAvailableTask,
     updateTask,
     deleteTask,
     sections,
     allCategories,
     handleAddTask,
-    nextAvailableTask,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
   } = useTasks({ currentDate, viewMode: 'focus', userId: demoUserId });
 
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true);
   const [isFullScreenFocus, setIsFullScreenFocus] = useState(false);
-  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
-
-  const handleOpenFocusView = () => {
-    if (nextAvailableTask) {
-      setIsFullScreenFocus(true);
-    }
-  };
-
-  const handleMarkDoneAndCloseFocus = async () => {
-    if (nextAvailableTask) {
-      await updateTask(nextAvailableTask.id, { status: 'completed' });
-      setIsFullScreenFocus(false);
-      setFocusTask(null); // Clear focus after completion
-    }
-  };
 
   const handleOpenDetail = (task: any) => {
-    // This function is passed to FocusToolsPanel, which then passes it to TaskOverviewDialog.
-    // For now, we'll just log it or implement a placeholder.
-    console.log("Open task detail for:", task);
+    // This function is passed to FocusPanelDrawer, which then passes it to TaskOverviewDialog.
+    // TaskOverviewDialog expects a task object and will handle opening itself.
+    // For now, we'll just log it or pass it through.
+    console.log("Opening detail for task:", task);
+    // If you have a TaskOverviewDialog in this component's scope, you'd set its state here.
+    // Since it's handled within FocusPanelDrawer, we don't need to do anything here.
   };
 
+  const handleStartFullScreenFocus = () => {
+    if (nextAvailableTask) {
+      setIsFullScreenFocus(true);
+      setIsFocusPanelOpen(false); // Close the drawer when full screen is active
+    }
+  };
+
+  const handleExitFullScreenFocus = () => {
+    setIsFullScreenFocus(false);
+    setIsFocusPanelOpen(true); // Re-open the drawer when exiting full screen
+  };
+
+  const handleMarkFullScreenTaskDone = async () => {
+    if (nextAvailableTask) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+      handleExitFullScreenFocus();
+    }
+  };
+
+  if (isFullScreenFocus && nextAvailableTask) {
+    return (
+      <FullScreenFocusView
+        taskDescription={nextAvailableTask.description}
+        onClose={handleExitFullScreenFocus}
+        onMarkDone={handleMarkFullScreenTaskDone}
+      />
+    );
+  }
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4">
-      {isFullScreenFocus && nextAvailableTask ? (
-        <FullScreenFocusView
-          taskDescription={nextAvailableTask.description}
-          onClose={() => setIsFullScreenFocus(false)}
-          onMarkDone={handleMarkDoneAndCloseFocus}
-        />
-      ) : (
-        <div className="flex flex-col items-center justify-center text-center space-y-6">
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-foreground">
-            Focus Mode
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl">
-            Eliminate distractions and concentrate on your most important tasks.
-          </p>
-          {nextAvailableTask ? (
-            <div className="space-y-4">
-              <p className="text-2xl font-bold text-primary">
-                Next: {nextAvailableTask.description}
-              </p>
-              <Button size="lg" onClick={handleOpenFocusView} className="h-14 px-8 text-lg">
-                <Brain className="mr-2 h-6 w-6" /> Start Focus
-              </Button>
-            </div>
-          ) : (
-            <p className="text-xl text-muted-foreground">
-              No tasks currently set for focus. Add a task or select one from your daily list.
-            </p>
-          )}
-          <Button variant="outline" onClick={() => setIsFocusPanelOpen(true)} className="mt-8">
-            Open Focus Tools
-          </Button>
-        </div>
-      )}
+    <div className="flex-1 flex flex-col items-center justify-center p-4 lg:p-6">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground">Focus Mode</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl">
+          Minimize distractions and concentrate on your most important tasks.
+        </p>
+        <Button
+          size="lg"
+          onClick={handleStartFullScreenFocus}
+          disabled={!nextAvailableTask}
+          className="h-12 px-6 text-lg"
+        >
+          <Target className="mr-2 h-5 w-5" /> Start Focused Work
+        </Button>
+      </div>
 
       <FocusPanelDrawer
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
         nextAvailableTask={nextAvailableTask}
-        allTasks={allTasks}
+        allTasks={processedTasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
         onOpenDetail={handleOpenDetail}

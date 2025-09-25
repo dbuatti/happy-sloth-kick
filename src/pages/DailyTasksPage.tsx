@@ -1,12 +1,13 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { Card, CardContent } from "@/components/ui/card";
-import { useTasks } from '@/hooks/useTasks';
+import React, { useState, useRef, useCallback } from 'react';
 import TaskList from '@/components/TaskList';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
+import { useTasks, Task, NewTaskData } from '@/hooks/useTasks';
+import { useIsMobile } from '@/hooks/use-mobile';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
-import { useIsMobile } from '@/hooks/use-mobile';
+import BulkActionBar from '@/components/BulkActionBar';
+import { useSettings } from '@/context/SettingsContext';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 
 interface DailyTasksPageProps {
@@ -16,11 +17,13 @@ interface DailyTasksPageProps {
 
 const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const isMobile = useIsMobile();
+  const { settings } = useSettings();
 
   const {
+    tasks,
     processedTasks,
     filteredTasks,
+    nextAvailableTask,
     loading,
     handleAddTask,
     updateTask,
@@ -47,7 +50,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     deleteSection,
     updateSectionIncludeInFocusMode,
     reorderSections,
-    nextAvailableTask,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
@@ -57,7 +59,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   const { appointments: allAppointments } = useAllAppointments();
 
-  const scheduledTasksMap = useMemo(() => {
+  const scheduledTasksMap = React.useMemo(() => {
     const map = new Map<string, any>();
     allAppointments.forEach(app => {
       if (app.task_id) {
@@ -67,71 +69,79 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     return map;
   }, [allAppointments]);
 
+  const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<any>(null);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
   const taskListRef = useRef<any>(null);
 
-  const handleOpenOverview = useCallback((task: any) => {
+  const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleEditTaskClick = useCallback((task: any) => {
+  const handleEditTaskClick = useCallback((task: Task) => {
     setTaskToOverview(task);
-    setIsTaskOverviewOpen(true); // TaskDetailDialog is used for editing
+    setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleOpenFocusView = () => {
-    setIsFocusPanelOpen(true);
-  };
-
-  const handleToggleAllSections = () => {
+  const handleToggleAllSections = useCallback(() => {
     if (taskListRef.current) {
       taskListRef.current.toggleAllSections();
     }
+  }, []);
+
+  const handleSelectTask = (taskId: string, isSelected: boolean) => {
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(taskId);
+      } else {
+        newSet.delete(taskId);
+      }
+      return newSet;
+    });
   };
 
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
+  const handleClearSelection = () => {
+    setSelectedTaskIds(new Set());
+  };
 
-  const toggleSection = useCallback((sectionId: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [sectionId]: prev[sectionId] === false ? true : false, // Toggle logic
-    }));
-  }, []);
+  const handleBulkComplete = async () => {
+    await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  };
 
-  const toggleTask = useCallback((taskId: string) => {
-    setExpandedTasks(prev => ({
-      ...prev,
-      [taskId]: prev[taskId] === false ? true : false, // Toggle logic
-    }));
-  }, []);
+  const handleBulkArchive = async () => {
+    await bulkUpdateTasks({ status: 'archived' }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  };
 
-  const toggleAllSections = useCallback(() => {
-    const allCollapsed = Object.values(expandedSections).every(val => val === false);
-    const newExpandedState: Record<string, boolean> = {};
-    sections.forEach(section => {
-      newExpandedState[section.id] = allCollapsed;
-    });
-    newExpandedState['no-section-header'] = allCollapsed;
-    setExpandedSections(newExpandedState);
-  }, [expandedSections, sections]);
+  const handleBulkDelete = async () => {
+    await bulkDeleteTasks(Array.from(selectedTaskIds));
+    handleClearSelection();
+  };
+
+  const handleBulkChangePriority = async (priority: Task['priority']) => {
+    await bulkUpdateTasks({ priority }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-background">
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
-        tasks={processedTasks}
+        tasks={tasks}
         filteredTasks={filteredTasks}
         sections={sections}
         allCategories={allCategories}
-        userId={demoUserId || null}
+        userId={demoUserId}
         setIsFocusPanelOpen={setIsFocusPanelOpen}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
@@ -154,7 +164,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         nextAvailableTask={nextAvailableTask}
         updateTask={updateTask}
         onOpenOverview={handleOpenOverview}
-        onOpenFocusView={handleOpenFocusView}
+        onOpenFocusView={() => setIsFocusPanelOpen(true)}
         tasksLoading={loading}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
@@ -165,51 +175,45 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setIsManageSectionsOpen={setIsManageSectionsOpen}
       />
 
-      <main className="flex-1 p-4 overflow-auto">
-        <Card className="shadow-lg rounded-xl">
-          <CardContent className="p-4">
-            <TaskList
-              ref={taskListRef}
-              processedTasks={processedTasks}
-              filteredTasks={filteredTasks}
-              loading={loading}
-              handleAddTask={handleAddTask}
-              updateTask={updateTask}
-              deleteTask={deleteTask}
-              bulkUpdateTasks={bulkUpdateTasks}
-              bulkDeleteTasks={bulkDeleteTasks}
-              markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-              sections={sections}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-              updateTaskParentAndOrder={updateTaskParentAndOrder}
-              reorderSections={reorderSections}
-              allCategories={allCategories}
-              setIsAddTaskOpen={() => {}} // No longer directly used here
-              onOpenOverview={handleOpenOverview}
-              currentDate={currentDate}
-              expandedSections={expandedSections}
-              expandedTasks={expandedTasks}
-              toggleTask={toggleTask}
-              toggleSection={toggleSection}
-              toggleAllSections={toggleAllSections}
-              setFocusTask={setFocusTask}
-              doTodayOffIds={doTodayOffIds}
-              toggleDoToday={toggleDoToday}
-              scheduledTasksMap={scheduledTasksMap}
-              isDemo={isDemo}
-            />
-          </CardContent>
-        </Card>
-      </main>
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <TaskList
+          ref={taskListRef}
+          processedTasks={processedTasks}
+          filteredTasks={filteredTasks}
+          loading={loading}
+          handleAddTask={handleAddTask}
+          updateTask={updateTask}
+          deleteTask={deleteTask}
+          bulkUpdateTasks={bulkUpdateTasks}
+          bulkDeleteTasks={bulkDeleteTasks} // Pass bulkDeleteTasks
+          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+          sections={sections}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          updateTaskParentAndOrder={updateTaskParentAndOrder}
+          reorderSections={reorderSections}
+          allCategories={allCategories}
+          setIsAddTaskOpen={setIsAddTaskOpen}
+          onOpenOverview={handleOpenOverview}
+          currentDate={currentDate}
+          expandedSections={settings?.expanded_sections || {}}
+          expandedTasks={settings?.expanded_tasks || {}}
+          toggleTask={(taskId) => updateSettings({ expanded_tasks: { ...settings?.expanded_tasks, [taskId]: !(settings?.expanded_tasks?.[taskId] ?? true) } })}
+          toggleSection={(sectionId) => updateSettings({ expanded_sections: { ...settings?.expanded_sections, [sectionId]: !(settings?.expanded_sections?.[sectionId] ?? true) } })}
+          toggleAllSections={handleToggleAllSections}
+          setFocusTask={setFocusTask}
+          doTodayOffIds={doTodayOffIds}
+          toggleDoToday={toggleDoToday}
+          scheduledTasksMap={scheduledTasksMap}
+          isDemo={isDemo}
+        />
+      </div>
 
-      {!isDemo && (
-        <FloatingAddTaskButton onClick={() => handleEditTaskClick(null)} />
-      )}
+      <FloatingAddTaskButton onClick={() => setIsAddTaskOpen(true)} isDemo={isDemo} />
 
-      {taskToOverview && (
+      {isTaskOverviewOpen && taskToOverview && (
         <TaskDetailDialog
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
@@ -243,6 +247,17 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
       />
+
+      {selectedTaskIds.size > 0 && (
+        <BulkActionBar
+          selectedCount={selectedTaskIds.size}
+          onClearSelection={handleClearSelection}
+          onComplete={handleBulkComplete}
+          onArchive={handleBulkArchive}
+          onDelete={handleBulkDelete}
+          onChangePriority={handleBulkChangePriority}
+        />
+      )}
     </div>
   );
 };
