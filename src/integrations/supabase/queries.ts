@@ -62,11 +62,12 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} FAILED (not found or RLS issue).`);
   }
 
-  // Now fetch all tasks for the user
+  // Now fetch all tasks for the user, explicitly requesting a large range
   const { data, error } = await supabase
     .from('tasks')
     .select('*') // Select all columns, category_color will be added in useTasks
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .range(0, 999999); // Request a large range to bypass the default 1000-row limit
 
   if (error) {
     console.error('fetchTasks: Supabase query error for all tasks:', error);
