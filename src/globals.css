@@ -10,13 +10,3 @@
   background-color: rgba(0, 0, 0, 0.6) !important; 
   opacity: 1 !important; /* Ensure full opacity of the overlay element itself */
 }
-
-:root {
-  /* ... existing variables ... */
-  --meal-card-background: 0 0% 98%; /* Very light pink */
-  --meal-card-border: 0 0% 90%; /* Lighter border */
-  --meal-card-border-left: 350 80% 80%; /* Distinct pink for left border */
-
-  --radius-3xl: 1.5rem; /* 24px */
-  --radius-4xl: 2rem;   /* 32px */
-}
