@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
-import { startOfDay, parseISO, isSameDay, isBefore, format, isValid, isAfter } from 'date-fns'; // Added isValid, isAfter
+import { startOfDay, parseISO, isSameDay, isBefore, format, isValid, isAfter } from 'date-fns';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Define a minimal Task type for this hook, including necessary fields for filtering
@@ -13,7 +13,8 @@ interface DailyCountTask {
   section_id: string | null;
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
   parent_task_id: string | null;
-  completed_at: string | null; // Added completed_at
+  completed_at: string | null;
+  due_date: string | null; // Added due_date
 }
 
 // Re-use query functions from useTasks
