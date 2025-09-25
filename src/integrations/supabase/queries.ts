@@ -41,13 +41,5 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
 
   if (error) throw error;
   
-  const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
-  const foundTargetTask = (data || []).find(task => task.id === targetTaskId);
-  if (foundTargetTask) {
-    console.log(`fetchTasks: Target task ${targetTaskId} WAS found in Supabase response!`, foundTargetTask);
-  } else {
-    console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in Supabase response for user ${userId}.`);
-  }
-
   return data || [];
 };
