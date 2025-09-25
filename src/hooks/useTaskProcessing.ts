@@ -155,7 +155,7 @@ export const useTaskProcessing = ({
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
-        // Include tasks completed/archived today
+        // Always include tasks completed/archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
             const completedAtDate = parseISO(task.completed_at);
             const isCompletedOnCurrentDate = (
@@ -167,20 +167,9 @@ export const useTaskProcessing = ({
             }
         }
 
-        // Include 'to-do' tasks
+        // Include all 'to-do' tasks, regardless of created_at or due_date
         if (task.status === 'to-do') {
-            const createdAt = startOfDay(parseISO(task.created_at));
-            const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
-
-            const isCreatedOnEffectiveDate = isSameDay(createdAt, effectiveCurrentDate);
-            const isDueOnEffectiveDateOrPast = dueDate && !isAfter(dueDate, effectiveCurrentDate);
-            const isUndatedAndCreatedOnEffectiveDateOrPast = !dueDate && !isAfter(createdAt, effectiveCurrentDate);
-
-            const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
-
-            if (isRelevantByDate) {
-                return true;
-            }
+            return true; 
         }
 
         return false;
