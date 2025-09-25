@@ -68,8 +68,6 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     .select('*') // Select all columns, category_color will be added in useTasks
     .eq('user_id', userId)
     .order('created_at', { ascending: true }) // Add a default order for consistent results
-    .limit(null) // Explicitly remove any client-side limit
-    .range(0, 999999) // Request a large range, though 'Prefer' header is more definitive
     .options({
       headers: {
         'Prefer': 'count=exact,max-rows=none', // Request exact count and no max rows
@@ -78,7 +76,7 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
 
   if (error) {
     console.error('fetchTasks: Supabase query error for all tasks:', error);
-    throw error;
+    throw error; // Re-throw the error to be caught by react-query
   }
   
   const foundTargetTaskInAll = (data || []).find(task => task.id === targetTaskId);
