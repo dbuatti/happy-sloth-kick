@@ -107,42 +107,43 @@ export const useTaskProcessing = ({
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
-        const taskCreatedAt = startOfDay(parseISO(task.created_at));
-        const taskDueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
         const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
 
-        // 1. Include tasks completed/archived today
-        const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, todayStart);
-        if (isCompletedOrArchivedToday) return true;
-
-        // 2. Only consider 'to-do' tasks from here
-        if (task.status !== 'to-do') return false;
-
-        // Check if the task is marked as "Do Today" (not in doTodayOffIds)
-        const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
-        if (!isDoToday) return false; // If not "Do Today", filter it out
-
-        // Now, check date relevance for 'to-do' and 'Do Today' tasks
-        // A task is relevant if it's due today/past, created today/past (if no due date), or is a future task.
-        // The future_tasks_days_visible filter will handle the range for future tasks.
-        let isRelevantByDate = false;
-        if (taskDueDate) {
-          isRelevantByDate = true; // Potentially relevant if it has a due date (past, today, or future)
-        } else {
-          isRelevantByDate = true; // Potentially relevant if it has no due date (created past, today, or future)
-        }
-        
         // --- TEMPORARY DEBUG LOG ---
         if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
-            console.log(`DEBUG: Task ${task.id} (description: "${task.description}") - After initial daily filter`);
-            console.log(`  isCompletedOrArchivedToday: ${isCompletedOrArchivedToday}`);
-            console.log(`  isToDo: ${task.status === 'to-do'}`);
-            console.log(`  isDoToday: ${isDoToday}`);
-            console.log(`  isRelevantByDate: ${isRelevantByDate}`);
+            console.log(`DEBUG: Task ${task.id} (description: "${task.description}") - Before initial daily filter`);
+            console.log(`  task.status: ${task.status}`);
+            console.log(`  task.created_at: ${task.created_at}`);
+            console.log(`  task.due_date: ${task.due_date}`);
+            console.log(`  task.completed_at: ${task.completed_at}`);
+            console.log(`  effectiveCurrentDate: ${format(effectiveCurrentDate, 'yyyy-MM-dd')}`);
+            console.log(`  todayStart: ${format(todayStart, 'yyyy-MM-dd')}`);
         }
         // --- END TEMPORARY DEBUG LOG ---
 
-        return isRelevantByDate;
+        // 1. Always include tasks completed/archived today
+        const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, todayStart);
+        if (isCompletedOrArchivedToday) {
+            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed by isCompletedOrArchivedToday`);
+            return true;
+        }
+
+        // 2. Only consider 'to-do' tasks from here
+        if (task.status !== 'to-do') {
+            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Filtered out: Not 'to-do'`);
+            return false;
+        }
+
+        // 3. Check if the task is marked as "Do Today" (not in doTodayOffIds)
+        const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
+        if (!isDoToday) {
+            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Filtered out: Not 'Do Today'`);
+            return false; // If not "Do Today", filter it out
+        }
+
+        // 4. If it's a 'to-do' and 'Do Today' task, let it pass to the future_tasks_days_visible filter
+        if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed initial daily filter (to-do & Do Today)`);
+        return true;
       });
     }
 
@@ -198,13 +199,19 @@ export const useTaskProcessing = ({
         // If task is completed or archived today, it should always be visible regardless of future_tasks_days_visible
         const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
         const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, today);
-        if (isCompletedOrArchivedToday) return true;
+        if (isCompletedOrArchivedToday) {
+            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed future_tasks_days_visible (completed/archived today)`);
+            return true;
+        }
 
         // For 'to-do' tasks, apply the visibility limit based on due_date or created_at
         const dateToCheck = task.due_date ? startOfDay(parseISO(task.due_date)) : startOfDay(parseISO(task.created_at));
         
         // If the date is in the past or today, it's always visible
-        if (!isAfter(dateToCheck, today)) return true;
+        if (!isAfter(dateToCheck, today)) {
+            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed future_tasks_days_visible (past/today)`);
+            return true;
+        }
 
         // If the date is in the future, check if it's within the visibility limit
         const isWithinFutureLimit = !isAfter(dateToCheck, futureLimit);
@@ -217,6 +224,7 @@ export const useTaskProcessing = ({
             console.log(`  futureLimit: ${format(futureLimit, 'yyyy-MM-dd')}`);
             console.log(`  isAfter(dateToCheck, today): ${isAfter(dateToCheck, today)}`);
             console.log(`  isWithinFutureLimit: ${isWithinFutureLimit}`);
+            console.log(`DEBUG: Task ${task.id} - Result of future_tasks_days_visible filter: ${isWithinFutureLimit}`);
         }
         // --- END TEMPORARY DEBUG LOG ---
 
