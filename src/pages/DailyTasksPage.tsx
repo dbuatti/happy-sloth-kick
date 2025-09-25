@@ -186,7 +186,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             updateTask={updateTask}
             deleteTask={deleteTask}
             bulkUpdateTasks={bulkUpdateTasks}
-            markAllTasksInSectionCompleted={markAllTasksInSectionInSectionCompleted}
+            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
             sections={sections}
             createSection={createSection}
             updateSection={updateSection}
