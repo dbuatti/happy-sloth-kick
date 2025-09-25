@@ -141,7 +141,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-0 py-0.5 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed py-1 to py-0.5
+        "relative flex flex-col gap-0 py-px px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed py-0.5 to py-px
         "border-l-4",
         isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
         !isCompleted && getIngredientStatusClasses(),
@@ -167,7 +167,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("h-7 w-7", isDemo && "cursor-not-allowed")}
+                className={cn("h-6 w-6", isDemo && "cursor-not-allowed")} // Changed h-7 w-7 to h-6 w-6
                 onClick={() => handleHasIngredientsChange(!hasIngredients)}
                 disabled={isDemo || isCompleted}
               >
