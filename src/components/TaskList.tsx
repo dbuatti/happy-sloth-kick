@@ -33,7 +33,6 @@ import { Appointment } from '@/hooks/useAppointments';
 
 
 interface TaskListProps {
-  // tasks: Task[]; // Removed unused 'tasks' prop
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
   filteredTasks: Task[];
   loading: boolean;
@@ -68,7 +67,6 @@ interface TaskListProps {
 
 const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
   const {
-    // tasks, // Removed unused 'tasks' prop
     processedTasks,
     filteredTasks,
     loading,

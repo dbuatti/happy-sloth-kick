@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy, CheckCircle2 } from 'lucide-react';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection } from '@/hooks/useTasks'; // Removed Category import
 import { useSound } from '@/context/SoundContext';
 import {
   AlertDialog,
@@ -28,7 +28,6 @@ interface TaskOverviewDialogProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  // allCategories: Category[]; // Removed unused prop
   allTasks: Task[]; // This prop should now receive processedTasks
 }
 
@@ -40,7 +39,6 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  // allCategories, // Removed unused prop
   allTasks, // This is the prop, assumed to be processedTasks
 }) => {
   const { playSound } = useSound();

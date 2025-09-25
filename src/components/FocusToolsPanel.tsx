@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react'; // Added useCallback
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Edit, Target, ListTodo, Clock, Plus, Sparkles, Wind, Home, TreePine, UtensilsCrossed, ScanEye, Armchair, MessageSquare } from 'lucide-react';
@@ -22,6 +22,7 @@ interface FocusToolsPanelProps {
   allCategories: Category[];
   currentDate: Date;
   handleAddTask: (taskData: any) => Promise<any>;
+  onOpenFocusView: () => void; // Added onOpenFocusView prop
 }
 
 const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
@@ -35,6 +36,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
   allCategories,
   currentDate,
   handleAddTask,
+  onOpenFocusView, // Destructure onOpenFocusView
 }) => {
   const navigate = useNavigate();
   
@@ -60,15 +62,15 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     }
   };
 
-  const handleOpenTaskOverview = (task: Task) => {
+  const handleOpenTaskOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
-  };
+  }, []);
 
-  const handleEditTaskFromOverview = (task: Task) => {
+  const handleEditTaskFromOverview = useCallback((task: Task) => {
     setIsTaskOverviewOpen(false);
     onOpenDetail(task);
-  };
+  }, [onOpenDetail]);
 
   const upcomingTasks = useMemo(() => {
     if (!nextAvailableTask) return [];
@@ -93,7 +95,7 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
     const suggestions: AISuggestionResult | null = await suggestTaskDetails(quickAddTaskDescription.trim(), categoriesForAI, currentDate);
     dismissToast(loadingToastId);
     if (!suggestions) {
-      showError('Failed to get AI suggestions. Please try again.');
+      showError('Failed to get AI suggestions. Adding task with default details.');
       setIsAddingQuickTask(false);
       setQuickAddTaskDescription('');
       return;
@@ -272,7 +274,6 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
           onUpdate={updateTask}
           onDelete={onDeleteTask}
           sections={sections}
-          allCategories={allCategories}
           allTasks={allTasks} // Passed allTasks (processed)
         />
       )}

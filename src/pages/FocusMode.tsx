@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react'; // Added useCallback
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTasks, Task } from '@/hooks/useTasks'; // Import Task
+import { useTasks, Task } from '@/hooks/useTasks';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog'; // Import TaskOverviewDialog
 
 interface FocusModeProps {
   demoUserId?: string;
@@ -33,8 +34,10 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
   } = useTasks({ currentDate, viewMode: 'focus', userId });
 
   const [isFullScreenFocus, setIsFullScreenFocus] = useState(false);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // State for TaskOverviewDialog
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // State for TaskOverviewDialog
 
-  const handleOpenFocusView = useCallback(() => { // Defined as useCallback
+  const handleOpenFocusView = useCallback(() => {
     if (nextAvailableTask) {
       setIsFullScreenFocus(true);
     }
@@ -51,18 +54,12 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     }
   };
 
-  const handleOpenTaskOverview = useCallback((task: Task) => { // Defined as useCallback
-    // This function is passed to FocusToolsPanel's onOpenDetail
-    // and then to TaskOverviewDialog's onEditClick
-    // It should set the task to be viewed in the TaskOverviewDialog
+  const handleOpenTaskOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // State for TaskOverviewDialog
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // State for TaskOverviewDialog
-
-  const handleEditTaskFromOverview = useCallback((task: Task) => { // Defined as useCallback
+  const handleEditTaskFromOverview = useCallback((task: Task) => {
     setIsTaskOverviewOpen(false); // Close overview dialog
     // This would typically open a TaskDetailDialog for editing
     // For now, we'll just log it or re-open the overview for editing if that's the flow
@@ -134,7 +131,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
             allTasks={processedTasks} // Pass processedTasks
             filteredTasks={filteredTasks}
             updateTask={updateTask}
-            onOpenDetail={handleOpenTaskOverview} // Corrected prop name
+            onOpenDetail={handleOpenTaskOverview}
             onDeleteTask={deleteTask}
             sections={sections}
             allCategories={allCategories}
@@ -161,12 +158,11 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview} // Pass the handler
+          onEditClick={handleEditTaskFromOverview}
           onUpdate={updateTask}
           onDelete={deleteTask}
           sections={sections}
           allTasks={processedTasks}
-          allCategories={allCategories} // Keep this if TaskOverviewDialog needs it for sub-components
         />
       )}
     </div>

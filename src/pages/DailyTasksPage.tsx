@@ -20,7 +20,7 @@ interface DailyTasksPageProps {
 
 const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const userId = demoUserId || user?.id || null; // Ensure userId is string | null
+  const userId = demoUserId || user?.id || undefined; // Ensure userId is string | undefined
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const {
@@ -177,7 +177,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
-        tasks={tasks}
+        tasks={processedTasks} // Pass processedTasks here
         filteredTasks={filteredTasks}
         sections={sections}
         allCategories={allCategories}
@@ -214,7 +214,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         <TaskList
           ref={taskListRef}
-          tasks={processedTasks} // Pass processedTasks here
           processedTasks={processedTasks}
           filteredTasks={filteredTasks}
           loading={loading}
