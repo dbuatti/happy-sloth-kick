@@ -434,7 +434,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={tasks}
+            allTasks={processedTasks} // Use processedTasks here
           />
         </DialogContent>
       </Dialog>

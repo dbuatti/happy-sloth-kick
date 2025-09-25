@@ -222,7 +222,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
         (payload) => {
           const newOrOldSection = (payload.new || payload.old) as TaskSection;
-          if (inFlightUpdatesRef.current.has(newOrOrOldSection.id)) return;
+          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return; // Corrected typo here
           invalidateSectionsQueries();
           if (payload.eventType === 'DELETE') {
             invalidateTasksQueries();
@@ -542,8 +542,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart, effectiveCurrentDate]);
 
   return {
-    tasks: rawTasks,
-    processedTasks,
+    tasks: rawTasks, // rawTasks is Omit<Task, 'category_color'>[]
+    processedTasks, // processedTasks is Task[]
     filteredTasks: finalFilteredTasks,
     nextAvailableTask,
     loading,

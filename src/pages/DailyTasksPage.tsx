@@ -27,7 +27,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
 
   const {
-    tasks,
+    // tasks, // Removed as processedTasks is used instead for rendering
     processedTasks,
     filteredTasks,
     nextAvailableTask,
@@ -36,7 +36,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     updateTask,
     deleteTask,
     bulkUpdateTasks,
-    bulkDeleteTasks,
+    // bulkDeleteTasks, // Removed unused variable
     searchFilter,
     setSearchFilter,
     statusFilter,
@@ -141,11 +141,11 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
-        tasks={tasks}
+        tasks={processedTasks} // Use processedTasks here
         filteredTasks={filteredTasks}
         sections={sections}
         allCategories={allCategories}
-        userId={userId}
+        userId={userId || null} // Ensure userId is string | null
         setIsFocusPanelOpen={setIsFocusPanelOpen}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
@@ -178,7 +178,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <div className="flex-1 overflow-y-auto p-4">
         <div className="w-full max-w-4xl mx-auto flex flex-col h-full"> {/* Added h-full here */}
           <TaskList
-            tasks={tasks}
+            tasks={processedTasks} // Use processedTasks here
             processedTasks={processedTasks}
             filteredTasks={filteredTasks}
             loading={loading}
@@ -209,7 +209,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             toggleDoToday={toggleDoToday}
             scheduledTasksMap={scheduledTasksMap.current}
             isDemo={isDemo}
-            userId={userId} // Pass userId to TaskList
+            userId={userId || null} // Ensure userId is string | null
           />
         </div>
       </div>
@@ -239,7 +239,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={tasks}
+            allTasks={processedTasks} // Use processedTasks here
           />
         </DialogContent>
       </Dialog>
@@ -254,7 +254,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
-          allTasks={tasks}
+          allTasks={processedTasks} // Use processedTasks here
         />
       )}
 
@@ -262,7 +262,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
         nextAvailableTask={nextAvailableTask}
-        tasks={tasks}
+        tasks={processedTasks} // Use processedTasks here
         filteredTasks={filteredTasks}
         updateTask={updateTask}
         onOpenDetail={handleOpenOverview}
