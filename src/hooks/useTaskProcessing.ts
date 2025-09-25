@@ -65,12 +65,29 @@ export const useTaskProcessing = ({
         allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray' });
       } else {
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
-        let relevantInstance: Omit<Task, 'category_color'> | null = sortedInstances.find(t => isSameDay(startOfDay(parseISO(t.created_at)), todayStart)) || null;
+        
+        let relevantInstance: Omit<Task, 'category_color'> | null = null;
 
+        // 1. Check for an instance completed today
+        relevantInstance = sortedInstances.find(t => 
+            t.completed_at && isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
+        ) || null;
+
+        // 2. If not found, check for an instance created today (and not yet completed/archived)
         if (!relevantInstance) {
-          relevantInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do') || null;
+            relevantInstance = sortedInstances.find(t => 
+                isSameDay(startOfDay(parseISO(t.created_at)), todayStart) && t.status !== 'completed' && t.status !== 'archived'
+            ) || null;
         }
 
+        // 3. If still not found, look for an uncompleted instance from before today
+        if (!relevantInstance) {
+          relevantInstance = sortedInstances.find(t => 
+            isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do'
+          ) || null;
+        }
+
+        // If still no relevant instance (real or carried over), create a virtual one if applicable
         if (!relevantInstance) {
           const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
           const baseTaskForVirtual = mostRecentRealInstance || templateTask;
@@ -85,12 +102,12 @@ export const useTaskProcessing = ({
               ...baseTaskForVirtual,
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
               created_at: todayStart.toISOString(),
-              status: 'to-do',
+              status: 'to-do', // Virtual tasks are always 'to-do' initially
               original_task_id: templateTask.id,
               remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
-              completed_at: null,
+              completed_at: null, // Virtual tasks are never completed_at initially
             };
             allProcessedTasks.push(virtualTask);
           }
@@ -109,41 +126,25 @@ export const useTaskProcessing = ({
       filteredTasks = filteredTasks.filter(task => {
         const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
 
-        // --- TEMPORARY DEBUG LOG ---
-        if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
-            console.log(`DEBUG: Task ${task.id} (description: "${task.description}") - Before initial daily filter`);
-            console.log(`  task.status: ${task.status}`);
-            console.log(`  task.created_at: ${task.created_at}`);
-            console.log(`  task.due_date: ${task.due_date}`);
-            console.log(`  task.completed_at: ${task.completed_at}`);
-            console.log(`  effectiveCurrentDate: ${format(effectiveCurrentDate, 'yyyy-MM-dd')}`);
-            console.log(`  todayStart: ${format(todayStart, 'yyyy-MM-dd')}`);
-        }
-        // --- END TEMPORARY DEBUG LOG ---
-
         // 1. Always include tasks completed/archived today
         const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, todayStart);
         if (isCompletedOrArchivedToday) {
-            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed by isCompletedOrArchivedToday`);
             return true;
         }
 
         // 2. Only consider 'to-do' tasks from here
         if (task.status !== 'to-do') {
-            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Filtered out: Not 'to-do'`);
             return false;
         }
 
         // 3. Check if the task is marked as "Do Today" (not in doTodayOffIds)
         const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
         if (!isDoToday) {
-            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Filtered out: Not 'Do Today'`);
             return false; // If not "Do Today", filter it out
         }
 
         // 4. If it's a 'to-do' and 'Do Today' task, it's considered relevant for the daily view
         //    The future_tasks_days_visible filter will further refine its visibility based on date.
-        if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed initial daily filter (to-do & Do Today)`);
         return true;
       });
     }
@@ -201,7 +202,6 @@ export const useTaskProcessing = ({
         const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
         const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, today);
         if (isCompletedOrArchivedToday) {
-            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed future_tasks_days_visible (completed/archived today)`);
             return true;
         }
 
@@ -210,24 +210,11 @@ export const useTaskProcessing = ({
         
         // If the date is in the past or today, it's always visible
         if (!isAfter(dateToCheck, today)) {
-            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed future_tasks_days_visible (past/today)`);
             return true;
         }
 
         // If the date is in the future, check if it's within the visibility limit
         const isWithinFutureLimit = !isAfter(dateToCheck, futureLimit);
-
-        // --- TEMPORARY DEBUG LOG ---
-        if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
-            console.log(`DEBUG: Task ${task.id} (description: "${task.description}") - After future_tasks_days_visible filter`);
-            console.log(`  dateToCheck: ${format(dateToCheck, 'yyyy-MM-dd')}`);
-            console.log(`  today: ${format(today, 'yyyy-MM-dd')}`);
-            console.log(`  futureLimit: ${format(futureLimit, 'yyyy-MM-dd')}`);
-            console.log(`  isAfter(dateToCheck, today): ${isAfter(dateToCheck, today)}`);
-            console.log(`  isWithinFutureLimit: ${isWithinFutureLimit}`);
-            console.log(`DEBUG: Task ${task.id} - Result of future_tasks_days_visible filter: ${isWithinFutureLimit}`);
-        }
-        // --- END TEMPORARY DEBUG LOG ---
 
         return isWithinFutureLimit;
       });
