@@ -11,7 +11,6 @@ import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { useNavigate } from 'react-router-dom';
 import PomodoroTimer from './PomodoroTimer';
 import DoTodaySwitch from './DoTodaySwitch';
-import { getPriorityDotColor } from '@/lib/utils/task-helpers'; // Import from task-helpers
 
 interface FocusToolsPanelProps {
   nextAvailableTask: Task | null;
@@ -51,6 +50,16 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
 
   const [quickAddTaskDescription, setQuickAddTaskDescription] = useState('');
   const [isAddingQuickTask, setIsAddingQuickTask] = useState(false);
+
+  const getPriorityDotColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-gray-500';
+    }
+  };
 
   const handleMarkComplete = async () => {
     if (nextAvailableTask) {

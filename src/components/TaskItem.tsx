@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
-import { parseISO, isSameDay, isPast, isValid } from 'date-fns';
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import DoTodaySwitch from '@/components/DoTodaySwitch';
-import { getPriorityDotColor, getDueDateDisplay, isUrl, handleCopyPath } from '@/lib/utils/task-helpers'; // Import from task-helpers
+import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
 
 
@@ -45,11 +45,10 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  attributes?: React.HTMLAttributes<HTMLDivElement>;
-  listeners?: React.HTMLAttributes<HTMLDivElement>;
+  attributes?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
+  listeners?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -70,8 +69,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  attributes,
-  listeners,
+  attributes, // Destructure
+  listeners, // Destructure
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -125,6 +124,16 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const getPriorityDotColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-gray-500';
+    }
+  };
+
   const handleCheckboxChange = async (checked: boolean) => {
     if (isOverlay || isDemo) return;
     await onStatusChange(task.id, checked ? 'completed' : 'to-do');
@@ -134,6 +143,32 @@ const TaskItem: React.FC<TaskItemProps> = ({
       setTimeout(() => {
         setShowCompletionEffect(false);
       }, 600);
+    }
+  };
+
+  const getDueDateDisplay = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (!isValid(date)) return null;
+
+    if (isSameDay(date, currentDate)) {
+      return 'Today';
+    } else if (isPast(date) && !isSameDay(date, currentDate)) {
+      return format(date, 'MMM d');
+    } else {
+      return format(date, 'MMM d');
+    }
+  };
+
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const handleCopyPath = async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Could not copy path.');
     }
   };
 
@@ -147,22 +182,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border",
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border", // Adjusted vertical padding and left padding
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
-          : "bg-card text-foreground border-border hover:shadow-md hover:scale-[1.005]",
+          : "bg-card text-foreground border-border hover:shadow-md hover:scale-[1.005]", // Added hover scale and shadow
         !isDoToday && "opacity-60",
         "group"
       )}
     >
       {/* Priority Pill */}
       <div className={cn(
-        "absolute left-0 top-0 h-full w-2 rounded-l-xl",
+        "absolute left-0 top-0 h-full w-2 rounded-l-xl", // Increased width from w-1.5 to w-2
         getPriorityDotColor(task.priority)
       )} />
 
       {/* Drag Handle */}
-      {!isOverlay && !task.parent_task_id && (
+      {!isOverlay && !task.parent_task_id && ( // Only show drag handle for top-level tasks
         <div className="flex-shrink-0 pr-2 -ml-3" {...listeners} {...attributes} onPointerDown={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab touch-none text-muted-foreground hover:bg-transparent">
             <GripVertical className="h-4 w-4" />
@@ -217,14 +252,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-base leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium"
+              className="h-auto text-base leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium" // Adjusted text size
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
               <span
                 className={cn(
-                  "block text-base leading-tight font-medium",
+                  "block text-base leading-tight font-medium", // Changed to block, adjusted text size
                   task.status === 'completed' ? 'line-through opacity-75' : '',
                   "cursor-text"
                 )}
@@ -233,10 +268,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 {task.description}
               </span>
               {scheduledAppointment && (
-                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"> {/* Adjusted text size */}
                   <CalendarClock className="h-3 w-3" />
                   <span>
-                    Scheduled: {getDueDateDisplay(scheduledAppointment.date, currentDate)} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
+                    Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
                   </span>
                 </div>
               )}
@@ -291,7 +326,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   isOverdue && "text-status-overdue bg-status-overdue/10",
                   isDueToday && "text-status-due-today bg-status-due-today/10"
                 )}>
-                  <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date, currentDate)}
+                  <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date)}
                 </span>
               </TooltipTrigger>
               <TooltipContent>

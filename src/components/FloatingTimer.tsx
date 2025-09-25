@@ -3,12 +3,44 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button";
 import { Timer, Play, Pause, X, RefreshCcw, Square } from "lucide-react";
 import { useTimer } from '@/context/TimerContext';
-import CircularProgress from './CircularProgress'; // Import the shared CircularProgress
 
 const formatTime = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
+const CircularProgress = ({ progress }: { progress: number }) => {
+  const radius = 45;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100">
+      <circle
+        className="text-muted/20"
+        strokeWidth="5"
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx="50"
+        cy="50"
+      />
+      <circle
+        className="text-primary"
+        strokeWidth="5"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        stroke="currentColor"
+        fill="transparent"
+        r={radius}
+        cx="50"
+        cy="50"
+        style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+      />
+    </svg>
+  );
 };
 
 const FloatingTimer: React.FC = () => {

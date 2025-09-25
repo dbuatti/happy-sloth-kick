@@ -5,21 +5,31 @@ import { cn } from '@/lib/utils';
 import { Task } from '@/hooks/useTasks';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getPriorityDotColor, isUrl, handleCopyPath } from '@/lib/utils/task-helpers'; // Import from task-helpers
-import DoTodaySwitch from '@/components/DoTodaySwitch';
+import { showSuccess, showError } from '@/utils/toast';
+import DoTodaySwitch from '@/components/DoTodaySwitch'; // Import DoTodaySwitch
 
 interface NextTaskCardProps {
   nextAvailableTask: Task | null;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenOverview: (task: Task) => void;
   loading: boolean;
-  onOpenFocusView: () => void;
-  isDoToday: boolean;
-  toggleDoToday: (task: Task) => void;
-  isDemo?: boolean;
+  onOpenFocusView: () => void; // This is the correct prop for the click handler
+  isDoToday: boolean; // New prop
+  toggleDoToday: (task: Task) => void; // New prop
+  isDemo?: boolean; // New prop
 }
 
 const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTask, onOpenOverview, loading, onOpenFocusView, isDoToday, toggleDoToday, isDemo = false }) => {
+  const getPriorityDotColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-gray-500';
+    }
+  };
+
   const handleMarkComplete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (nextAvailableTask) {
@@ -34,6 +44,18 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
     }
   };
 
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const handleCopyPath = async (e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Could not copy path.');
+    }
+  };
+
   const handleToggleDoTodaySwitch = () => {
     if (nextAvailableTask) {
       toggleDoToday(nextAvailableTask);
@@ -42,7 +64,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
 
   return (
     <div
-      className="flex flex-col justify-center"
+      className="flex flex-col justify-center" // Removed cursor-pointer from here
     >
       {loading ? (
         <div className="space-y-3 w-full flex flex-col items-center">
@@ -64,7 +86,7 @@ const NextTaskCard: React.FC<NextTaskCardProps> = ({ nextAvailableTask, updateTa
             />
           </div>
           <p
-            className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2 cursor-pointer hover:text-primary transition-colors"
+            className="text-xl sm:text-2xl font-bold leading-tight text-foreground line-clamp-2 cursor-pointer hover:text-primary transition-colors" // Added cursor-pointer and hover effect here
             onClick={onOpenFocusView}
           >
             {nextAvailableTask.description}

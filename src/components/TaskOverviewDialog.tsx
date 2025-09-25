@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
 import { Trash2, ListTodo, Edit, Calendar, StickyNote, BellRing, FolderOpen, Repeat, Link as LinkIcon, ClipboardCopy, CheckCircle2 } from 'lucide-react';
-import { Task, TaskSection } from '@/hooks/useTasks';
+import { Task, TaskSection } from '@/hooks/useTasks'; // Removed Category import
 import { useSound } from '@/context/SoundContext';
 import {
   AlertDialog,
@@ -19,7 +19,6 @@ import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { showSuccess, showError } from '@/utils/toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getTaskPriorityColorClass, isUrl, handleCopyPath, getDueDateDisplay } from '@/lib/utils/task-helpers'; // Import from task-helpers
 
 interface TaskOverviewDialogProps {
   task: Task | null;
@@ -29,7 +28,7 @@ interface TaskOverviewDialogProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  allTasks: Task[];
+  allTasks: Task[]; // This prop should now receive processedTasks
 }
 
 const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
@@ -40,7 +39,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  allTasks,
+  allTasks, // This is the prop, assumed to be processedTasks
 }) => {
   const { playSound } = useSound();
   const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
@@ -58,6 +57,28 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   }, [allTasks, task]);
 
   const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'text-priority-urgent';
+      case 'high': return 'text-priority-high';
+      case 'medium': return 'text-priority-medium';
+      case 'low': return 'text-priority-low';
+      default: return 'text-muted-foreground';
+    }
+  };
+
+  const getDueDateDisplay = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (isSameDay(date, new Date())) {
+      return 'Today';
+    } else if (isPast(date) && !isSameDay(date, new Date())) {
+      return `Overdue ${format(date, 'MMM d')}`;
+    } else {
+      return format(date, 'MMM d');
+    }
+  };
 
   const handleToggleMainTaskStatus = async () => {
     if (!task) return;
@@ -90,11 +111,26 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
     const subtaskIdsToComplete = subtasks.filter(st => st.status !== 'completed').map(st => st.id);
     if (subtaskIdsToComplete.length > 0) {
       setIsUpdatingStatus(true);
+      // Assuming bulkUpdateTasks is available through a context or another hook
+      // For now, I'll simulate it or assume it's passed down if needed.
+      // If it's not passed, this would be a missing dependency.
+      // For now, I'll just update each subtask individually.
       for (const subtaskId of subtaskIdsToComplete) {
         await onUpdate(subtaskId, { status: 'completed' });
       }
       playSound('success');
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const handleCopyPath = async (path: string) => {
+    try {
+      await navigator.clipboard.writeText(path);
+      showSuccess('Path copied to clipboard!');
+    } catch (err) {
+      showError('Failed to copy path.');
     }
   };
 
@@ -128,8 +164,8 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
           <span>Status: <span className="font-semibold capitalize">{task.status}</span></span>
         </div>
         <div className="flex items-center gap-2">
-          <span className={cn("h-3.5 w-3.5", getTaskPriorityColorClass(task.priority))}><Edit className="h-3.5 w-3.5" /></span>
-          <span>Priority: <span className={cn("font-semibold capitalize", getTaskPriorityColorClass(task.priority))}>{task.priority}</span></span>
+          <span className={cn("h-3.5 w-3.5", getPriorityColor(task.priority))}><Edit className="h-3.5 w-3.5" /></span>
+          <span>Priority: <span className={cn("font-semibold capitalize", getPriorityColor(task.priority))}>{task.priority}</span></span>
         </div>
         <div className="flex items-center gap-2">
           <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
@@ -144,7 +180,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
         {task.due_date && (
           <div className="flex items-center gap-2 col-span-2">
             <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>Due Date: <span className={cn("font-semibold", isOverdue && "text-status-overdue", isDueToday && "text-status-due-today")}>{getDueDateDisplay(task.due_date, new Date())}</span></span>
+            <span>Due Date: <span className={cn("font-semibold", isOverdue && "text-status-overdue", isDueToday && "text-status-due-today")}>{getDueDateDisplay(task.due_date)}</span></span>
           </div>
         )}
         {task.remind_at && (
@@ -168,7 +204,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
                 <ClipboardCopy className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                 <span className="flex-shrink-0">Path:</span>
                 <span className="font-mono text-sm bg-muted px-1 rounded flex-1 min-w-0 truncate">{task.link}</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyPath(new MouseEvent('click') as any, task.link!)}>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCopyPath(task.link!)}>
                   <ClipboardCopy className="h-3.5 w-3.5" />
                 </Button>
               </>
