@@ -211,6 +211,9 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
                 <Button size="sm" variant="outline" onClick={() => handleOpenTaskOverview(nextAvailableTask)} className="h-8 text-base">
                   <Edit className="mr-2 h-4 w-4" /> Details
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => setFocusTask(null)} className="h-8 text-base">
+                  <X className="mr-2 h-4 w-4" /> Clear Focus
+                </Button>
               </div>
             </div>
           ) : (
@@ -242,6 +245,15 @@ const FocusToolsPanel: React.FC<FocusToolsPanelProps> = ({
                     aria-label="View task details"
                   >
                     <Edit className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 flex-shrink-0"
+                    onClick={() => setFocusTask(task.id)}
+                    aria-label="Set as focus task"
+                  >
+                    <Target className="h-3.5 w-3.5" />
                   </Button>
                 </li>
               ))}
