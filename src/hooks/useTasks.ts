@@ -20,7 +20,6 @@ import {
   updateTaskParentAndOrderMutation,
   toggleDoTodayMutation,
   toggleAllDoTodayMutation,
-  
 } from '@/integrations/supabase/taskMutations';
 import {
   createSectionMutation,
@@ -28,7 +27,7 @@ import {
   deleteSectionMutation,
   updateSectionIncludeInFocusModeMutation,
   reorderSectionsMutation,
-} from '@/integrations/supabase/sectionMutations';
+} from '@/integrations/supabase/sectionMutations'; // Updated import path
 import { useTaskProcessing } from './useTaskProcessing'; // Import the new hook
 import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
@@ -370,7 +369,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     const newIndex = sections.findIndex(s => s.id === overId);
     if (oldIndex === -1 || newIndex === -1) return;
     const newOrderedSections = arrayMove(sections, oldIndex, newIndex);
-    return reorderSectionsMutation(activeId, overId, newOrderedSections, mutationContext);
+    return reorderSectionsMutation(activeId, newOrderedSections, mutationContext);
   }, [userId, sections, mutationContext]);
 
   const updateTaskParentAndOrder = useCallback(async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => {

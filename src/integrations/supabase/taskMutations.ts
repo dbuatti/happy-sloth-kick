@@ -1,8 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/toast';
 import { format, parseISO, startOfDay, addDays, addWeeks, addMonths, setHours, setMinutes, isValid } from 'date-fns';
 import { QueryClient } from '@tanstack/react-query';
-import { Task, NewTaskData, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, NewTaskData, TaskSection } from '@/hooks/useTasks';
 import { v4 as uuidv4 } from 'uuid';
 
 // Define MutationContext
@@ -246,7 +245,7 @@ export const bulkUpdateTasksMutation = async (
     showError('Failed to bulk update tasks.');
     console.error('Error bulk updating tasks:', error.message);
   } finally {
-    ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+    ids.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
   }
 };
 
@@ -287,7 +286,7 @@ export const bulkDeleteTasksMutation = async (
     console.error('Error bulk deleting tasks:', error.message);
     return false;
   } finally {
-    ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+    ids.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
   }
 };
 
@@ -295,6 +294,7 @@ export const archiveAllCompletedTasksMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  let idsToArchive: string[] = []; // Declare outside try block
 
   try {
     const { data: completedTasks, error: fetchError } = await supabase
@@ -305,7 +305,7 @@ export const archiveAllCompletedTasksMutation = async (
 
     if (fetchError) throw fetchError;
 
-    const idsToArchive = completedTasks.map(task => task.id);
+    idsToArchive = completedTasks.map(task => task.id); // Assign to the outer-scoped variable
     if (idsToArchive.length === 0) {
       showSuccess('No completed tasks to archive.');
       return;
@@ -331,7 +331,7 @@ export const archiveAllCompletedTasksMutation = async (
     context.queryClient.invalidateQueries({ queryKey: ['tasks', userId] }); // Ensure full refresh
     context.queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] });
     context.queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] });
-    idsToArchive.forEach(id => inFlightUpdatesRef.current.delete(id));
+    idsToArchive.forEach((id: string) => inFlightUpdatesRef.current.delete(id)); // Use outer-scoped variable
   }
 };
 
@@ -340,6 +340,7 @@ export const markAllTasksInSectionCompletedMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  let idsToComplete: string[] = []; // Declare outside try block
 
   try {
     let query = supabase
@@ -358,7 +359,7 @@ export const markAllTasksInSectionCompletedMutation = async (
 
     if (fetchError) throw fetchError;
 
-    const idsToComplete = tasksToComplete.map(task => task.id);
+    idsToComplete = tasksToComplete.map(task => task.id); // Assign to the outer-scoped variable
     if (idsToComplete.length === 0) {
       showSuccess('No pending tasks in this section to mark as completed.');
       return;
@@ -384,7 +385,7 @@ export const markAllTasksInSectionCompletedMutation = async (
     context.queryClient.invalidateQueries({ queryKey: ['tasks', userId] }); // Ensure full refresh
     context.queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] });
     context.queryClient.invalidateQueries({ queryKey: ['dashboardStats', userId] });
-    idsToComplete.forEach(id => inFlightUpdatesRef.current.delete(id));
+    idsToComplete.forEach((id: string) => inFlightUpdatesRef.current.delete(id)); // Use outer-scoped variable
   }
 };
 
@@ -510,8 +511,10 @@ export const toggleAllDoTodayMutation = async (
   const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context;
   const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
+  const tasksToToggle = filteredTasks.filter(task => task.recurring_type === 'none' && task.parent_task_id === null); // Declare outside try block
+  tasksToToggle.forEach(task => inFlightUpdatesRef.current.add(task.original_task_id || task.id));
+
   try {
-    const tasksToToggle = filteredTasks.filter(task => task.recurring_type === 'none' && task.parent_task_id === null);
     if (tasksToToggle.length === 0) {
       showSuccess('No non-recurring tasks to toggle "Do Today" status.');
       return;
@@ -551,157 +554,6 @@ export const toggleAllDoTodayMutation = async (
     showError('Failed to toggle all "Do Today" statuses.');
     console.error('Error toggling all Do Today:', error.message);
   } finally {
-    tasksToToggle.forEach(task => inFlightUpdatesRef.current.delete(task.original_task_id || task.id));
-  }
-};
-
-// Section Mutations
-export const createSectionMutation = async (
-  name: string,
-  context: MutationContext
-): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateSectionsQueries, sections } = context;
-  const tempId = uuidv4();
-  inFlightUpdatesRef.current.add(tempId);
-
-  try {
-    const { error } = await supabase
-      .from('task_sections')
-      .insert({ name, user_id: userId, order: sections.length });
-
-    if (error) throw error;
-
-    showSuccess('Section created successfully!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to create section.');
-    console.error('Error creating section:', error.message);
-  } finally {
-    inFlightUpdatesRef.current.delete(tempId);
-  }
-};
-
-export const updateSectionMutation = async (
-  sectionId: string,
-  newName: string,
-  context: MutationContext
-): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  inFlightUpdatesRef.current.add(sectionId);
-
-  try {
-    const { error } = await supabase
-      .from('task_sections')
-      .update({ name: newName })
-      .eq('id', sectionId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    showSuccess('Section updated successfully!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to update section.');
-    console.error('Error updating section:', error.message);
-  } finally {
-    inFlightUpdatesRef.current.delete(sectionId);
-  }
-};
-
-export const deleteSectionMutation = async (
-  sectionId: string,
-  context: MutationContext
-): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries } = context;
-  inFlightUpdatesRef.current.add(sectionId);
-
-  try {
-    // First, set section_id to null for all tasks in this section
-    const { error: updateTasksError } = await supabase
-      .from('tasks')
-      .update({ section_id: null })
-      .eq('section_id', sectionId)
-      .eq('user_id', userId);
-
-    if (updateTasksError) throw updateTasksError;
-
-    // Then delete the section
-    const { error } = await supabase
-      .from('task_sections')
-      .delete()
-      .eq('id', sectionId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    showSuccess('Section deleted successfully!');
-    invalidateSectionsQueries();
-    invalidateTasksQueries(); // Tasks changed due to section_id update
-  } catch (error: any) {
-    showError('Failed to delete section.');
-    console.error('Error deleting section:', error.message);
-  } finally {
-    inFlightUpdatesRef.current.delete(sectionId);
-  }
-};
-
-export const updateSectionIncludeInFocusModeMutation = async (
-  sectionId: string,
-  include: boolean,
-  context: MutationContext
-): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  inFlightUpdatesRef.current.add(sectionId);
-
-  try {
-    const { error } = await supabase
-      .from('task_sections')
-      .update({ include_in_focus_mode: include })
-      .eq('id', sectionId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    showSuccess('Section focus mode setting updated!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to update section focus mode setting.');
-    console.error('Error updating section focus mode setting:', error.message);
-  } finally {
-    inFlightUpdatesRef.current.delete(sectionId);
-  }
-};
-
-export const reorderSectionsMutation = async (
-  activeId: string,
-  overId: string,
-  newOrderedSections: TaskSection[],
-  context: MutationContext
-): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  inFlightUpdatesRef.current.add(activeId); // Add activeId to in-flight updates
-
-  try {
-    const updates = newOrderedSections.map((section, index) => ({
-      id: section.id,
-      order: index,
-      user_id: userId,
-      name: section.name, // Include other non-nullable fields for upsert
-      include_in_focus_mode: section.include_in_focus_mode,
-    }));
-
-    const { error } = await supabase
-      .from('task_sections')
-      .upsert(updates, { onConflict: 'id' });
-
-    if (error) throw error;
-
-    showSuccess('Sections reordered successfully!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to reorder sections.');
-    console.error('Error reordering sections:', error.message);
-  } finally {
-    inFlightUpdatesRef.current.delete(activeId); // Remove activeId from in-flight updates
+    tasksToToggle.forEach((task: Task) => inFlightUpdatesRef.current.delete(task.original_task_id || task.id));
   }
 };

@@ -1,82 +1,88 @@
 import { supabase } from '@/integrations/supabase/client';
+import { showSuccess, showError } from '@/utils/toast';
 import { QueryClient } from '@tanstack/react-query';
-import { showError, showSuccess } from '@/utils/toast';
-import { TaskSection } from '@/hooks/useTasks';
+import { Task, TaskSection } from '@/hooks/useTasks';
+import { v4 as uuidv4 } from 'uuid';
 
-// Define a more comprehensive MutationContext interface for sections
+// Define MutationContext for section mutations
 interface MutationContext {
   userId: string;
   queryClient: QueryClient;
   inFlightUpdatesRef: React.MutableRefObject<Set<string>>;
   invalidateTasksQueries: () => void;
   invalidateSectionsQueries: () => void;
-  sections: TaskSection[];
 }
-
-// Helper to add/remove section from in-flight updates
-const trackInFlight = (id: string, inFlightUpdatesRef: React.MutableRefObject<Set<string>>, action: 'add' | 'remove') => {
-  if (action === 'add') {
-    inFlightUpdatesRef.current.add(id);
-  } else {
-    inFlightUpdatesRef.current.delete(id);
-  }
-};
 
 export const createSectionMutation = async (
   name: string,
-  { userId, inFlightUpdatesRef, invalidateSectionsQueries, sections }: MutationContext
+  context: MutationContext
 ): Promise<void> => {
-  trackInFlight('create-section-temp', inFlightUpdatesRef, 'add');
+  const { userId, inFlightUpdatesRef, invalidateSectionsQueries, queryClient } = context;
+  const tempId = uuidv4();
+  inFlightUpdatesRef.current.add(tempId);
+
   try {
+    // Optimistically get current sections to determine the new order
+    const currentSections = queryClient.getQueryData<TaskSection[]>(['task_sections', userId]) || [];
+
     const { error } = await supabase
       .from('task_sections')
-      .insert({ name, user_id: userId, order: sections.length });
+      .insert({ name, user_id: userId, order: currentSections.length });
+
     if (error) throw error;
+
     showSuccess('Section created successfully!');
     invalidateSectionsQueries();
-  } catch (err: any) {
+  } catch (error: any) {
     showError('Failed to create section.');
-    console.error('Error creating section:', err.message);
+    console.error('Error creating section:', error.message);
   } finally {
-    trackInFlight('create-section-temp', inFlightUpdatesRef, 'remove');
+    inFlightUpdatesRef.current.delete(tempId);
   }
 };
 
 export const updateSectionMutation = async (
   sectionId: string,
   newName: string,
-  { userId, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
+  context: MutationContext
 ): Promise<void> => {
-  trackInFlight(sectionId, inFlightUpdatesRef, 'add');
+  const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
+  inFlightUpdatesRef.current.add(sectionId);
+
   try {
     const { error } = await supabase
       .from('task_sections')
       .update({ name: newName })
       .eq('id', sectionId)
       .eq('user_id', userId);
+
     if (error) throw error;
+
     showSuccess('Section updated successfully!');
     invalidateSectionsQueries();
-  } catch (err: any) {
+  } catch (error: any) {
     showError('Failed to update section.');
-    console.error('Error updating section:', err.message);
+    console.error('Error updating section:', error.message);
   } finally {
-    trackInFlight(sectionId, inFlightUpdatesRef, 'remove');
+    inFlightUpdatesRef.current.delete(sectionId);
   }
 };
 
 export const deleteSectionMutation = async (
   sectionId: string,
-  { userId, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries }: MutationContext
+  context: MutationContext
 ): Promise<void> => {
-  trackInFlight(sectionId, inFlightUpdatesRef, 'add');
+  const { userId, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries } = context;
+  inFlightUpdatesRef.current.add(sectionId);
+
   try {
-    // First, set tasks in this section to null
+    // First, set section_id to null for all tasks in this section
     const { error: updateTasksError } = await supabase
       .from('tasks')
       .update({ section_id: null })
       .eq('section_id', sectionId)
       .eq('user_id', userId);
+
     if (updateTasksError) throw updateTasksError;
 
     // Then delete the section
@@ -85,54 +91,62 @@ export const deleteSectionMutation = async (
       .delete()
       .eq('id', sectionId)
       .eq('user_id', userId);
+
     if (error) throw error;
 
     showSuccess('Section deleted successfully!');
     invalidateSectionsQueries();
-    invalidateTasksQueries(); // Invalidate tasks as their section_id might have changed
-  } catch (err: any) {
+    invalidateTasksQueries(); // Tasks changed due to section_id update
+  } catch (error: any) {
     showError('Failed to delete section.');
-    console.error('Error deleting section:', err.message);
+    console.error('Error deleting section:', error.message);
   } finally {
-    trackInFlight(sectionId, inFlightUpdatesRef, 'remove');
+    inFlightUpdatesRef.current.delete(sectionId);
   }
 };
 
 export const updateSectionIncludeInFocusModeMutation = async (
   sectionId: string,
   include: boolean,
-  { userId, inFlightUpdatesRef, invalidateSectionsQueries }: MutationContext
+  context: MutationContext
 ): Promise<void> => {
-  trackInFlight(sectionId, inFlightUpdatesRef, 'add');
+  const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
+  inFlightUpdatesRef.current.add(sectionId);
+
   try {
     const { error } = await supabase
       .from('task_sections')
       .update({ include_in_focus_mode: include })
       .eq('id', sectionId)
       .eq('user_id', userId);
+
     if (error) throw error;
+
     showSuccess('Section focus mode setting updated!');
     invalidateSectionsQueries();
-  } catch (err: any) {
+  } catch (error: any) {
     showError('Failed to update section focus mode setting.');
-    console.error('Error updating section focus mode:', err.message);
+    console.error('Error updating section focus mode setting:', error.message);
   } finally {
-    trackInFlight(sectionId, inFlightUpdatesRef, 'remove');
+    inFlightUpdatesRef.current.delete(sectionId);
   }
 };
 
 export const reorderSectionsMutation = async (
-  _activeId: string, // Unused, but kept for consistency with dnd-kit event
-  _overId: string,   // Unused, but kept for consistency with dnd-kit event
+  activeId: string,
   newOrderedSections: TaskSection[],
-  { userId, invalidateSectionsQueries }: MutationContext
+  context: MutationContext
 ): Promise<void> => {
-  // We don't track activeId here as the entire list is updated
+  const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
+  inFlightUpdatesRef.current.add(activeId); // Add activeId to in-flight updates
+
   try {
     const updates = newOrderedSections.map((section, index) => ({
       id: section.id,
       order: index,
       user_id: userId,
+      name: section.name, // Include other non-nullable fields for upsert
+      include_in_focus_mode: section.include_in_focus_mode,
     }));
 
     const { error } = await supabase
@@ -141,10 +155,12 @@ export const reorderSectionsMutation = async (
 
     if (error) throw error;
 
-    showSuccess('Sections reordered!');
+    showSuccess('Sections reordered successfully!');
     invalidateSectionsQueries();
-  } catch (err: any) {
+  } catch (error: any) {
     showError('Failed to reorder sections.');
-    console.error('Error reordering sections:', err.message);
+    console.error('Error reordering sections:', error.message);
+  } finally {
+    inFlightUpdatesRef.current.delete(activeId); // Remove activeId from in-flight updates
   }
 };
