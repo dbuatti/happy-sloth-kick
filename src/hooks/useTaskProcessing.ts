@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { parse, getMinutes, getHours, parseISO, isValid, isSameDay, differenceInMinutes, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
+import { parseISO, isValid, isSameDay, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
 import { Task, TaskSection } from './useTasks'; // Import types
 import { UserSettings } from './useUserSettings'; // Import UserSettings type
 
