@@ -107,7 +107,6 @@ export const useTaskProcessing = ({
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
-        const taskDueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
         const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
 
         // --- TEMPORARY DEBUG LOG ---
@@ -122,7 +121,7 @@ export const useTaskProcessing = ({
         }
         // --- END TEMPORARY DEBUG LOG ---
 
-        // 1. Include tasks completed/archived today
+        // 1. Always include tasks completed/archived today
         const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, todayStart);
         if (isCompletedOrArchivedToday) {
             if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed by isCompletedOrArchivedToday`);
@@ -142,7 +141,8 @@ export const useTaskProcessing = ({
             return false; // If not "Do Today", filter it out
         }
 
-        // 4. If it's a 'to-do' and 'Do Today' task, let it pass to the future_tasks_days_visible filter
+        // 4. If it's a 'to-do' and 'Do Today' task, it's considered relevant for the daily view
+        //    The future_tasks_days_visible filter will further refine its visibility based on date.
         if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') console.log(`DEBUG: Task ${task.id} - Passed initial daily filter (to-do & Do Today)`);
         return true;
       });
