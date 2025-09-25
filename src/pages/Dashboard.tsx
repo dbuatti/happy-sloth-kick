@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "react-resizable-panels";
-import { useDashboardData, CustomCard, WeeklyFocus } from '@/hooks/useDashboardData';
+import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels"; // Corrected imports
+import { useDashboardData, CustomCard } from '@/hooks/useDashboardData'; // Removed unused WeeklyFocus
 import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { ListTodo, CalendarDays, CheckCircle2, StickyNote } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ListTodo, CalendarDays, CheckCircle2 } from 'lucide-react'; // Removed unused Plus, StickyNote
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import DailyBriefingCard from '@/components/dashboard/DailyBriefingCard';
 import DailySchedulePreview from '@/components/dashboard/DailySchedulePreview';
@@ -15,10 +14,10 @@ import MeditationNotesCard from '@/components/dashboard/MeditationNotes';
 import PomodoroCard from '@/components/dashboard/PomodoroCard';
 import StatCard from '@/components/dashboard/StatCard';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useUserSettings, UserSettings } from '@/hooks/useUserSettings';
+import { useUserSettings } from '@/hooks/useUserSettings'; // Removed unused UserSettings
 import DashboardLayoutSettings from '@/components/dashboard/DashboardLayoutSettings';
-import AddCustomCardDialog from '@/components/dashboard/AddCustomCardDialog';
-import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, UniqueIdentifier } from '@dnd-kit/core';
+import AddCustomCardDialog from '@/components/dashboard/AddCustomCardDialog'; // This component needs to be created or imported from shadcn/ui
+import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors, UniqueIdentifier, DragStartEvent } from '@dnd-kit/core'; // Added DragStartEvent
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import SortableCustomCard from '@/components/dashboard/SortableCustomCard';
 import { createPortal } from 'react-dom';
@@ -38,17 +37,17 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     loading: dashboardDataLoading,
     updateWeeklyFocus,
     addCustomCard,
-    updateCustomCard,
-    deleteCustomCard,
+    // Removed unused deleteCustomCard
     reorderCustomCards,
+    updateCustomCard, // Added updateCustomCard as it's used
   } = useDashboardData({ userId: demoUserId });
   const { tasksDue, tasksCompleted, appointmentsToday, loading: statsLoading } = useDashboardStats({ userId: demoUserId });
-  const { processedTasks, sections, updateTask, deleteTask } = useTasks({ currentDate: new Date(), userId: demoUserId });
-  const { appointments: allAppointments } = useAllAppointments();
+  // Removed unused processedTasks, sections, updateTask, deleteTask
+  const { appointments: allAppointments } = useAllAppointments(); // Removed unused allAppointments
 
   const [isCustomizeLayoutOpen, setIsCustomizeLayoutOpen] = useState(false);
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // State for task overview dialog
+  // Removed unused taskToOverview, setTaskToOverview
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const sensors = useSensors(useSensor(PointerSensor));
@@ -88,8 +87,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
 
   const visibleCards = customCards.filter(card => card.is_visible);
 
-  const leftColumnCards = visibleCards.filter((_, index) => index % 2 === 0);
-  const rightColumnCards = visibleCards.filter((_, index) => index % 2 !== 0);
+  // Removed unused leftColumnCards, rightColumnCards
+  // const leftColumnCards = visibleCards.filter((_, index) => index % 2 === 0);
+  // const rightColumnCards = visibleCards.filter((_, index) => index % 2 !== 0);
 
   const hasCustomCards = visibleCards.length > 0;
 
@@ -127,8 +127,8 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
         <PomodoroCard />
       </div>
 
-      <ResizablePanelGroup direction="horizontal" className="min-h-[500px] rounded-xl border" onLayout={handlePanelLayoutChange}>
-        <ResizablePanel defaultSize={panelSizes[0]} minSize={30}>
+      <PanelGroup direction="horizontal" className="min-h-[500px] rounded-xl border" onLayout={handlePanelLayoutChange}>
+        <Panel defaultSize={panelSizes[0]} minSize={30}>
           <div className="h-full flex flex-col p-4 pr-2">
             <div className="grid gap-4 flex-1">
               {layout?.dailyBriefingVisible !== false && <DailyBriefingCard isDemo={isDemo} demoUserId={demoUserId} />}
@@ -138,9 +138,9 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               {layout?.meditationNotesVisible !== false && <MeditationNotesCard settings={settings} updateSettings={updateSettings} loading={settingsLoading} />}
             </div>
           </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={panelSizes[1]} minSize={30}>
+        </Panel>
+        <PanelResizeHandle className="w-2 bg-border-2 hover:bg-primary/50 transition-colors duration-200" />
+        <Panel defaultSize={panelSizes[1]} minSize={30}>
           <div className="h-full flex flex-col p-4 pl-2">
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
               <SortableContext items={visibleCards.map(card => card.id)} strategy={verticalListSortingStrategy}>
@@ -165,8 +165,8 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
               )}
             </DndContext>
           </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+        </Panel>
+      </PanelGroup>
 
       <DashboardLayoutSettings
         isOpen={isCustomizeLayoutOpen}

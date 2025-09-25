@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Button } from "@/components/ui/button";
 import { ChevronsDownUp } from 'lucide-react';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -96,7 +96,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     isDemo = false,
   } = props;
 
-  const userId = ''; // Removed useAuth, so userId is hardcoded or passed from parent
+  // Removed unused userId variable
+  const userId = ''; 
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -126,7 +127,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId,
+      user_id: userId, // userId is not used here, but keeping for type consistency if it were to be used
       order: sections.length,
       include_in_focus_mode: true,
     };

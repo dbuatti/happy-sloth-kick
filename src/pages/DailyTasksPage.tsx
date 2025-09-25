@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { useTasks, Task, NewTaskData } from '@/hooks/useTasks';
+import { useTasks, Task, NewTaskData, TaskSection, Category } from '@/hooks/useTasks'; // Added TaskSection, Category
 import { useAuth } from '@/context/AuthContext';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
@@ -26,6 +26,8 @@ import { useSound } from '@/context/SoundContext';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments'; // Added Appointment import
+import { Skeleton } from '@/components/ui/skeleton'; // Added Skeleton import
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -189,17 +191,19 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     }
   };
 
-  const AddTaskDialog = isMobile ? Sheet : Dialog;
-  const AddTaskContent = isMobile ? SheetContent : DialogContent;
-  const AddTaskHeader = isMobile ? SheetHeader : DialogHeader;
-  const AddTaskTitle = isMobile ? SheetTitle : DialogTitle;
-  const AddTaskDescription = isMobile ? SheetDescription : DialogDescription;
+  const AddTaskDialogComponent = isMobile ? Sheet : Dialog;
+  const AddTaskContentComponent = isMobile ? SheetContent : DialogContent;
+  const AddTaskHeaderComponent = isMobile ? SheetHeader : DialogHeader;
+  const AddTaskTitleComponent = isMobile ? SheetTitle : DialogTitle;
+  const AddTaskDescriptionComponent = isMobile ? SheetDescription : DialogDescription;
 
   return (
     <div className="flex flex-col h-full">
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
+        tasks={processedTasks} // Added tasks prop
+        filteredTasks={filteredTasks} // Added filteredTasks prop
         sections={sections}
         allCategories={allCategories}
         userId={userId}
@@ -306,14 +310,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         allTasks={processedTasks}
       />
 
-      <AddTaskDialog open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
-        <AddTaskContent className="sm:max-w-md">
-          <AddTaskHeader>
-            <AddTaskTitle>{taskToEdit ? 'Edit Task' : 'Add New Task'}</AddTaskTitle>
-            <AddTaskDescription className="sr-only">
+      <AddTaskDialogComponent open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
+        <AddTaskContentComponent className="sm:max-w-md">
+          <AddTaskHeaderComponent>
+            <AddTaskTitleComponent>{taskToEdit ? 'Edit Task' : 'Add New Task'}</AddTaskTitleComponent>
+            <AddTaskDescriptionComponent className="sr-only">
               {taskToEdit ? 'Edit the details of your task.' : 'Fill in the details to add a new task.'}
-            </AddTaskDescription>
-          </AddTaskHeader>
+            </AddTaskDescriptionComponent>
+          </AddTaskHeaderComponent>
           <TaskForm
             initialData={taskToEdit}
             onSave={handleNewTaskSubmit}
@@ -327,8 +331,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             allTasks={processedTasks}
           />
-        </AddTaskContent>
-      </AddTaskDialog>
+        </AddTaskContentComponent>
+      </AddTaskDialogComponent>
 
       <FocusPanelDrawer
         isOpen={isFocusPanelOpen}

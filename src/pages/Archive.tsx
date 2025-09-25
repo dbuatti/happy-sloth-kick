@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from 'react';
-import { useTasks, Task, NewTaskData } from '@/hooks/useTasks';
+import { useTasks, Task, NewTaskData, TaskSection, Category } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Archive as ArchiveIcon, Undo2, Trash2, ListRestart } from 'lucide-react';
+import { Archive as ArchiveIcon, Undo2, Trash2 } from 'lucide-react'; // Removed unused ListRestart
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +20,11 @@ import {
 import { useSound } from '@/context/SoundContext';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
+import { useIsMobile } from '@/hooks/use-mobile'; // Added useIsMobile import
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'; // Added Sheet imports
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'; // Added Dialog imports
+import TaskForm from '@/components/TaskForm'; // Added TaskForm import
+import { Skeleton } from '@/components/ui/skeleton'; // Added Skeleton import
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -40,6 +45,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const [showConfirmBulkDeleteDialog, setShowConfirmBulkDeleteDialog] = useState(false);
   const [tasksToDelete, setTasksToDelete] = useState<string[]>([]);
 
+  const isMobile = useIsMobile(); // Initialized useIsMobile
   const { playSound } = useSound();
 
   const {
@@ -48,7 +54,7 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     loading,
     handleAddTask,
     updateTask,
-    deleteTask,
+    // Removed unused deleteTask
     bulkUpdateTasks,
     bulkDeleteTasks,
     markAllTasksInSectionCompleted,
@@ -136,11 +142,11 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setIsTaskDetailOpen(false); // Close detail if a task was deleted from it
   };
 
-  const AddTaskDialog = isMobile ? Sheet : Dialog;
-  const AddTaskContent = isMobile ? SheetContent : DialogContent;
-  const AddTaskHeader = isMobile ? SheetHeader : DialogHeader;
-  const AddTaskTitle = isMobile ? SheetTitle : DialogTitle;
-  const AddTaskDescription = isMobile ? SheetDescription : DialogDescription;
+  const AddTaskDialogComponent = isMobile ? Sheet : Dialog;
+  const AddTaskContentComponent = isMobile ? SheetContent : DialogContent;
+  const AddTaskHeaderComponent = isMobile ? SheetHeader : DialogHeader;
+  const AddTaskTitleComponent = isMobile ? SheetTitle : DialogTitle;
+  const AddTaskDescriptionComponent = isMobile ? SheetDescription : DialogDescription;
 
   return (
     <div className="flex flex-col h-full">
@@ -235,14 +241,14 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
         allTasks={processedTasks}
       />
 
-      <AddTaskDialog open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
-        <AddTaskContent className="sm:max-w-md">
-          <AddTaskHeader>
-            <AddTaskTitle>{taskToEdit ? 'Edit Task' : 'Add New Task'}</AddTaskTitle>
-            <AddTaskDescription className="sr-only">
+      <AddTaskDialogComponent open={isTaskDetailOpen} onOpenChange={setIsTaskDetailOpen}>
+        <AddTaskContentComponent className="sm:max-w-md">
+          <AddTaskHeaderComponent>
+            <AddTaskTitleComponent>{taskToEdit ? 'Edit Task' : 'Add New Task'}</AddTaskTitleComponent>
+            <AddTaskDescriptionComponent className="sr-only">
               {taskToEdit ? 'Edit the details of your task.' : 'Fill in the details to add a new task.'}
-            </AddTaskDescription>
-          </AddTaskHeader>
+            </AddTaskDescriptionComponent>
+          </AddTaskHeaderComponent>
           <TaskForm
             initialData={taskToEdit}
             onSave={handleNewTaskSubmit}
@@ -256,23 +262,8 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             allTasks={processedTasks}
           />
-        </AddTaskContent>
-      </AddTaskDialog>
-
-      <AlertDialog open={showConfirmClearArchiveDialog} onOpenChange={setShowConfirmClearArchiveDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete ALL archived tasks.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClearArchive}>Clear All</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </AddTaskContentComponent>
+      </AddTaskDialogComponent>
 
       <AlertDialog open={showConfirmBulkDeleteDialog} onOpenChange={setShowConfirmBulkDeleteDialog}>
         <AlertDialogContent>

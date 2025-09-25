@@ -9,7 +9,7 @@ import { useTasks, Task } from '@/hooks/useTasks';
 import { startOfWeek, addWeeks, addDays, isSameDay, parseISO } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from '@/context/AuthContext'; // Added missing import
+import { useAuth } from '@/context/AuthContext';
 import ScheduleGridContent from '@/components/ScheduleGridContent';
 
 interface TimeBlockScheduleProps {
@@ -31,13 +31,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     processedTasks,
     allCategories,
     sections,
-    handleAddTask,
-    updateTask,
-    deleteTask,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
+    // Removed unused imports: handleAddTask, updateTask, deleteTask, createSection, updateSection, deleteSection, updateSectionIncludeInFocusMode
   } = useTasks({ currentDate, userId: demoUserId });
 
   const daysInWeek = useMemo(() => {
@@ -94,8 +88,8 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
                 allWorkHours={allWorkHoursArray}
                 saveWorkHours={saveWorkHours}
                 appointments={appointments}
+                updateAppointment={(id, updates) => updateAppointment({ id, updates })}
                 addAppointment={addAppointment}
-                updateAppointment={updateAppointment}
                 deleteAppointment={deleteAppointment}
                 clearDayAppointments={clearDayAppointments}
                 batchAddAppointments={batchAddAppointments}
