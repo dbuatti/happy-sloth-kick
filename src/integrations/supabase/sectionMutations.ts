@@ -1,8 +1,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { showSuccess, showError } from '@/utils/toast';
 import { QueryClient } from '@tanstack/react-query';
-import { TaskSection } from '@/hooks/useTasks'; // Removed unused 'Task' import
+import { TaskSection, Task } from '@/hooks/useTasks'; // Removed unused 'Task' import
 import { v4 as uuidv4 } from 'uuid';
+import { trackInFlight } from './utils'; // Import trackInFlight
 
 // Define MutationContext for section mutations
 interface MutationContext {
@@ -11,15 +12,24 @@ interface MutationContext {
   inFlightUpdatesRef: React.MutableRefObject<Set<string>>;
   invalidateTasksQueries: () => void;
   invalidateSectionsQueries: () => void;
+  sections: TaskSection[]; // Added sections to context for getNextSectionOrder
 }
+
+// Helper to get the next order value for a new section
+const getNextSectionOrder = (sections: TaskSection[]): number => {
+  if (sections.length === 0) {
+    return 0;
+  }
+  const maxOrder = Math.max(...sections.map(s => s.order || 0));
+  return maxOrder + 1;
+};
 
 export const createSectionMutation = async (
   name: string,
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateSectionsQueries, queryClient } = context;
-  const tempId = uuidv4();
-  inFlightUpdatesRef.current.add(tempId);
+  const cleanup = trackInFlight('create-section', inFlightUpdatesRef);
 
   try {
     // Optimistically get current sections to determine the new order
@@ -27,7 +37,7 @@ export const createSectionMutation = async (
 
     const { error } = await supabase
       .from('task_sections')
-      .insert({ name, user_id: userId, order: currentSections.length });
+      .insert({ name, user_id: userId, order: getNextSectionOrder(currentSections) });
 
     if (error) throw error;
 
@@ -37,7 +47,7 @@ export const createSectionMutation = async (
     showError('Failed to create section.');
     console.error('Error creating section:', error.message);
   } finally {
-    inFlightUpdatesRef.current.delete(tempId);
+    cleanup();
   }
 };
 
@@ -47,7 +57,7 @@ export const updateSectionMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  inFlightUpdatesRef.current.add(sectionId);
+  const cleanup = trackInFlight(sectionId, inFlightUpdatesRef);
 
   try {
     const { error } = await supabase
@@ -64,7 +74,7 @@ export const updateSectionMutation = async (
     showError('Failed to update section.');
     console.error('Error updating section:', error.message);
   } finally {
-    inFlightUpdatesRef.current.delete(sectionId);
+    cleanup();
   }
 };
 
@@ -73,7 +83,7 @@ export const deleteSectionMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries } = context;
-  inFlightUpdatesRef.current.add(sectionId);
+  const cleanup = trackInFlight(sectionId, inFlightUpdatesRef);
 
   try {
     // First, set section_id to null for all tasks in this section
@@ -101,7 +111,7 @@ export const deleteSectionMutation = async (
     showError('Failed to delete section.');
     console.error('Error deleting section:', error.message);
   } finally {
-    inFlightUpdatesRef.current.delete(sectionId);
+    cleanup();
   }
 };
 
@@ -111,7 +121,7 @@ export const updateSectionIncludeInFocusModeMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  inFlightUpdatesRef.current.add(sectionId);
+  const cleanup = trackInFlight(sectionId, inFlightUpdatesRef);
 
   try {
     const { error } = await supabase
@@ -128,7 +138,7 @@ export const updateSectionIncludeInFocusModeMutation = async (
     showError('Failed to update section focus mode setting.');
     console.error('Error updating section focus mode setting:', error.message);
   } finally {
-    inFlightUpdatesRef.current.delete(sectionId);
+    cleanup();
   }
 };
 
@@ -138,7 +148,7 @@ export const reorderSectionsMutation = async (
   context: MutationContext
 ): Promise<void> => {
   const { userId, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  inFlightUpdatesRef.current.add(activeId); // Add activeId to in-flight updates
+  const cleanup = trackInFlight(`reorder-section-${activeId}`, inFlightUpdatesRef);
 
   try {
     const updates = newOrderedSections.map((section, index) => ({
@@ -161,6 +171,6 @@ export const reorderSectionsMutation = async (
     showError('Failed to reorder sections.');
     console.error('Error reordering sections:', error.message);
   } finally {
-    inFlightUpdatesRef.current.delete(activeId); // Remove activeId from in-flight updates
+    cleanup();
   }
 };

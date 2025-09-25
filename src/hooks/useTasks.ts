@@ -90,7 +90,7 @@ export interface NewTaskData {
   order?: number | null;
 }
 
-interface MutationContext {
+export interface MutationContext {
   userId: string;
   queryClient: QueryClient;
   inFlightUpdatesRef: React.MutableRefObject<Set<string>>;
@@ -299,9 +299,9 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
       notes: newTaskData.notes ?? null,
       remind_at: newTaskData.remind_at ?? null,
       section_id: newTaskData.section_id ?? null,
-      order: newTaskData.order ?? null,
-      original_task_id: newTaskData.original_task_id ?? null,
       parent_task_id: newTaskData.parent_task_id ?? null,
+      original_task_id: newTaskData.original_task_id ?? null,
+      created_at: newTaskData.created_at, // Keep original created_at if provided
       link: newTaskData.link ?? null,
       image_url: newTaskData.image_url ?? null,
     };

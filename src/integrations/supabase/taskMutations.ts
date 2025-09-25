@@ -1,9 +1,7 @@
-import { QueryClient } from '@tanstack/react-query';
 import { format, parseISO, isValid } from 'date-fns';
-import { arrayMove } from '@dnd-kit/sortable';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { Task, NewTaskData, TaskUpdate, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, NewTaskData, TaskUpdate, TaskSection } from '@/hooks/useTasks';
 import { MutationContext } from '@/hooks/useTasks'; // Import MutationContext
 import { trackInFlight } from './utils';
 
@@ -17,27 +15,16 @@ const getNextTaskOrder = (tasks: Task[], sectionId: string | null, parentTaskId:
   return maxOrder + 1;
 };
 
-// Helper to get the next order value for a new section
-const getNextSectionOrder = (sections: TaskSection[]): number => {
-  if (sections.length === 0) {
-    return 0;
-  }
-  const maxOrder = Math.max(...sections.map(s => s.order || 0));
-  return maxOrder + 1;
-};
-
 // --- Task Mutations ---
 
 export const addTaskMutation = async (newTaskData: NewTaskData, context: MutationContext): Promise<boolean> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap, addReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder } = context;
   const cleanup = trackInFlight('add-task', inFlightUpdatesRef);
 
   try {
-    const categoryColor = categoriesMap.get(newTaskData.category || '') || 'gray';
-
-    const taskToInsert: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order: number | null } = {
+    const taskToInsert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order: number | null } = {
       ...newTaskData,
-      user_id: userId,
+      user_id: userId, // user_id is already part of NewTaskData, but we ensure it's set here
       status: newTaskData.status || 'to-do',
       priority: newTaskData.priority || 'medium',
       recurring_type: newTaskData.recurring_type || 'none',
@@ -79,14 +66,14 @@ export const addTaskMutation = async (newTaskData: NewTaskData, context: Mutatio
 };
 
 export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, context: MutationContext): Promise<string | null> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
   const cleanup = trackInFlight(taskId, inFlightUpdatesRef);
 
   try {
     // If it's a virtual task, we need to create a real instance first
     if (taskId.startsWith('virtual-')) {
       const originalTaskId = taskId.split('-')[1];
-      const originalTask = context.processedTasks.find(t => t.id === originalTaskId || t.original_task_id === originalTaskId);
+      const originalTask = context.processedTasks.find((t: Task) => t.id === originalTaskId || t.original_task_id === originalTaskId);
       if (!originalTask) {
         throw new Error('Original task not found for virtual task.');
       }
@@ -123,7 +110,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
     const finalUpdates: Partial<Task> = { ...updates };
     if (updates.status === 'completed') {
       finalUpdates.completed_at = new Date().toISOString();
-    } else if (updates.status === 'to-do' && context.processedTasks.find(t => t.id === taskId)?.status === 'completed') {
+    } else if (updates.status === 'to-do' && context.processedTasks.find((t: Task) => t.id === taskId)?.status === 'completed') {
       finalUpdates.completed_at = null; // Clear completed_at if status changes from completed to to-do
     }
 
@@ -157,7 +144,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
   const cleanup = trackInFlight(taskId, inFlightUpdatesRef);
 
   try {
@@ -182,7 +169,7 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
 };
 
 export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: string[], context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
   const cleanup = trackInFlight('bulk-update-tasks', inFlightUpdatesRef);
 
   try {
@@ -202,7 +189,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
     if (error) throw error;
 
     ids.forEach(id => {
-      const task = context.processedTasks.find(t => t.id === id);
+      const task = context.processedTasks.find((t: Task) => t.id === id);
       if (task) {
         if (updates.remind_at && updates.status === 'to-do') {
           const d = parseISO(updates.remind_at);
@@ -224,7 +211,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
 };
 
 export const bulkDeleteTasksMutation = async (ids: string[], context: MutationContext): Promise<boolean> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
   const cleanup = trackInFlight('bulk-delete-tasks', inFlightUpdatesRef);
 
   try {
@@ -265,7 +252,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
 };
 
 export const archiveAllCompletedTasksMutation = async (context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
   const cleanup = trackInFlight('archive-all-completed-tasks', inFlightUpdatesRef);
 
   try {
@@ -303,7 +290,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
 };
 
 export const markAllTasksInSectionCompletedMutation = async (sectionId: string | null, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, addReminder, dismissReminder } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries, dismissReminder } = context;
   const cleanup = trackInFlight(`mark-all-in-section-completed-${sectionId}`, inFlightUpdatesRef);
 
   try {
@@ -328,7 +315,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
       if (updateError) throw updateError;
 
       tasksToComplete.forEach(task => dismissReminder(task.id));
-      showSuccess(`All tasks in section ${sectionId === null ? '"No Section"' : context.sections.find(s => s.id === sectionId)?.name || ''} marked completed!`);
+      showSuccess(`All tasks in section ${sectionId === null ? '"No Section"' : context.sections.find((s: TaskSection) => s.id === sectionId)?.name || ''} marked completed!`);
       invalidateTasksQueries();
     } else {
       showSuccess('No pending tasks in this section to mark completed.');
@@ -342,22 +329,22 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
 };
 
 export const updateTaskParentAndOrderMutation = async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context;
   const cleanup = trackInFlight(`reorder-task-${activeId}`, inFlightUpdatesRef);
 
   try {
-    const activeTask = context.processedTasks.find(t => t.id === activeId);
+    const activeTask = context.processedTasks.find((t: Task) => t.id === activeId);
     if (!activeTask) throw new Error('Active task not found.');
 
-    const tasksInTargetSectionAndParent = context.processedTasks.filter(t =>
+    const tasksInTargetSectionAndParent = context.processedTasks.filter((t: Task) =>
       t.section_id === newSectionId && t.parent_task_id === newParentId && t.id !== activeId
-    ).sort((a, b) => (a.order || 0) - (b.order || 0));
+    ).sort((a: Task, b: Task) => (a.order || 0) - (b.order || 0));
 
     let newOrder: number;
     if (overId === null) { // Dropped at the end
       newOrder = tasksInTargetSectionAndParent.length > 0 ? (tasksInTargetSectionAndParent[tasksInTargetSectionAndParent.length - 1].order || 0) + 1 : 0;
     } else {
-      const overTaskIndex = tasksInTargetSectionAndParent.findIndex(t => t.id === overId);
+      const overTaskIndex = tasksInTargetSectionAndParent.findIndex((t: Task) => t.id === overId);
       if (overTaskIndex === -1) { // Should not happen if overId is valid
         newOrder = getNextTaskOrder(context.processedTasks, newSectionId, newParentId);
       } else {
@@ -389,136 +376,6 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
   } catch (error: any) {
     showError('Failed to reorder task.');
     console.error('updateTaskParentAndOrderMutation error:', error.message);
-  } finally {
-    cleanup();
-  }
-};
-
-// --- Section Mutations ---
-
-export const createSectionMutation = async (name: string, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  const cleanup = trackInFlight('create-section', inFlightUpdatesRef);
-
-  try {
-    const newOrder = getNextSectionOrder(context.sections);
-    const { error } = await supabase
-      .from('task_sections')
-      .insert({ name, user_id: userId, order: newOrder });
-
-    if (error) throw error;
-
-    showSuccess('Section created successfully!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to create section.');
-    console.error('createSectionMutation error:', error.message);
-  } finally {
-    cleanup();
-  }
-};
-
-export const updateSectionMutation = async (sectionId: string, newName: string, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  const cleanup = trackInFlight(sectionId, inFlightUpdatesRef);
-
-  try {
-    const { error } = await supabase
-      .from('task_sections')
-      .update({ name: newName })
-      .eq('id', sectionId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    showSuccess('Section updated successfully!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to update section.');
-    console.error('updateSectionMutation error:', error.message);
-  } finally {
-    cleanup();
-  }
-};
-
-export const deleteSectionMutation = async (sectionId: string, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries, invalidateTasksQueries } = context;
-  const cleanup = trackInFlight(sectionId, inFlightUpdatesRef);
-
-  try {
-    // First, set section_id to null for all tasks in this section
-    await supabase
-      .from('tasks')
-      .update({ section_id: null })
-      .eq('section_id', sectionId)
-      .eq('user_id', userId);
-
-    const { error } = await supabase
-      .from('task_sections')
-      .delete()
-      .eq('id', sectionId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    showSuccess('Section deleted successfully!');
-    invalidateSectionsQueries();
-    invalidateTasksQueries(); // Tasks might have changed sections
-  } catch (error: any) {
-    showError('Failed to delete section.');
-    console.error('deleteSectionMutation error:', error.message);
-  } finally {
-    cleanup();
-  }
-};
-
-export const updateSectionIncludeInFocusModeMutation = async (sectionId: string, include: boolean, context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  const cleanup = trackInFlight(sectionId, inFlightUpdatesRef);
-
-  try {
-    const { error } = await supabase
-      .from('task_sections')
-      .update({ include_in_focus_mode: include })
-      .eq('id', sectionId)
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    showSuccess('Section focus mode setting updated!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to update section focus mode setting.');
-    console.error('updateSectionIncludeInFocusModeMutation error:', error.message);
-  } finally {
-    cleanup();
-  }
-};
-
-export const reorderSectionsMutation = async (activeId: string, newOrderedSections: TaskSection[], context: MutationContext): Promise<void> => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateSectionsQueries } = context;
-  const cleanup = trackInFlight(`reorder-section-${activeId}`, inFlightUpdatesRef);
-
-  try {
-    const updates = newOrderedSections.map((section, index) => ({
-      id: section.id,
-      order: index,
-      user_id: userId,
-      name: section.name, // Include name to prevent partial update issues
-      include_in_focus_mode: section.include_in_focus_mode, // Include to prevent partial update issues
-    }));
-
-    const { error } = await supabase
-      .from('task_sections')
-      .upsert(updates, { onConflict: 'id' });
-
-    if (error) throw error;
-
-    showSuccess('Sections reordered successfully!');
-    invalidateSectionsQueries();
-  } catch (error: any) {
-    showError('Failed to reorder sections.');
-    console.error('reorderSectionsMutation error:', error.message);
   } finally {
     cleanup();
   }
