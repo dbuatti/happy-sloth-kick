@@ -46,13 +46,24 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
   }
   
   const targetTaskId = 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d';
-  const foundTargetTask = (data || []).find(task => task.id === targetTaskId);
-  if (foundTargetTask) {
-    console.log(`fetchTasks: Target task ${targetTaskId} WAS found in Supabase response!`, foundTargetTask);
+  let foundTargetTask = null;
+
+  if (data && data.length > 0) {
+    console.log('fetchTasks: Inspecting received data...');
+    for (const task of data) {
+      // Log every task ID and its type
+      console.log(`fetchTasks: Task ID: ${task.id}, Type: ${typeof task.id}`);
+      if (task.id === targetTaskId) {
+        foundTargetTask = task;
+        console.log(`fetchTasks: Target task ${targetTaskId} WAS found in Supabase response!`, foundTargetTask);
+      }
+    }
+    if (!foundTargetTask) {
+      console.log(`fetchTasks: Target task ${targetTaskId} was NOT found after iterating through all ${data.length} records for user ${userId}.`);
+    }
   } else {
-    console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in Supabase response for user ${userId}.`);
+    console.log(`fetchTasks: No data received from Supabase for user ${userId}.`);
   }
-  console.log('fetchTasks: Full data received from Supabase:', data);
 
   return data || [];
 };
