@@ -18,6 +18,9 @@ interface UseTaskProcessingProps {
   doTodayOffIds: Set<string>;
 }
 
+// Regex to validate UUID format
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const useTaskProcessing = ({
   rawTasks,
   categoriesMap,
@@ -39,8 +42,18 @@ export const useTaskProcessing = ({
     const processedSeriesKeys = new Set<string>();
     const categoriesMapLocal = categoriesMap;
 
+    // Filter out tasks with invalid IDs first
+    const validRawTasks = rawTasks.filter(task => {
+      // Allow virtual tasks (client-side generated IDs) and valid UUIDs
+      if (!task.id.startsWith('virtual-') && !UUID_REGEX.test(task.id)) {
+        console.warn(`Skipping task with invalid ID format: "${task.id}". It will not be displayed or interactable.`);
+        return false;
+      }
+      return true;
+    });
+
     const taskSeriesMap = new Map<string, Omit<Task, 'category_color'>[]>();
-    rawTasks.forEach((task: Omit<Task, 'category_color'>) => {
+    validRawTasks.forEach((task: Omit<Task, 'category_color'>) => { // Use validRawTasks here
       const seriesKey = task.original_task_id || task.id;
       if (!taskSeriesMap.has(seriesKey)) {
         taskSeriesMap.set(seriesKey, []);
@@ -52,7 +65,7 @@ export const useTaskProcessing = ({
       if (processedSeriesKeys.has(seriesKey)) return;
       processedSeriesKeys.add(seriesKey);
 
-      const templateTask: Omit<Task, 'category_color'> | undefined = rawTasks.find((t: Omit<Task, 'category_color'>) => t.id === seriesKey);
+      const templateTask: Omit<Task, 'category_color'> | undefined = validRawTasks.find((t: Omit<Task, 'category_color'>) => t.id === seriesKey);
 
       if (!templateTask) {
         seriesInstances.forEach(orphanTask => {
