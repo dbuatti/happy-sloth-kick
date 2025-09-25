@@ -6,7 +6,6 @@ import { usePomodoro } from '@/hooks/usePomodoro';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { showError } from '@/utils/toast';
 
 interface PomodoroCardProps {
