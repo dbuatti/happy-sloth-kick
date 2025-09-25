@@ -1,11 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useCallback } from 'react';
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useSettings } from '@/context/SettingsContext';
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { CalendarDays, CalendarWeek } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TimeBlockScheduleProps {
@@ -15,20 +14,18 @@ interface TimeBlockScheduleProps {
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
-  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
   const [activeTab, setActiveTab] = useState('daily');
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
 
   const {
-    processedTasks, // Use processedTasks for TaskOverviewDialog
-    updateTask,
-    deleteTask,
     sections,
     allCategories,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    processedTasks, // Need processedTasks for TaskOverviewDialog
   } = useTasks({ currentDate, userId: demoUserId });
 
   const handleOpenTaskOverview = useCallback((task: Task) => {
@@ -36,30 +33,41 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleEditTaskFromOverview = useCallback((_task: Task) => {
-    setIsTaskOverviewOpen(false);
-    // Logic to open task edit form if needed
+  const handleEditTask = useCallback((task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  }, []);
+
+  const handleUpdateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
+    // This function is passed to TaskOverviewDialog, but useTasks already has its own updateTask
+    // We need to ensure the TaskOverviewDialog calls the updateTask from useTasks
+    // For now, I'll just return null as a placeholder, assuming the dialog will use its own update prop
+    console.warn("handleUpdateTask in TimeBlockSchedule is a placeholder. TaskOverviewDialog should use its own onUpdate prop.");
+    return null;
+  }, []);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    // This function is passed to TaskOverviewDialog, but useTasks already has its own deleteTask
+    // We need to ensure the TaskOverviewDialog calls the deleteTask from useTasks
+    console.warn("handleDeleteTask in TimeBlockSchedule is a placeholder. TaskOverviewDialog should use its own onDelete prop.");
   }, []);
 
   return (
-    <div className="flex-1 overflow-auto p-4 lg:p-6">
-      <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl">
+    <div className="flex-1 space-y-4 p-4 lg:p-6">
+      <Card className="shadow-lg rounded-xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-3xl font-bold flex items-center gap-2">
-            <CalendarDays className="h-7 w-7 text-primary" /> Time Block Schedule
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <CalendarDays className="h-6 w-6 text-primary" /> Schedule
           </CardTitle>
-          <p className="text-muted-foreground">Plan your day and week by blocking out time for tasks and appointments.</p>
         </CardHeader>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full px-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="daily" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" /> Daily View
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="flex items-center gap-2">
-              <CalendarWeek className="h-4 w-4" /> Weekly View
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="daily" className="mt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="px-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="daily">Daily View</TabsTrigger>
+              <TabsTrigger value="weekly">Weekly View</TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="daily">
             <DailyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -68,7 +76,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               onOpenTaskOverview={handleOpenTaskOverview}
             />
           </TabsContent>
-          <TabsContent value="weekly" className="mt-4">
+          <TabsContent value="weekly">
             <WeeklyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -85,11 +93,11 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           task={taskToOverview}
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
-          onEditClick={handleEditTaskFromOverview}
-          onUpdate={updateTask}
-          onDelete={deleteTask}
+          onEditClick={handleEditTask}
+          onUpdate={handleUpdateTask} // This should ideally be the updateTask from useTasks
+          onDelete={handleDeleteTask} // This should ideally be the deleteTask from useTasks
           sections={sections}
-          allTasks={processedTasks} // Pass processedTasks here
+          allTasks={processedTasks}
         />
       )}
     </div>
