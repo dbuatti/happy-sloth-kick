@@ -26,7 +26,7 @@ const WeeklyScheduleView: React.FC<WeeklyScheduleViewProps> = ({
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 }); // Monday as start of week
   const weekEnd = addWeeks(weekStart, 1); // End of the week (Sunday)
 
-  const daysInGrid = Array.from({ length: 7 }).map((_, i) => addWeeks(weekStart, 0)); // Just one week for now
+  const daysInGrid = Array.from({ length: 7 }).map((_, _i) => addWeeks(weekStart, 0)); // Just one week for now
 
   const { workHours: allWorkHours, loading: workHoursLoading, saveWorkHours } = useWorkHours({ userId: demoUserId });
   const { appointments, loading: appointmentsLoading, addAppointment, updateAppointment, deleteAppointment, clearDayAppointments, batchAddAppointments } = useAppointments({ startDate: weekStart, endDate: weekEnd });

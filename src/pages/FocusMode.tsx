@@ -1,112 +1,120 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useState, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext';
-import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import FullScreenFocusView from '@/components/FullScreenFocusView';
-import { AnimatePresence } from 'framer-motion';
-import { useSettings } from '@/context/SettingsContext';
-import { Sparkles } from 'lucide-react';
+import FocusToolsPanel from '@/components/FocusToolsPanel';
+import { Button } from '@/components/ui/button'; // Added missing import
 
 interface FocusModeProps {
+  isDemo?: boolean;
   demoUserId?: string;
 }
 
-const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-  const { settings } = useSettings();
-
-  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true);
+const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
+  const [currentDate] = useState(new Date());
   const [isFullScreenFocus, setIsFullScreenFocus] = useState(false);
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true); // Panel is open by default in Focus Mode
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
   const {
-    processedTasks: allTasks,
+    processedTasks,
     filteredTasks,
+    loading,
+    nextAvailableTask,
     updateTask,
     deleteTask,
     sections,
     allCategories,
     handleAddTask,
-    currentDate,
-    nextAvailableTask,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
-  } = useTasks({ currentDate: new Date(), userId, viewMode: 'focus' });
+  } = useTasks({ currentDate, viewMode: 'focus', userId: demoUserId });
 
-  const handleOpenTaskDetail = (task: Task) => {
-    // This function is passed to FocusToolsPanel to open TaskOverviewDialog
-    // The TaskOverviewDialog is then responsible for calling onEditClick (which is onOpenDetail)
-    // or onDelete.
-  };
-
-  const handleOpenFullScreenFocus = () => {
+  const handleOpenFullScreenFocus = useCallback(() => {
     if (nextAvailableTask) {
       setIsFullScreenFocus(true);
     }
-  };
+  }, [nextAvailableTask]);
 
-  const handleMarkDoneFullScreen = async () => {
+  const handleCloseFullScreenFocus = useCallback(() => {
+    setIsFullScreenFocus(false);
+  }, []);
+
+  const handleMarkTaskDoneFromFullScreen = useCallback(async () => {
     if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
       setIsFullScreenFocus(false);
     }
-  };
+  }, [nextAvailableTask, updateTask]);
+
+  const handleOpenTaskDetail = useCallback((task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (isFullScreenFocus && nextAvailableTask) {
+    return (
+      <FullScreenFocusView
+        taskDescription={nextAvailableTask.description}
+        onClose={handleCloseFullScreenFocus}
+        onMarkDone={handleMarkTaskDoneFromFullScreen}
+      />
+    );
+  }
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6">
-      <Card className="w-full max-w-2xl text-center shadow-lg rounded-xl">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-3xl font-bold flex items-center justify-center gap-2">
-            <Sparkles className="h-7 w-7 text-primary" /> Focus Mode
-          </CardTitle>
-          <p className="text-muted-foreground text-lg">
-            Minimize distractions and concentrate on your most important task.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-6 py-6">
-          {nextAvailableTask ? (
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-muted-foreground">Your current focus:</h3>
-              <h2 className="text-4xl font-extrabold tracking-tight text-foreground">
-                {nextAvailableTask.description}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                From section: {sections.find(s => s.id === nextAvailableTask.section_id)?.name || 'No Section'}
-              </p>
-              <div className="flex justify-center gap-4 mt-6">
-                <Button size="lg" onClick={handleOpenFullScreenFocus} className="h-12 px-6 text-lg">
-                  Go Fullscreen
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => handleOpenTaskDetail(nextAvailableTask)} className="h-12 px-6 text-lg">
-                  Details
-                </Button>
+    <div className="flex-1 overflow-auto p-4 lg:p-6 flex flex-col lg:flex-row gap-6">
+      <div className="flex-1">
+        <Card className="w-full shadow-lg rounded-xl h-full flex flex-col">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold flex items-center gap-2">
+              Focus Mode
+            </CardTitle>
+            <p className="text-muted-foreground">Deep work session for your most important tasks.</p>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col items-center justify-center text-center p-6">
+            {nextAvailableTask ? (
+              <>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-foreground mb-6">
+                  {nextAvailableTask.description}
+                </h2>
+                <div className="flex justify-center gap-4 mt-6">
+                  <Button size="lg" onClick={handleOpenFullScreenFocus} className="h-12 px-6 text-lg">
+                    Go Fullscreen
+                  </Button>
+                  <Button size="lg" variant="outline" onClick={() => handleOpenTaskDetail(nextAvailableTask)} className="h-12 px-6 text-lg">
+                    Details
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center text-muted-foreground text-lg">
+                No tasks currently set for focus. Add some tasks or set a task as focus.
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 flex flex-col items-center gap-4">
-              <Sparkles className="h-16 w-16 text-muted-foreground" />
-              <p className="text-xl font-medium">No tasks currently set for focus.</p>
-              <p className="text-muted-foreground">
-                Add a task or set one as focus from your daily tasks list.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <FocusPanelDrawer
-        isOpen={isFocusPanelOpen}
-        onClose={() => setIsFocusPanelOpen(false)}
+      <FocusToolsPanel
         nextAvailableTask={nextAvailableTask}
-        allTasks={allTasks}
+        allTasks={processedTasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
-        onOpenDetail={handleOpenTaskDetail}
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
+        onOpenDetail={handleOpenTaskDetail}
         handleAddTask={handleAddTask}
         currentDate={currentDate}
         setFocusTask={setFocusTask}
@@ -114,15 +122,18 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
         toggleDoToday={toggleDoToday}
       />
 
-      <AnimatePresence>
-        {isFullScreenFocus && nextAvailableTask && (
-          <FullScreenFocusView
-            taskDescription={nextAvailableTask.description}
-            onClose={() => setIsFullScreenFocus(false)}
-            onMarkDone={handleMarkDoneFullScreen}
-          />
-        )}
-      </AnimatePresence>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleOpenTaskDetail} // Pass itself to allow re-opening with edit form
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allTasks={processedTasks}
+        />
+      )}
     </div>
   );
 };

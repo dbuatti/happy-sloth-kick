@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Task } from '@/hooks/useTasks';
+import React, { useState, useCallback, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTasks, Task } from '@/hooks/useTasks';
+import { useSettings } from '@/context/SettingsContext';
 import DailyScheduleView from '@/components/DailyScheduleView';
 import WeeklyScheduleView from '@/components/WeeklyScheduleView';
 import TaskOverviewDialog from '@/components/TaskOverviewDialog';
-import { useTasks } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext';
+import { CalendarDays, CalendarWeek } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TimeBlockScheduleProps {
   isDemo?: boolean;
@@ -15,48 +15,51 @@ interface TimeBlockScheduleProps {
 
 const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [activeTab, setActiveTab] = useState('daily');
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [activeTab, setActiveTab] = useState('daily');
 
   const {
-    tasks: allTasks,
+    processedTasks, // Use processedTasks for TaskOverviewDialog
+    updateTask,
+    deleteTask,
     sections,
     allCategories,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    updateTask,
-    deleteTask,
   } = useTasks({ currentDate, userId: demoUserId });
 
-  const handleOpenTaskOverview = (task: Task) => {
+  const handleOpenTaskOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
-  };
+  }, []);
 
-  const handleEditTaskFromOverview = (task: Task) => {
+  const handleEditTaskFromOverview = useCallback((_task: Task) => {
     setIsTaskOverviewOpen(false);
-    // This will open the TaskDetailDialog, which is handled by the parent component
-    // For now, we'll just close the overview. If a separate edit dialog is needed,
-    // it would be triggered here.
-  };
+    // Logic to open task edit form if needed
+  }, []);
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-6">
-      <Card className="w-full shadow-lg rounded-xl">
+    <div className="flex-1 overflow-auto p-4 lg:p-6">
+      <Card className="w-full max-w-6xl mx-auto shadow-lg rounded-xl">
         <CardHeader className="pb-2">
-          <CardTitle className="text-2xl font-bold">Schedule</CardTitle>
+          <CardTitle className="text-3xl font-bold flex items-center gap-2">
+            <CalendarDays className="h-7 w-7 text-primary" /> Time Block Schedule
+          </CardTitle>
+          <p className="text-muted-foreground">Plan your day and week by blocking out time for tasks and appointments.</p>
         </CardHeader>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="flex justify-center border-b px-4">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="daily">Daily</TabsTrigger>
-              <TabsTrigger value="weekly">Weekly</TabsTrigger>
-            </TabsList>
-          </div>
-          <TabsContent value="daily" className="mt-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full px-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="daily" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" /> Daily View
+            </TabsTrigger>
+            <TabsTrigger value="weekly" className="flex items-center gap-2">
+              <CalendarWeek className="h-4 w-4" /> Weekly View
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="daily" className="mt-4">
             <DailyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -65,7 +68,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
               onOpenTaskOverview={handleOpenTaskOverview}
             />
           </TabsContent>
-          <TabsContent value="weekly" className="mt-0">
+          <TabsContent value="weekly" className="mt-4">
             <WeeklyScheduleView
               currentDate={currentDate}
               setCurrentDate={setCurrentDate}
@@ -86,7 +89,7 @@ const TimeBlockSchedule: React.FC<TimeBlockScheduleProps> = ({ isDemo = false, d
           onUpdate={updateTask}
           onDelete={deleteTask}
           sections={sections}
-          allTasks={allTasks}
+          allTasks={processedTasks} // Pass processedTasks here
         />
       )}
     </div>
