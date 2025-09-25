@@ -148,7 +148,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground"
       )}
     >
-      <div className="flex items-center justify-between py-[2px]"> {/* Reduced vertical padding further */}
+      <div className="flex items-center justify-between py-[2px]">
         <div className="flex items-center gap-1">
           {getMealIcon(meal.meal_type)}
           <span className={cn(
@@ -194,7 +194,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         onChange={handleNameChange}
         placeholder={`Add ${meal.meal_type} meal name...`}
         className={cn(
-          "text-base font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto leading-tight", // Ensure leading-tight
+          "text-base font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 leading-tight", // Added min-h-0
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
@@ -207,8 +207,8 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         placeholder="Add notes or short description..."
         rows={2}
         className={cn(
-          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto resize-none leading-tight",
-          "max-h-[2.4em] overflow-hidden", // Re-added max-h and overflow-hidden
+          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 resize-none leading-tight", // Added min-h-0
+          "max-h-[2rem] overflow-hidden", // Changed max-h to 2rem (32px)
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
