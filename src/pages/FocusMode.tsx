@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react'; // Added useCallback
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks'; // Import Task
 import FullScreenFocusView from '@/components/FullScreenFocusView';
 import { AnimatePresence } from 'framer-motion';
 import FocusToolsPanel from '@/components/FocusToolsPanel';
@@ -34,15 +34,15 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
 
   const [isFullScreenFocus, setIsFullScreenFocus] = useState(false);
 
-  const handleOpenFocusView = () => {
+  const handleOpenFocusView = useCallback(() => { // Defined as useCallback
     if (nextAvailableTask) {
       setIsFullScreenFocus(true);
     }
-  };
+  }, [nextAvailableTask]);
 
-  const handleCloseFocusView = () => {
+  const handleCloseFocusView = useCallback(() => {
     setIsFullScreenFocus(false);
-  };
+  }, []);
 
   const handleMarkDoneFromFullScreen = async () => {
     if (nextAvailableTask) {
@@ -50,6 +50,30 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
       setIsFullScreenFocus(false);
     }
   };
+
+  const handleOpenTaskOverview = useCallback((task: Task) => { // Defined as useCallback
+    // This function is passed to FocusToolsPanel's onOpenDetail
+    // and then to TaskOverviewDialog's onEditClick
+    // It should set the task to be viewed in the TaskOverviewDialog
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  }, []);
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false); // State for TaskOverviewDialog
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null); // State for TaskOverviewDialog
+
+  const handleEditTaskFromOverview = useCallback((task: Task) => { // Defined as useCallback
+    setIsTaskOverviewOpen(false); // Close overview dialog
+    // This would typically open a TaskDetailDialog for editing
+    // For now, we'll just log it or re-open the overview for editing if that's the flow
+    // Since TaskOverviewDialog has an 'onEditClick' prop, we'll use that.
+    // If a separate edit dialog is needed, it would be opened here.
+    console.log("Edit task from overview:", task.id);
+    // Re-open the overview dialog, which has an edit button
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
+  }, []);
+
 
   if (loading) {
     return (
@@ -110,12 +134,13 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
             allTasks={processedTasks} // Pass processedTasks
             filteredTasks={filteredTasks}
             updateTask={updateTask}
-            onOpenDetail={handleOpenTaskOverview}
+            onOpenDetail={handleOpenTaskOverview} // Corrected prop name
             onDeleteTask={deleteTask}
             sections={sections}
             allCategories={allCategories}
             currentDate={currentDate}
             handleAddTask={handleAddTask}
+            onOpenFocusView={handleOpenFocusView} // Pass the handler here
           />
         </div>
       </div>
@@ -129,6 +154,21 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           />
         )}
       </AnimatePresence>
+
+      {/* Task Overview Dialog for 'Next Up' and 'Upcoming' tasks */}
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onEditClick={handleEditTaskFromOverview} // Pass the handler
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allTasks={processedTasks}
+          allCategories={allCategories} // Keep this if TaskOverviewDialog needs it for sub-components
+        />
+      )}
     </div>
   );
 };

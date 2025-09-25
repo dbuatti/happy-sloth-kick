@@ -28,7 +28,7 @@ interface TaskOverviewDialogProps {
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   sections: TaskSection[];
-  allCategories: Category[];
+  // allCategories: Category[]; // Removed unused prop
   allTasks: Task[]; // This prop should now receive processedTasks
 }
 
@@ -40,7 +40,7 @@ const TaskOverviewDialog: React.FC<TaskOverviewDialogProps> = ({
   onUpdate,
   onDelete,
   sections,
-  allCategories, // This prop is not directly used in this component
+  // allCategories, // Removed unused prop
   allTasks, // This is the prop, assumed to be processedTasks
 }) => {
   const { playSound } = useSound();

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks'; // Import Task interface
 import TaskList from '@/components/TaskList';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -20,7 +20,7 @@ interface DailyTasksPageProps {
 
 const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const userId = demoUserId || user?.id;
+  const userId = demoUserId || user?.id || null; // Ensure userId is string | null
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const {
@@ -58,7 +58,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     toggleAllDoToday,
     dailyProgress,
     archiveAllCompletedTasks,
-    markAllTasksInSectionCompleted, // Destructure the correct function
+    markAllTasksInSectionCompleted,
   } = useTasks({ currentDate, viewMode: 'daily', userId });
 
   const { appointments: allAppointments } = useAllAppointments();
@@ -99,6 +99,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       setIsFullScreenFocus(true);
     }
   };
+
+  const handleCloseFocusView = useCallback(() => {
+    setIsFullScreenFocus(false);
+  }, []);
 
   const handleMarkDoneFromFullScreen = async () => {
     if (nextAvailableTask) {
@@ -210,7 +214,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <main className="flex-1 overflow-y-auto p-4 lg:p-6">
         <TaskList
           ref={taskListRef}
-          tasks={tasks} // rawTasks
+          tasks={processedTasks} // Pass processedTasks here
           processedTasks={processedTasks}
           filteredTasks={filteredTasks}
           loading={loading}
@@ -218,7 +222,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           updateTask={updateTask}
           deleteTask={deleteTask}
           bulkUpdateTasks={bulkUpdateTasks}
-          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted} {/* Corrected prop name here */}
+          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           sections={sections}
           createSection={createSection}
           updateSection={updateSection}
@@ -232,7 +236,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           currentDate={currentDate}
           expandedSections={{}} // Placeholder for now
           expandedTasks={{}} // Placeholder for now
-          toggleTask={() => {}} // Placeholder for now
+          toggleTask={toggleTaskSelection} // Pass toggleTaskSelection
           toggleSection={() => {}} // Placeholder for now
           toggleAllSections={handleToggleAllSections}
           setFocusTask={setFocusTask}

@@ -33,7 +33,7 @@ import { Appointment } from '@/hooks/useAppointments';
 
 
 interface TaskListProps {
-  tasks: Task[]; // This is rawTasks from useTasks
+  // tasks: Task[]; // Removed unused 'tasks' prop
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
   filteredTasks: Task[];
   loading: boolean;
