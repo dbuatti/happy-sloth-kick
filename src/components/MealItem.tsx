@@ -141,7 +141,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-0 py-1 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed p-2 to py-1 px-2 and gap-0.5 to gap-0
+        "relative flex flex-col gap-0 py-0.5 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed py-1 to py-0.5
         "border-l-4",
         isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
         !isCompleted && getIngredientStatusClasses(),
