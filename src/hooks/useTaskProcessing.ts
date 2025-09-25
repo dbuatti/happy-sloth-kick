@@ -44,11 +44,6 @@ export const useTaskProcessing = ({
 
     // Filter out tasks with invalid IDs first
     const validRawTasks = rawTasks.filter(task => {
-      // Add debug log here for validRawTasks
-      if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
-        console.log('DEBUG: Task d3d30bab-9a6f-4385-bb87-0769b0be6a3d in validRawTasks (after ID check):', task);
-      }
-
       // Allow virtual tasks (client-side generated IDs), temporary optimistic update IDs, and valid UUIDs
       if (!task.id.startsWith('virtual-') && !task.id.startsWith('temp-') && !UUID_REGEX.test(task.id)) {
         console.warn(`Skipping task with invalid ID format: "${task.id}". It will not be displayed or interactable.`);
@@ -84,10 +79,6 @@ export const useTaskProcessing = ({
       }
 
       if (templateTask.recurring_type === 'none') {
-        // Add debug log here for non-recurring tasks being pushed
-        if (templateTask.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
-          console.log('DEBUG: Task d3d30bab-9a6f-4385-bb87-0769b0be6a3d pushed to allProcessedTasks (non-recurring):', templateTask);
-        }
         allProcessedTasks.push({ 
           ...templateTask, 
           category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray',
@@ -186,20 +177,6 @@ export const useTaskProcessing = ({
             const isUndatedAndCreatedOnEffectiveDateOrPast = !dueDate && !isAfter(createdAt, effectiveCurrentDate);
 
             const isRelevantByDate = isCreatedOnEffectiveDate || isDueOnEffectiveDateOrPast || isUndatedAndCreatedOnEffectiveDateOrPast;
-
-            // TEMPORARY DEBUG LOG
-            if (task.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d') {
-              console.log('DEBUG Task (in daily filter):', task.description);
-              console.log('  task.created_at (raw):', task.created_at);
-              console.log('  createdAt (startOfDay):', startOfDay(parseISO(task.created_at)));
-              console.log('  effectiveCurrentDate (startOfDay):', startOfDay(effectiveCurrentDate));
-              console.log('  isCreatedOnEffectiveDate:', isCreatedOnEffectiveDate);
-              console.log('  dueDate:', dueDate);
-              console.log('  isDueOnEffectiveDateOrPast:', isDueOnEffectiveDateOrPast);
-              console.log('  isUndatedAndCreatedOnEffectiveDateOrPast:', isUndatedAndCreatedOnEffectiveDateOrPast);
-              console.log('  isRelevantByDate:', isRelevantByDate);
-            }
-            // END TEMPORARY DEBUG LOG
 
             if (isRelevantByDate) {
                 return true;
