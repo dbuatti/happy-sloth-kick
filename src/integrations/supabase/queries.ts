@@ -33,6 +33,8 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Se
   return new Set((data || []).map(item => item.task_id));
 };
 
+const BATCH_SIZE = 1000; // Define a batch size for fetching
+
 export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
   console.log(`fetchTasks: Called with userId from hook: ${userId}`);
   
@@ -62,25 +64,39 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     console.log(`fetchTasks: Direct fetch of target task ${targetTaskId} FAILED (not found or RLS issue).`);
   }
 
-  // Now fetch all tasks for the user, without explicit client-side limits or problematic options
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*') // Select all columns, category_color will be added in useTasks
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true }); // Add a default order for consistent results
+  let allTasks: Omit<Task, 'category_color'>[] = [];
+  let offset = 0;
+  let hasMore = true;
 
-  if (error) {
-    console.error('fetchTasks: Supabase query error for all tasks:', error);
-    throw error; // Re-throw the error to be caught by react-query
+  while (hasMore) {
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*') // Select all columns, category_color will be added in useTasks
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }) // Add a default order for consistent results
+      .range(offset, offset + BATCH_SIZE - 1); // Fetch in batches
+
+    if (error) {
+      console.error('fetchTasks: Supabase query error for all tasks:', error);
+      throw error; // Re-throw the error to be caught by react-query
+    }
+
+    if (data && data.length > 0) {
+      allTasks = allTasks.concat(data);
+      offset += data.length;
+      hasMore = data.length === BATCH_SIZE; // Continue if we got a full batch
+    } else {
+      hasMore = false; // No more data
+    }
   }
   
-  const foundTargetTaskInAll = (data || []).find((task: Omit<Task, 'category_color'>) => task.id === targetTaskId);
+  const foundTargetTaskInAll = allTasks.find(task => task.id === targetTaskId);
   if (foundTargetTaskInAll) {
     console.log(`fetchTasks: Target task ${targetTaskId} WAS found in the ALL tasks response!`, foundTargetTaskInAll);
   } else {
     console.log(`fetchTasks: Target task ${targetTaskId} was NOT found in the ALL tasks response for user ${userId}.`);
   }
-  console.log('fetchTasks: Total tasks received:', (data || []).length);
+  console.log('fetchTasks: Total tasks received:', allTasks.length);
 
-  return data || [];
+  return allTasks;
 };
