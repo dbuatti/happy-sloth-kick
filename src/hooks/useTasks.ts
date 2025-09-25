@@ -462,13 +462,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
     const tasksForToday = processedTasks.filter(task => {
         if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
-            const completedAtDate = new Date(task.completed_at);
+            const completedAtDate = parseISO(task.completed_at);
             
             const isCompletedOnCurrentDate = (
-                isValid(completedAtDate) &&
-                completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-                completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-                completedAtDate.getDate() === effectiveCurrentDate.getDate()
+                completedAtDate && isValid(completedAtDate) &&
+                isSameDay(completedAtDate, effectiveCurrentDate)
             );
             
             if (isCompletedOnCurrentDate) {
@@ -504,13 +502,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     });
 
     const completedCount = focusTasks.filter(t => {
-      const completedAtDate = t.completed_at ? new Date(t.completed_at) : null;
+      const completedAtDate = t.completed_at ? parseISO(t.completed_at) : null;
       
       const isCompletedOnCurrentDate = (
           completedAtDate && isValid(completedAtDate) &&
-          completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-          completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-          completedAtDate.getDate() === effectiveCurrentDate.getDate()
+          isSameDay(completedAtDate, effectiveCurrentDate)
       );
 
       const isCompletedOrArchivedToday = (t.status === 'completed' || t.status === 'archived') && isCompletedOnCurrentDate;

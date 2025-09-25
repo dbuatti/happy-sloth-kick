@@ -109,12 +109,10 @@ export const useTaskProcessing = ({
       filteredTasks = filteredTasks.filter(task => {
         // Include tasks completed/archived today
         if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
-            const completedAtDate = new Date(task.completed_at);
+            const completedAtDate = parseISO(task.completed_at);
             const isCompletedOnCurrentDate = (
-                isValid(completedAtDate) &&
-                completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
-                completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
-                completedAtDate.getDate() === effectiveCurrentDate.getDate()
+                isValid(completed(completedAtDate)) &&
+                isSameDay(completedAtDate, effectiveCurrentDate)
             );
             if (isCompletedOnCurrentDate) {
                 return true;
@@ -209,7 +207,7 @@ export const useTaskProcessing = ({
     userSettings,
     todayStart,
     sections,
-    doTodayOffIds, // Added doTodayOffIds to dependency array
+    doTodayOffIds,
   ]);
 
   return { processedTasks, filteredTasks: filtered };
