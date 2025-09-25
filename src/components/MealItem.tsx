@@ -130,29 +130,22 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
     }
   };
 
-  const getIngredientStatusClasses = () => {
-    if (hasIngredients) {
-      return "border-green-500/30 bg-green-500/5";
-    } else {
-      return "border-red-500/30 bg-red-500/5";
-    }
-  };
-
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-0 py-0 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out",
+        "relative flex flex-col gap-0 py-1 px-2 rounded-xl shadow-sm transition-all duration-200 ease-in-out", // Changed py-0 to py-1 for slight overall padding
         "border-l-4",
-        isCompleted ? "opacity-70 bg-muted/30 border-muted-foreground/20" : "bg-card border-primary/20 hover:shadow-md",
-        !isCompleted && getIngredientStatusClasses(),
-        isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground"
+        isCompleted && "opacity-70 bg-muted/30 border-muted-foreground/20",
+        isPlaceholder && "border-dashed border-muted-foreground/30 bg-muted/10 text-muted-foreground",
+        !isCompleted && !isPlaceholder && (hasIngredients ? "bg-green-500/5 border-green-500/30" : "bg-red-500/5 border-red-500/30"), // Apply background based on hasIngredients
+        !isCompleted && !isPlaceholder && "hover:shadow-md" // Apply hover shadow only if not completed and not placeholder
       )}
     >
       <div className="flex items-center justify-between py-[2px]">
         <div className="flex items-center gap-1">
           {getMealIcon(meal.meal_type)}
           <span className={cn(
-            "text-xs font-semibold",
+            "text-sm font-bold", // Made meal type text larger and bolder
             isPlaceholder ? "text-muted-foreground/70" : "text-foreground"
           )}>
             {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)} ({formattedTime})
@@ -194,7 +187,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         onChange={handleNameChange}
         placeholder={`Add ${meal.meal_type} meal name...`}
         className={cn(
-          "text-base font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 leading-tight", // Added min-h-0
+          "text-base font-bold border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 leading-tight",
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
@@ -204,11 +197,11 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
       <Textarea
         value={notes}
         onChange={handleNotesChange}
-        placeholder="Add notes or short description..."
+        placeholder="Add notes..." // Shortened placeholder text
         rows={2}
         className={cn(
-          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 resize-none leading-tight", // Added min-h-0
-          "max-h-[2rem] overflow-hidden", // Changed max-h to 2rem (32px)
+          "text-xs border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto min-h-0 resize-none leading-tight",
+          "max-h-[2rem] overflow-hidden",
           "hover:border-b hover:border-input focus-visible:border-b focus-visible:border-primary",
           isCompleted && "line-through text-muted-foreground",
           isPlaceholder && "placeholder:text-muted-foreground/50"
