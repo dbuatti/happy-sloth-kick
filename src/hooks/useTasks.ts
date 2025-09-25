@@ -155,15 +155,9 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const { data: rawTasks = [], isLoading: tasksLoading } = useQuery<Omit<Task, 'category_color'>[], Error>({
     queryKey: ['tasks', userId],
-    queryFn: async () => {
-      const fetchedData = await fetchTasks(userId!);
-      return fetchedData;
-    },
+    queryFn: () => fetchTasks(userId!),
     enabled: !!userId && !authLoading,
     staleTime: 60 * 1000,
-    select: (data) => {
-      return data;
-    }
   });
 
   const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || tasksLoading;
@@ -299,17 +293,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-
-    // Refined defaultCategoryId logic
-    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
-    const defaultCategoryId = generalCategory?.id || (allCategories.length > 0 ? allCategories[0].id : null);
-
+    // Ensure status and recurring_type are explicitly set for addTaskMutation
     const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order?: number | null } = {
       ...newTaskData,
       description: newTaskData.description || '', // Ensure description is string
       status: newTaskData.status || 'to-do',
       recurring_type: newTaskData.recurring_type || 'none',
-      category: newTaskData.category || defaultCategoryId, // Use refined defaultCategoryId
+      category: newTaskData.category || 'general', // Ensure category is not null
       priority: newTaskData.priority ?? 'medium', // Ensure priority is not undefined using nullish coalescing
       due_date: newTaskData.due_date ?? null, // Fix: Add nullish coalescing for due_date
       notes: newTaskData.notes ?? null, // Fix: Add nullish coalescing for notes
@@ -321,10 +311,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
       link: newTaskData.link ?? null, // Fix: Add nullish coalescing for link
       image_url: newTaskData.image_url ?? null, // Fix: Add nullish coalescing for image_url
     };
-
-    const result = await addTaskMutation(dataWithDefaults, mutationContext);
-    return result;
-  }, [userId, mutationContext, allCategories]);
+    return addTaskMutation(dataWithDefaults, mutationContext);
+  }, [userId, mutationContext]);
 
   const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
     if (!userId) { showError('User not authenticated.'); return null; }
@@ -541,8 +529,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
   }, [processedTasks, viewMode, sections, doTodayOffIds, todayStart, effectiveCurrentDate]);
 
   return {
-    tasks: rawTasks, // rawTasks is Omit<Task, 'category_color'>[]
-    processedTasks, // processedTasks is Task[]
+    tasks: rawTasks,
+    processedTasks,
     filteredTasks: finalFilteredTasks,
     nextAvailableTask,
     loading,

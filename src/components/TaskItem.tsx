@@ -13,12 +13,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, CheckCircle2 } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
@@ -44,10 +45,10 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>; // This prop is still needed for the interface, but not destructured in the component
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  // Removed attributes and listeners from here
+  attributes?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
+  listeners?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -66,10 +67,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  // Removed doTodayOffIds from destructuring as it's not directly used here
   scheduledTasksMap,
   isDemo = false,
-  // Removed attributes and listeners from here
+  attributes, // Destructure
+  listeners, // Destructure
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -197,7 +198,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Drag Handle */}
       {!isOverlay && !task.parent_task_id && ( // Only show drag handle for top-level tasks
-        <div className="flex-shrink-0 pr-2 -ml-3" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flex-shrink-0 pr-2 -ml-3" {...listeners} {...attributes} onPointerDown={(e) => e.stopPropagation()}>
           <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab touch-none text-muted-foreground hover:bg-transparent">
             <GripVertical className="h-4 w-4" />
           </Button>

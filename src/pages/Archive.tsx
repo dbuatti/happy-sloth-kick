@@ -1,26 +1,14 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Archive as ArchiveIcon } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useAuth } from '@/context/AuthContext';
-import { Input } from '@/components/ui/input';
-import { Search, Filter, X, ListRestart, Archive as ArchiveIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import TaskItem from '@/components/TaskItem';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import BulkActionBar from '@/components/BulkActionBar';
-import { useDebounce } from '@/hooks/useDebounce';
-import { Skeleton } from "@/components/ui/skeleton"; // Added missing import
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import TaskOverviewDialog from '@/components/TaskOverviewDialog';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
+import { format, parseISO, isSameDay } from 'date-fns';
 
 interface ArchiveProps {
   isDemo?: boolean;
@@ -28,280 +16,172 @@ interface ArchiveProps {
 }
 
 const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth();
-  const userId = demoUserId || user?.id;
-
-  const [currentDate] = useState(new Date()); // Archive view doesn't change date
   const {
-    // Removed tasks: rawTasks as it was unused
-    processedTasks, // Use processedTasks for TaskItem
-    filteredTasks,
-    loading,
+    processedTasks, // Use processedTasks here
+    filteredTasks: archivedTasks, 
+    loading: archiveLoading,
     updateTask,
     deleteTask,
-    bulkUpdateTasks,
-    bulkDeleteTasks,
-    searchFilter,
-    setSearchFilter,
-    // Removed statusFilter and setStatusFilter as they are not used in Archive UI
-    categoryFilter,
-    setCategoryFilter,
-    priorityFilter,
-    setPriorityFilter,
     sections,
     allCategories,
+    setStatusFilter,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
     setFocusTask,
-    doTodayOffIds,
     toggleDoToday,
-  } = useTasks({ currentDate, viewMode: 'archive', userId });
+    doTodayOffIds,
+  } = useTasks({ viewMode: 'archive', userId: demoUserId, currentDate: new Date() });
 
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { appointments: allAppointments } = useAllAppointments();
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Corrected useState initialization
-  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
-  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
-  // Removed isBulkUpdating as it was unused
-
-  const debouncedSearchFilter = useDebounce(searchFilter, 300);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchFilter(e.target.value);
-  };
-
-  const handleClearSearch = () => {
-    setSearchFilter('');
-  };
-
-  // Removed handleStatusChange as it was unused
-
-  const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value);
-  };
-
-  const handlePriorityChange = (value: string) => {
-    setPriorityFilter(value);
-  };
-
-  const clearAllFilters = () => {
-    setSearchFilter('');
-    // Removed setStatusFilter('all');
-    setCategoryFilter('all');
-    setPriorityFilter('all');
-  };
-
-  const isAnyFilterActive = searchFilter !== '' || categoryFilter !== 'all' || priorityFilter !== 'all'; // Removed statusFilter check
-
-  // Removed handleToggleSelectTask as it was unused
-
-  const handleClearSelection = () => {
-    setSelectedTaskIds(new Set());
-  };
-
-  const handleBulkComplete = async () => {
-    if (selectedTaskIds.size === 0) return;
-    // Removed setIsBulkUpdating(true);
-    await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
-    setSelectedTaskIds(new Set());
-    // Removed setIsBulkUpdating(false);
-  };
-
-  const handleBulkArchive = async () => {
-    if (selectedTaskIds.size === 0) return;
-    // Removed setIsBulkUpdating(true);
-    await bulkUpdateTasks({ status: 'archived' }, Array.from(selectedTaskIds));
-    setSelectedTaskIds(new Set());
-    // Removed setIsBulkUpdating(false);
-  };
-
-  const handleBulkChangePriority = async (priority: Task['priority']) => {
-    if (selectedTaskIds.size === 0) return;
-    // Removed setIsBulkUpdating(true);
-    await bulkUpdateTasks({ priority }, Array.from(selectedTaskIds));
-    setSelectedTaskIds(new Set());
-    // Removed setIsBulkUpdating(false);
-  };
-
-  const handleDeleteSelectedClick = () => {
-    if (selectedTaskIds.size > 0) {
-      setShowConfirmDeleteDialog(true);
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    if (allAppointments) {
+        allAppointments.forEach(app => {
+            if (app.task_id) {
+                map.set(app.task_id, app);
+            }
+        });
     }
+    return map;
+  }, [allAppointments]);
+
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+
+  useEffect(() => {
+    setStatusFilter('archived');
+  }, [setStatusFilter]);
+
+  const handleTaskStatusChange = async (taskId: string, newStatus: Task['status']): Promise<string | null> => {
+    return await updateTask(taskId, { status: newStatus });
   };
 
-  const confirmBulkDelete = async () => {
-    if (selectedTaskIds.size === 0) return;
-    setIsBulkDeleting(true);
-    await bulkDeleteTasks(Array.from(selectedTaskIds));
-    setSelectedTaskIds(new Set());
-    setShowConfirmDeleteDialog(false);
-    setIsBulkDeleting(false);
+  const handleOpenOverview = (task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   };
 
-  const filteredAndSearchedTasks = useMemo(() => {
-    return filteredTasks.filter(task =>
-      task.status === 'archived' && // Only show archived tasks in this view
-      (task.description?.toLowerCase().includes(debouncedSearchFilter.toLowerCase()) ||
-       task.notes?.toLowerCase().includes(debouncedSearchFilter.toLowerCase()) ||
-       task.link?.toLowerCase().includes(debouncedSearchFilter.toLowerCase()))
-    );
-  }, [filteredTasks, debouncedSearchFilter]);
+  const handleEditTaskFromOverview = (task: Task) => {
+    setIsTaskOverviewOpen(false);
+    setTaskToEdit(task);
+    setIsTaskDetailOpen(true);
+  };
+
+  const groupedArchivedTasks = useMemo(() => {
+    const groups: { [date: string]: Task[] } = {};
+    archivedTasks.forEach((task: Task) => {
+      const dateToUse = task.completed_at || task.updated_at;
+      if (dateToUse) {
+        const dateKey = format(parseISO(dateToUse), 'yyyy-MM-dd');
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(task);
+      }
+    });
+
+    return Object.entries(groups).sort(([dateA], [dateB]) => {
+      return parseISO(dateB).getTime() - parseISO(dateA).getTime();
+    });
+  }, [archivedTasks]);
 
   return (
-    <div className="flex-1 overflow-auto p-4 lg:p-6">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6 flex items-center gap-3">
-          <ArchiveIcon className="h-8 w-8 text-primary" /> Task Archive
-        </h1>
-
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-            <Input
-              ref={searchInputRef}
-              placeholder="Search archived tasks..."
-              value={searchFilter}
-              onChange={handleSearchChange}
-              className="pl-10 h-9"
-              disabled={isDemo}
-            />
-            {searchFilter && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-                onClick={handleClearSearch}
-                disabled={isDemo}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            )}
-          </div>
-
-          <div className="flex gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2 h-9" disabled={isDemo}>
-                  <Filter className="h-4 w-4" />
-                  Filter
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <Select value={categoryFilter} onValueChange={handleCategoryChange} disabled={isDemo}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[9999]">
-                        <SelectItem value="all">All</SelectItem>
-                        {allCategories.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-4xl mx-auto shadow-lg rounded-xl p-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+              <ArchiveIcon className="h-7 w-7 text-primary" /> Archived Tasks
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            {archiveLoading ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : archivedTasks.length === 0 ? (
+              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
+                <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
+                <p className="text-lg font-medium mb-2">No archived tasks found.</p>
+                <p className="text-sm">Completed tasks will appear here once you archive them from your daily view.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {groupedArchivedTasks.map(([dateKey, tasksInGroup]) => (
+                  <div key={dateKey}>
+                    <h3 className="text-xl font-bold mb-3 text-foreground">
+                      {isSameDay(parseISO(dateKey), new Date()) ? 'Today' : format(parseISO(dateKey), 'EEEE, MMM d')}
+                    </h3>
+                    <ul className="space-y-2">
+                      {tasksInGroup.map((task) => (
+                        <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
+                          <TaskItem
+                            task={task}
+                            allTasks={processedTasks} // Pass processedTasks
+                            onStatusChange={handleTaskStatusChange}
+                            onDelete={deleteTask}
+                            onUpdate={updateTask}
+                            sections={sections}
+                            onOpenOverview={handleOpenOverview}
+                            currentDate={new Date()}
+                            onMoveUp={async () => {}}
+                            onMoveDown={async () => {}}
+                            setFocusTask={setFocusTask}
+                            isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                            toggleDoToday={() => toggleDoToday(task)}
+                            scheduledTasksMap={scheduledTasksMap}
+                            isDemo={isDemo}
+                            level={0}
+                          />
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Priority</Label>
-                    <Select value={priorityFilter} onValueChange={handlePriorityChange} disabled={isDemo}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                      <SelectContent className="z-[9999]">
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                        <SelectItem value="urgent">Urgent</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-            {isAnyFilterActive && (
-              <Button variant="outline" onClick={clearAllFilters} className="gap-2 h-9" disabled={isDemo}>
-                <ListRestart className="h-4 w-4" />
-                Clear Filters
-              </Button>
+                ))}
+              </div>
             )}
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : filteredAndSearchedTasks.length === 0 ? (
-          <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-            <ArchiveIcon className="h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">No archived tasks found.</p>
-            <p className="text-sm">Your archive is empty or no tasks match your current filters.</p>
-          </div>
-        ) : (
-          <ul className="space-y-3">
-            {filteredAndSearchedTasks.map(task => (
-              <li key={task.id} className="relative rounded-xl p-2 transition-all duration-200 ease-in-out group hover:shadow-md">
-                <TaskItem
-                  task={task}
-                  allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
-                  onStatusChange={async (taskId, newStatus) => { await updateTask(taskId, { status: newStatus }); return taskId; }}
-                  onDelete={async (taskId) => { await deleteTask(taskId); }}
-                  onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
-                  sections={sections}
-                  onOpenOverview={() => {}}
-                  currentDate={currentDate}
-                  onMoveUp={async () => {}}
-                  onMoveDown={async () => {}}
-                  level={0}
-                  isOverlay={false}
-                  hasSubtasks={false} // Archive view doesn't show subtasks directly
-                  isExpanded={false}
-                  toggleTask={() => {}}
-                  setFocusTask={setFocusTask}
-                  isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                  toggleDoToday={toggleDoToday}
-                  doTodayOffIds={doTodayOffIds}
-                  scheduledTasksMap={new Map()} // Archive tasks are not scheduled
-                  isDemo={isDemo}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {selectedTaskIds.size > 0 && (
-        <BulkActionBar
-          selectedCount={selectedTaskIds.size}
-          onClearSelection={handleClearSelection}
-          onComplete={handleBulkComplete}
-          onArchive={handleBulkArchive}
-          onDelete={handleDeleteSelectedClick}
-          onChangePriority={handleBulkChangePriority}
+          </CardContent>
+        </Card>
+      </main>
+      {taskToOverview && (
+        <TaskOverviewDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => {
+            setIsTaskOverviewOpen(false);
+            setTaskToOverview(null);
+          }}
+          onEditClick={handleEditTaskFromOverview}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          allTasks={processedTasks} // Pass processedTasks
         />
       )}
-
-      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete {selectedTaskIds.size} selected task(s) and all their sub-tasks.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBulkDelete} disabled={isBulkDeleting}>
-              {isBulkDeleting ? 'Deleting...' : 'Continue'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {taskToEdit && (
+        <TaskDetailDialog
+          task={taskToEdit}
+          isOpen={isTaskDetailOpen}
+          onClose={() => setIsTaskDetailOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={processedTasks} // Pass processedTasks
+        />
+      )}
     </div>
   );
 };

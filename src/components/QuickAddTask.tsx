@@ -6,20 +6,19 @@ import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integratio
 import { dismissToast, showError, showLoading } from '@/utils/toast';
 import { Button } from '@/components/ui/button'; // Added Button import
 
-
 interface QuickAddTaskProps {
   sectionId: string | null;
   onAddTask: (taskData: {
     description: string;
     section_id: string | null;
-    category: string | null; // Changed to string | null
+    category: string;
     priority: Task['priority'];
     due_date?: string | null;
     notes?: string | null;
     remind_at?: string | null;
     link?: string | null;
   }) => Promise<any>;
-  // Removed defaultCategoryId prop
+  defaultCategoryId: string;
   isDemo?: boolean;
   allCategories: Category[]; // Added prop
   sections: TaskSection[]; // Added prop
@@ -29,13 +28,12 @@ interface QuickAddTaskProps {
 const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   sectionId,
   onAddTask,
-  // Removed defaultCategoryId from destructuring
+  defaultCategoryId,
   isDemo = false,
   allCategories,
   sections,
   currentDate,
 }) => {
-  // Removed unused 'user' variable: const { user } = useAuth();
   const [description, setDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -56,12 +54,8 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
 
       let taskDataToSend: Parameters<typeof onAddTask>[0];
 
-      // Refined defaultCategoryId logic for QuickAddTask as well
-      const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
-      const effectiveDefaultCategoryId = generalCategory?.id || (allCategories.length > 0 ? allCategories[0].id : null);
-
       if (suggestions) {
-        const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || effectiveDefaultCategoryId;
+        const suggestedCategoryId = allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || defaultCategoryId;
         // Fix: Ensure suggestions.section is a string before comparison
         const suggestedSectionId = sections.find(sec => sec.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''))?.id || sectionId;
 
@@ -79,16 +73,13 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
         showError('AI suggestions failed. Adding task with default details.');
         taskDataToSend = {
           description: description.trim(),
-          category: effectiveDefaultCategoryId,
+          category: defaultCategoryId,
           priority: 'medium',
           section_id: sectionId,
         };
       }
 
-      console.log('QuickAddTask: Data being sent to onAddTask:', taskDataToSend);
       const success = await onAddTask(taskDataToSend);
-      console.log('QuickAddTask: Result from onAddTask:', success);
-
       if (success) {
         setDescription('');
       }

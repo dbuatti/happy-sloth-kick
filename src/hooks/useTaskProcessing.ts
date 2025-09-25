@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { parseISO, isSameDay, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
+import { isSameDay, parseISO, isValid, isBefore, format, startOfDay, addDays, isAfter } from 'date-fns';
 import { Task, TaskSection } from './useTasks'; // Import types
 import { UserSettings } from './useUserSettings'; // Import UserSettings type
 
@@ -65,55 +65,31 @@ export const useTaskProcessing = ({
         allProcessedTasks.push({ ...templateTask, category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray' });
       } else {
         const sortedInstances = [...seriesInstances].sort((a, b) => parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime());
-        
-        let relevantInstance: Omit<Task, 'category_color'> | null = null;
+        let relevantInstance: Omit<Task, 'category_color'> | null = sortedInstances.find(t => isSameDay(startOfDay(parseISO(t.created_at)), todayStart)) || null;
 
-        // 1. Look for an instance that was completed on the effectiveCurrentDate
-        relevantInstance = sortedInstances.find(t => 
-            t.status === 'completed' && t.completed_at && isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
-        ) || null;
-
-        // 2. If no completed instance for today, look for an active (to-do) instance that was created today.
         if (!relevantInstance) {
-            relevantInstance = sortedInstances.find(t => 
-                t.status === 'to-do' && isSameDay(startOfDay(parseISO(t.created_at)), todayStart)
-            ) || null;
+          relevantInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart) && t.status === 'to-do') || null;
         }
 
-        // 3. If still no instance for today, look for an active (to-do) instance from a previous day (carry-over).
-        //    We pick the most recent one if multiple exist.
         if (!relevantInstance) {
-            relevantInstance = sortedInstances.find(t => 
-                t.status === 'to-do' && isBefore(startOfDay(parseISO(t.created_at)), todayStart)
-            ) || null;
-        }
+          const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
+          const baseTaskForVirtual = mostRecentRealInstance || templateTask;
 
-        // 4. If no real instance (completed today, created today, or carried over) is found,
-        //    then consider creating a virtual task for today if it's a recurring task.
-        if (!relevantInstance) {
-          const templateCreatedAt = startOfDay(parseISO(templateTask.created_at)); // Normalize template creation date
-          
-          // Only generate a virtual task if the effectiveCurrentDate is on or after the template's creation date
-          if (isBefore(todayStart, templateCreatedAt)) {
-              // The recurring task hasn't "started" yet relative to today.
-              // Do not generate a virtual task.
-              return; 
-          }
-
+          const templateCreatedAt = parseISO(templateTask.created_at);
           const isDailyMatch = templateTask.recurring_type === 'daily';
           const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
           const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getUTCDate() === templateCreatedAt.getUTCDate();
 
           if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
             const virtualTask: Task = {
-              ...templateTask, // Use templateTask as base for virtual
+              ...baseTaskForVirtual,
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
               created_at: todayStart.toISOString(),
               status: 'to-do',
               original_task_id: templateTask.id,
-              remind_at: templateTask.remind_at ? format(parseISO(templateTask.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
-              due_date: templateTask.due_date ? todayStart.toISOString() : null, // If template has due date, virtual task is due today
-              category_color: categoriesMapLocal.get(templateTask.category || '') || 'gray',
+              remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
+              due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
+              category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
               completed_at: null,
             };
             allProcessedTasks.push(virtualTask);
@@ -131,28 +107,36 @@ export const useTaskProcessing = ({
 
     if (viewMode === 'daily') {
       filteredTasks = filteredTasks.filter(task => {
-        const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
-
-        // 1. Always include tasks completed/archived today
-        const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, todayStart);
-        if (isCompletedOrArchivedToday) {
-            return true;
+        // Include tasks completed/archived today
+        if ((task.status === 'completed' || task.status === 'archived') && task.completed_at) {
+            const completedAtDate = new Date(task.completed_at);
+            const isCompletedOnCurrentDate = (
+                isValid(completedAtDate) &&
+                completedAtDate.getFullYear() === effectiveCurrentDate.getFullYear() &&
+                completedAtDate.getMonth() === effectiveCurrentDate.getMonth() &&
+                completedAtDate.getDate() === effectiveCurrentDate.getDate()
+            );
+            if (isCompletedOnCurrentDate) {
+                return true;
+            }
         }
 
-        // 2. Only consider 'to-do' tasks from here
-        if (task.status !== 'to-do') {
-            return false;
+        // Include 'to-do' tasks that are due today or before, or created today or before
+        if (task.status === 'to-do') {
+            const createdAt = startOfDay(parseISO(task.created_at));
+            const dueDate = task.due_date ? startOfDay(parseISO(task.due_date)) : null;
+
+            const isRelevantByDate = (dueDate && !isAfter(dueDate, todayStart)) || (!dueDate && !isAfter(createdAt, todayStart));
+
+            // Check if the task is marked as "Do Today" (not in doTodayOffIds)
+            const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
+
+            if (isRelevantByDate && isDoToday) {
+                return true;
+            }
         }
 
-        // 3. Check if the task is marked as "Do Today" (not in doTodayOffIds)
-        const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
-        if (!isDoToday) {
-            return false; // If not "Do Today", filter it out
-        }
-
-        // 4. If it's a 'to-do' and 'Do Today' task, it's considered relevant for the daily view
-        //    The future_tasks_days_visible filter will further refine its visibility based on date.
-        return true;
+        return false;
       });
     }
 
@@ -198,32 +182,17 @@ export const useTaskProcessing = ({
       });
     }
 
-    // Apply future_tasks_days_visible filter for 'daily' view
     if (userSettings && userSettings.future_tasks_days_visible !== -1 && viewMode === 'daily') {
       const visibilityDays = userSettings.future_tasks_days_visible;
       const today = startOfDay(effectiveCurrentDate);
       const futureLimit = addDays(today, visibilityDays);
 
       filteredTasks = filteredTasks.filter(task => {
-        // If task is completed or archived today, it should always be visible regardless of future_tasks_days_visible
-        const taskCompletedAt = task.completed_at ? startOfDay(parseISO(task.completed_at)) : null;
-        const isCompletedOrArchivedToday = (task.status === 'completed' || task.status === 'archived') && taskCompletedAt && isSameDay(taskCompletedAt, today);
-        if (isCompletedOrArchivedToday) {
-            return true;
+        if (!task.due_date) {
+          return true;
         }
-
-        // For 'to-do' tasks, apply the visibility limit based on due_date or created_at
-        const dateToCheck = task.due_date ? startOfDay(parseISO(task.due_date)) : startOfDay(parseISO(task.created_at));
-        
-        // If the date is in the past or today, it's always visible
-        if (!isAfter(dateToCheck, today)) {
-            return true;
-        }
-
-        // If the date is in the future, check if it's within the visibility limit
-        const isWithinFutureLimit = !isAfter(dateToCheck, futureLimit);
-
-        return isWithinFutureLimit;
+        const dueDate = startOfDay(parseISO(task.due_date));
+        return !isAfter(dueDate, futureLimit);
       });
     }
 
@@ -240,7 +209,7 @@ export const useTaskProcessing = ({
     userSettings,
     todayStart,
     sections,
-    doTodayOffIds,
+    doTodayOffIds, // Added doTodayOffIds to dependency array
   ]);
 
   return { processedTasks, filteredTasks: filtered };

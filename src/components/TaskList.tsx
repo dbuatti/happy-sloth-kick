@@ -64,7 +64,6 @@ interface TaskListProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  userId: string | null; // Added userId prop
 }
 
 const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
@@ -97,8 +96,9 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     toggleDoToday,
     scheduledTasksMap,
     isDemo = false,
-    userId, // Destructure userId prop
   } = props;
+
+  const userId = ''; // Removed useAuth, so userId is hardcoded or passed from parent
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -128,12 +128,12 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId || '', // Use the userId prop here
+      user_id: userId,
       order: sections.length,
       include_in_focus_mode: true,
     };
     return [...sections, noSection];
-  }, [sections, userId]); // Add userId to dependencies
+  }, [sections, userId]);
 
   const allVisibleItemIds = useMemo(() => {
     const ids: UniqueIdentifier[] = [];
@@ -162,7 +162,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             addSubtasksRecursively(topLevelTasksInSection);
         }
     });
-    console.log('TaskList: allVisibleItemIds updated:', ids); // Add this log
     return ids;
   }, [allSortableSections, expandedSections, filteredTasks, expandedTasks]);
 
@@ -348,8 +347,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     <div className="mt-2 pt-2" data-no-dnd="true">
                       <QuickAddTask
                         sectionId={currentSection.id === 'no-section-header' ? null : currentSection.id}
-                        onAddTask={async (data) => { return await handleAddTask(data); }}
-                        // Removed defaultCategoryId prop
+                        onAddTask={async (data) => { await handleAddTask(data); }}
+                        defaultCategoryId={allCategories.find(c => c.name.toLowerCase() === 'general')?.id || allCategories[0]?.id || ''}
                         isDemo={isDemo}
                         allCategories={allCategories}
                         sections={sections}
@@ -397,7 +396,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       setFocusTask={setFocusTask}
                       isDoToday={!doTodayOffIds.has((activeItemData as Task).original_task_id || (activeItemData as Task).id)}
                       toggleDoToday={toggleDoToday}
-                      doTodayOffIds={doTodayOffIds}
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
                     />
@@ -434,7 +432,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={processedTasks} // Use processedTasks here
+            allTasks={tasks}
           />
         </DialogContent>
       </Dialog>
