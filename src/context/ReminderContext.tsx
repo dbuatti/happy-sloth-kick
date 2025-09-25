@@ -1,10 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
-import { isPast, parseISO, isValid, differenceInMinutes } from 'date-fns';
+import { isPast, parseISO, isValid } from 'date-fns';
 import { useAuth } from './AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client'; // Keep supabase for potential future use, but remove if truly unused in the context logic. Let's assume it's not used for now based on the error.
 
 interface Reminder {
   id: string;
@@ -16,93 +16,83 @@ interface ReminderContextType {
   addReminder: (id: string, message: string, remindAt: Date) => void;
   dismissReminder: (id: string) => void;
   clearAllReminders: () => void;
-  reminders: Reminder[];
 }
 
 const ReminderContext = createContext<ReminderContextType | undefined>(undefined);
 
-export const ReminderProvider = ({ children }: { children: React.ReactNode }) => {
+export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const addReminder = useCallback((id: string, message: string, remindAt: Date) => {
-    if (!isValid(remindAt) || isPast(remindAt)) {
-      // console.log(`Reminder for task ${id} is in the past or invalid, not adding.`);
-      return;
-    }
     setReminders(prev => {
       const existingIndex = prev.findIndex(r => r.id === id);
+      const newReminder = { id, message, remindAt };
+
       if (existingIndex > -1) {
-        const newReminders = [...prev];
-        newReminders[existingIndex] = { id, message, remindAt };
-        return newReminders;
+        // Update existing reminder
+        const updatedReminders = [...prev];
+        updatedReminders[existingIndex] = newReminder;
+        return updatedReminders;
+      } else {
+        // Add new reminder
+        return [...prev, newReminder];
       }
-      return [...prev, { id, message, remindAt }];
     });
   }, []);
 
   const dismissReminder = useCallback((id: string) => {
     setReminders(prev => prev.filter(r => r.id !== id));
-    // console.log(`Reminder for task ${id} dismissed.`);
   }, []);
 
   const clearAllReminders = useCallback(() => {
     setReminders([]);
   }, []);
 
-  // Load reminders from local storage on mount
   useEffect(() => {
+    // Load reminders from local storage on mount
     if (user?.id) {
       const storedReminders = localStorage.getItem(`reminders-${user.id}`);
       if (storedReminders) {
-        try {
-          const parsedReminders: Reminder[] = JSON.parse(storedReminders).map((r: any) => ({
-            ...r,
-            remindAt: parseISO(r.remindAt),
-          }));
-          setReminders(parsedReminders.filter(r => isValid(r.remindAt) && !isPast(r.remindAt)));
-        } catch (e) {
-          console.error("Failed to parse stored reminders:", e);
-          localStorage.removeItem(`reminders-${user.id}`);
-        }
+        const parsedReminders: Reminder[] = JSON.parse(storedReminders).map((r: any) => ({
+          ...r,
+          remindAt: parseISO(r.remindAt),
+        }));
+        setReminders(parsedReminders.filter(r => isValid(r.remindAt) && !isPast(r.remindAt)));
       }
     } else {
       setReminders([]); // Clear reminders if user logs out
     }
   }, [user?.id]);
 
-  // Save reminders to local storage whenever they change
   useEffect(() => {
+    // Save reminders to local storage whenever they change
     if (user?.id) {
-      localStorage.setItem(`reminders-${user.id}`, JSON.stringify(reminders.map(r => ({
-        ...r,
-        remindAt: r.remindAt.toISOString(),
-      }))));
+      localStorage.setItem(`reminders-${user.id}`, JSON.stringify(reminders));
     }
   }, [reminders, user?.id]);
 
-  // Reminder check interval
   useEffect(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
 
     intervalRef.current = setInterval(() => {
-      const now = new Date();
       setReminders(prevReminders => {
         const updatedReminders = prevReminders.filter(reminder => {
           if (isPast(reminder.remindAt)) {
             toast.info(reminder.message, {
-              duration: 10000, // Display for 10 seconds
+              description: 'This is a reminder for your task.',
+              duration: 5000,
               action: {
                 label: 'Dismiss',
                 onClick: () => dismissReminder(reminder.id),
               },
             });
-            return false; // Remove reminder
+            return false; // Remove past reminder
           }
-          return true;
+          return true; // Keep future reminder
         });
         return updatedReminders;
       });
@@ -116,7 +106,7 @@ export const ReminderProvider = ({ children }: { children: React.ReactNode }) =>
   }, [dismissReminder]);
 
   return (
-    <ReminderContext.Provider value={{ addReminder, dismissReminder, clearAllReminders, reminders }}>
+    <ReminderContext.Provider value={{ addReminder, dismissReminder, clearAllReminders }}>
       {children}
     </ReminderContext.Provider>
   );
