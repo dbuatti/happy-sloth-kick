@@ -59,27 +59,29 @@ const AppContent = () => {
   if (isDemoRoute) {
     return (
       <SettingsProvider userId={demoUserId}>
-        <div className="relative h-screen w-screen">
-          <Sidebar isDemo={true}>
-            <Routes>
-              <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/help" element={<Help />} />
-              <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/focus" element={<FocusMode isDemo={true} demoUserId={demoUserId} />} /> {/* Added isDemo and demoUserId */}
-              <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
-              <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
-              <Route path="*" element={<Navigate to="/demo" replace />} />
-            </Routes>
-          </Sidebar>
-        </div>
+        <ReminderProvider>
+          <div className="relative h-screen w-screen">
+            <Sidebar isDemo={true}>
+              <Routes>
+                <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/help" element={<Help />} />
+                <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/focus" element={<FocusMode isDemo={true} demoUserId={demoUserId} />} /> {/* Added isDemo and demoUserId */}
+                <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
+                <Route path="*" element={<Navigate to="/demo" replace />} />
+              </Routes>
+            </Sidebar>
+          </div>
+        </ReminderProvider>
       </SettingsProvider>
     );
   }
@@ -90,42 +92,44 @@ const AppContent = () => {
 
   return (
     <SettingsProvider>
-      <div className="flex-1 flex flex-col">
-        {user ? (
-          <div className="relative h-screen w-screen">
-            <Sidebar>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/daily-tasks" element={<DailyTasksPage />} />
-                <Route path="/help" element={<Help />} />
-                <Route path="/projects" element={<ProjectBalanceTracker />} />
-                <Route path="/schedule" element={<TimeBlockSchedule />} />
-                <Route path="/sleep" element={<SleepPage />} />
-                <Route path="/focus" element={<FocusMode />} />
-                <Route path="/dev-space" element={<DevSpace />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/analytics" element={<Analytics />} />
-                <Route path="/archive" element={<Archive />} />
-                <Route path="/meal-planner" element={<MealPlanner />} />
-                <Route path="/resonance-goals" element={<ResonanceGoalsPage />} /> {/* New User Route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Sidebar>
-            <FloatingTimer />
-            <CommandPalette
-              isCommandPaletteOpen={isCommandPaletteOpen}
-              setIsCommandPaletteOpen={setIsCommandPaletteOpen}
-            />
-          </div>
-        ) : (
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        )}
-      </div>
+      <ReminderProvider>
+        <div className="flex-1 flex flex-col">
+          {user ? (
+            <div className="relative h-screen w-screen">
+              <Sidebar>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/daily-tasks" element={<DailyTasksPage />} />
+                  <Route path="/help" element={<Help />} />
+                  <Route path="/projects" element={<ProjectBalanceTracker />} />
+                  <Route path="/schedule" element={<TimeBlockSchedule />} />
+                  <Route path="/sleep" element={<SleepPage />} />
+                  <Route path="/focus" element={<FocusMode />} />
+                  <Route path="/dev-space" element={<DevSpace />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/archive" element={<Archive />} />
+                  <Route path="/meal-planner" element={<MealPlanner />} />
+                  <Route path="/resonance-goals" element={<ResonanceGoalsPage />} /> {/* New User Route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Sidebar>
+              <FloatingTimer />
+              <CommandPalette
+                isCommandPaletteOpen={isCommandPaletteOpen}
+                setIsCommandPaletteOpen={setIsCommandPaletteOpen}
+              />
+            </div>
+          ) : (
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          )}
+        </div>
+      </ReminderProvider>
     </SettingsProvider>
   );
 };
@@ -138,11 +142,9 @@ const App = () => {
         <AuthProvider>
           <SoundProvider>
             <TimerProvider>
-              <ReminderProvider>
-                <BrowserRouter>
-                  <AppContent />
-                </BrowserRouter>
-              </ReminderProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
             </TimerProvider>
           </SoundProvider>
         </AuthProvider>
