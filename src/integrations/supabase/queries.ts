@@ -40,5 +40,16 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
     .eq('user_id', userId);
 
   if (error) throw error;
+  
+  // Add debug log here
+  if (data) {
+    const targetTask = data.find(t => t.id === 'd3d30bab-9a6f-4385-bb87-0769b0be6a3d');
+    if (targetTask) {
+      console.log('DEBUG: Task found in fetchTasks (from DB):', targetTask);
+    } else {
+      console.log('DEBUG: Task d3d30bab-9a6f-4385-bb87-0769b0be6a3d NOT found in fetchTasks (from DB).');
+    }
+  }
+
   return data || [];
 };
