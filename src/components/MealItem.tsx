@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { parseISO } from 'date-fns'; // Removed setHours, setMinutes, format
+// import { parseISO } from 'date-fns'; // Removed as it was unused
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,11 +19,11 @@ interface MealItemProps {
   isPlaceholder: boolean;
 }
 
-const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
-  breakfast: { hour: 7, minute: 0 },
-  lunch: { hour: 12, minute: 0 },
-  dinner: { hour: 18, minute: 0 },
-};
+// const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = { // Removed as it was unused
+//   breakfast: { hour: 7, minute: 0 },
+//   lunch: { hour: 12, minute: 0 },
+//   dinner: { hour: 18, minute: 0 },
+// };
 
 const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isPlaceholder }) => {
   const { playSound } = useSound();
@@ -107,9 +107,6 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
       playSound('reset');
     }
   };
-
-  // const mealDate = parseISO(meal.meal_date); // Removed as it was unused
-  // const mealTime = MEAL_TIMES[meal.meal_type]; // Removed as it was unused
 
   const getMealIcon = (type: MealType) => {
     switch (type) {
