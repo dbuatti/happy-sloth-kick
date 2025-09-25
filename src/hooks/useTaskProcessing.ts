@@ -134,16 +134,6 @@ export const useTaskProcessing = ({
             // Check if the task is marked as "Do Today" (not in doTodayOffIds)
             const isDoToday = task.recurring_type !== 'none' || !doTodayOffIds.has(task.original_task_id || task.id);
 
-            // --- TEMPORARY DEBUG LOG ---
-            if (task.id === '4f6da17d-0d76-4d9a-9fe4-8ef2874c4aff') {
-                console.log(`DEBUG: Task ${task.id} (description: "${task.description}")`);
-                console.log(`  isRelevantByDate: ${isRelevantByDate}`);
-                console.log(`  isDoToday (before filter): ${isDoToday}`);
-                console.log(`  doTodayOffIds contains task.id: ${doTodayOffIds.has(task.id)}`);
-                console.log(`  doTodayOffIds contains task.original_task_id: ${task.original_task_id ? doTodayOffIds.has(task.original_task_id) : 'N/A'}`);
-            }
-            // --- END TEMPORARY DEBUG LOG ---
-
             if (isRelevantByDate && isDoToday) {
                 return true;
             }

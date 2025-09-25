@@ -157,10 +157,6 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
     queryKey: ['tasks', userId],
     queryFn: async () => {
       const fetchedData = await fetchTasks(userId!);
-      // --- TEMPORARY DEBUG LOG ---
-      const specificTask = fetchedData.find(t => t.id === '4f6da17d-0d76-4d9a-9fe4-8ef2874c4aff');
-      console.log(`DEBUG: Task 4f6da17d-0d76-4d9a-9fe4-8ef2874c4aff found in rawTasks:`, !!specificTask);
-      // --- END TEMPORARY DEBUG LOG ---
       return fetchedData;
     },
     enabled: !!userId && !authLoading,
@@ -216,7 +212,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
               dismissReminder(newOrOldTask.id);
             }
           } else if (payload.eventType === 'DELETE') {
-            dismissReminder(newOrOldTask.id);
+            dismissReminder(newOrOrOldTask.id);
           }
         }
       )
@@ -229,7 +225,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId }
         { event: '*', schema: 'public', table: 'task_sections', filter: `user_id=eq.${userId}` },
         (payload) => {
           const newOrOldSection = (payload.new || payload.old) as TaskSection;
-          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return; // Corrected typo here
+          if (inFlightUpdatesRef.current.has(newOrOldSection.id)) return;
           invalidateSectionsQueries();
           if (payload.eventType === 'DELETE') {
             invalidateTasksQueries();
