@@ -6,7 +6,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff, ListOrdered } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TaskSection } from '@/hooks/useTasks';
 
@@ -20,6 +20,7 @@ interface SortableSectionHeaderProps {
   handleDeleteSectionClick: (sectionId: string) => void;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>;
+  onOpenReorderTasks: (sectionId: string | null) => void; // New prop
   isOverlay?: boolean;
 }
 
@@ -33,6 +34,7 @@ const SortableSectionHeader = ({
   handleDeleteSectionClick,
   updateSectionIncludeInFocusMode,
   onUpdateSectionName,
+  onOpenReorderTasks, // Destructure new prop
   isOverlay = false,
 }: SortableSectionHeaderProps) => {
   const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
@@ -175,6 +177,10 @@ const SortableSectionHeader = ({
                   </DropdownMenuItem>
                   <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => onOpenReorderTasks(section.id)}>
+                    <ListOrdered className="mr-2 h-4 w-4" /> Reorder Tasks
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>

@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
+import TaskReorderDialog from './TaskReorderDialog'; // Import the new dialog
 
 
 interface TaskListProps {
@@ -102,6 +103,9 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
+
+  const [isTaskReorderDialogOpen, setIsTaskReorderDialogOpen] = useState(false);
+  const [sectionToReorderId, setSectionToReorderId] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
@@ -235,6 +239,26 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     setIsAddTaskOpenLocal(true);
   };
 
+  const handleOpenReorderTasks = (sectionId: string | null) => {
+    if (isDemo) return;
+    setSectionToReorderId(sectionId);
+    setIsTaskReorderDialogOpen(true);
+  };
+
+  const handleSaveReorderTasks = async (sectionId: string | null, reorderedTasks: Task[]) => {
+    if (isDemo) return;
+    // This function will be called from TaskReorderDialog
+    // It needs to update the order of tasks in the database
+    // We can use updateTaskParentAndOrder for this, iterating through the reorderedTasks
+    for (let i = 0; i < reorderedTasks.length; i++) {
+      const task = reorderedTasks[i];
+      // Only update if the order has actually changed
+      if (task.order !== i) {
+        await updateTask(task.id, { order: i });
+      }
+    }
+  };
+
   useEffect(() => {
     allSortableSections.forEach(section => {
       const topLevelTasksInSection = filteredTasks
@@ -253,6 +277,23 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
       toggleAllSections();
     }
   }));
+
+  const tasksForReorderDialog = useMemo(() => {
+    if (!sectionToReorderId) {
+      return filteredTasks.filter(t => t.parent_task_id === null && t.section_id === null)
+        .sort((a, b) => (a.order || 0) - (b.order || 0));
+    }
+    return filteredTasks.filter(t => t.parent_task_id === null && t.section_id === sectionToReorderId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [filteredTasks, sectionToReorderId]);
+
+  const currentSectionToReorder = useMemo(() => {
+    if (sectionToReorderId === 'no-section-header') {
+      return allSortableSections.find(s => s.id === 'no-section-header');
+    }
+    return sections.find(s => s.id === sectionToReorderId);
+  }, [sectionToReorderId, sections, allSortableSections]);
+
 
   return (
     <>
@@ -308,6 +349,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     handleDeleteSectionClick={deleteSection}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                     onUpdateSectionName={updateSection}
+                    onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
                     isOverlay={false}
                   />
 
@@ -377,6 +419,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     handleDeleteSectionClick={() => {}}
                     updateSectionIncludeInFocusMode={async () => {}}
                     onUpdateSectionName={async () => {}}
+                    onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
                     isOverlay={true}
                   />
                 ) : (
@@ -436,6 +479,28 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           />
         </DialogContent>
       </Dialog>
+
+      {currentSectionToReorder && (
+        <TaskReorderDialog
+          isOpen={isTaskReorderDialogOpen}
+          onClose={() => setIsTaskReorderDialogOpen(false)}
+          sectionId={currentSectionToReorder.id === 'no-section-header' ? null : currentSectionToReorder.id}
+          sectionName={currentSectionToReorder.name}
+          tasks={tasksForReorderDialog}
+          allTasks={processedTasks}
+          onSaveReorder={handleSaveReorderTasks}
+          onUpdateTask={updateTask}
+          onDeleteTask={deleteTask}
+          sections={sections}
+          onOpenOverview={onOpenOverview}
+          currentDate={currentDate}
+          setFocusTask={setFocusTask}
+          doTodayOffIds={doTodayOffIds}
+          toggleDoToday={toggleDoToday}
+          scheduledTasksMap={scheduledTasksMap}
+          isDemo={isDemo}
+        />
+      )}
     </>
   );
 });

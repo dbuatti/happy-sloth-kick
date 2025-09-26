@@ -1,285 +1,216 @@
-import { format, parseISO, isValid } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { showError, showSuccess } from '@/utils/toast';
-import { Task, NewTaskData, TaskUpdate, TaskSection } from '@/hooks/useTasks';
-import { MutationContext } from '@/hooks/useTasks';
-import { trackInFlight } from './utils';
+import { supabase } from './client';
+import { showSuccess, showError } from '@/utils/toast';
+import { Task, NewTaskData, TaskUpdate, TaskSection, MutationContext } from '@/hooks/useTasks';
+import { format, startOfDay } from 'date-fns';
 
-// Regex to validate UUID format
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Helper to get the next order value for a new task in a section
-const getNextTaskOrder = (tasks: Task[], sectionId: string | null, parentTaskId: string | null): number => {
-  const relevantTasks = tasks.filter(t => t.section_id === sectionId && t.parent_task_id === parentTaskId);
-  if (relevantTasks.length === 0) {
-    return 0;
+// Helper to add/remove from in-flight updates set
+const withInFlightTracking = async <T>(
+  id: string,
+  context: MutationContext,
+  mutationFn: () => Promise<T>
+): Promise<T> => {
+  context.inFlightUpdatesRef.current.add(id);
+  try {
+    return await mutationFn();
+  } finally {
+    context.inFlightUpdatesRef.current.delete(id);
   }
-  const maxOrder = Math.max(...relevantTasks.map(t => t.order || 0));
-  return maxOrder + 1;
 };
 
-// --- Task Mutations ---
-
-export const addTaskMutation = async (newTaskData: NewTaskData, context: MutationContext): Promise<boolean> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder } = context;
-  const cleanup = trackInFlight('add-task', inFlightUpdatesRef);
-
+export const addTaskMutation = async (
+  newTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color' | 'isDoTodayOff'> & { order: number | null },
+  context: MutationContext
+): Promise<string | null> => {
+  const { userId, invalidateTasksQueries, scheduleReminder } = context;
   try {
-    const taskToInsert: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color'> & { order: number | null } = {
-      ...newTaskData,
-      user_id: userId,
-      status: newTaskData.status || 'to-do',
-      priority: newTaskData.priority || 'medium',
-      recurring_type: newTaskData.recurring_type || 'none',
-      order: newTaskData.order ?? getNextTaskOrder(context.processedTasks, newTaskData.section_id || null, newTaskData.parent_task_id || null),
-      category: newTaskData.category || null,
-      due_date: newTaskData.due_date || null,
-      remind_at: newTaskData.remind_at || null,
-      notes: newTaskData.notes || null,
-      section_id: newTaskData.section_id || null,
-      parent_task_id: newTaskData.parent_task_id || null,
-      original_task_id: newTaskData.original_task_id || null,
-      link: newTaskData.link || null,
-      image_url: newTaskData.image_url || null,
-    };
-
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert(taskToInsert)
-      .select()
-      .single();
+    const { data, error } = await withInFlightTracking(
+      `temp-${Date.now()}`, // Use a temporary ID for tracking
+      context,
+      async () => {
+        const { data, error } = await supabase
+          .from('tasks')
+          .insert({ ...newTaskData, user_id: userId })
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+    );
 
     if (error) throw error;
-
-    if (data.remind_at && data.status === 'to-do') {
-      const d = parseISO(data.remind_at);
-      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
-    }
 
     showSuccess('Task added successfully!');
     invalidateTasksQueries();
-    return true;
+
+    if (data.remind_at && data.status === 'to-do') {
+      scheduleReminder(data.id, `Reminder: ${data.description}`, new Date(data.remind_at));
+    }
+    return data.id;
   } catch (error: any) {
     showError('Failed to add task.');
     console.error('addTaskMutation error:', error.message);
-    return false;
-  } finally {
-    cleanup();
+    return null;
   }
 };
 
-export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, context: MutationContext): Promise<string | null> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
-  const cleanup = trackInFlight(taskId, inFlightUpdatesRef);
-
+export const updateTaskMutation = async (
+  taskId: string,
+  updates: TaskUpdate,
+  context: MutationContext
+): Promise<string | null> => {
+  const { userId, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
   try {
-    // If it's a virtual task, we need to create a real instance first
-    if (taskId.startsWith('virtual-')) {
-      // Correctly extract the originalTaskId (which is a full UUID)
-      const firstHyphenIndex = taskId.indexOf('-');
-      // The date part is YYYY-MM-DD, which is 10 characters.
-      // So, the UUID part ends 11 characters before the end of the string (including the last hyphen).
-      const originalTaskId = taskId.substring(firstHyphenIndex + 1, taskId.length - 11); 
-      
-      // Validate the extracted ID to be safe
-      if (!UUID_REGEX.test(originalTaskId)) {
-        throw new Error(`Invalid UUID extracted from virtual task ID: ${originalTaskId}`);
+    const { data, error } = await withInFlightTracking(
+      taskId,
+      context,
+      async () => {
+        const { data, error } = await supabase
+          .from('tasks')
+          .update(updates)
+          .eq('id', taskId)
+          .eq('user_id', userId)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
       }
-      
-      // Fetch the original template task directly from the database
-      const { data: fetchedOriginalTask, error: fetchOriginalError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', originalTaskId)
-        .eq('user_id', userId) // Ensure user ownership
-        .single();
-
-      if (fetchOriginalError) {
-        throw fetchOriginalError;
-      }
-      if (!fetchedOriginalTask) {
-        throw new Error('Original template task not found in database for virtual task.');
-      }
-
-      const originalTask = fetchedOriginalTask; // Rename for clarity
-      
-      const newRealTaskData: NewTaskData = {
-        description: originalTask.description,
-        status: updates.status || originalTask.status,
-        recurring_type: originalTask.recurring_type,
-        category: originalTask.category,
-        priority: updates.priority || originalTask.priority, // Use updates.priority if provided
-        due_date: updates.due_date || originalTask.due_date,
-        notes: updates.notes || originalTask.notes,
-        remind_at: updates.remind_at || originalTask.remind_at,
-        section_id: updates.section_id || originalTask.section_id,
-        parent_task_id: originalTask.parent_task_id,
-        original_task_id: originalTask.id, // The original task becomes the parent of this new instance
-        created_at: new Date().toISOString(),
-        link: updates.link || originalTask.link,
-        image_url: updates.image_url || originalTask.image_url,
-        order: originalTask.order,
-      };
-
-      const { data: newRealTask, error: insertError } = await supabase
-        .from('tasks')
-        .insert({ ...newRealTaskData, user_id: userId })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-      taskId = newRealTask.id; // Update taskId to the new real task's ID
-      showSuccess('Virtual task converted to real task!');
-    }
-
-    const finalUpdates: Partial<Task> = { ...updates };
-    if (updates.status === 'completed') {
-      finalUpdates.completed_at = new Date().toISOString();
-    } else if (updates.status === 'to-do' && context.processedTasks.find((t: Task) => t.id === taskId)?.status === 'completed') {
-      finalUpdates.completed_at = null; // Clear completed_at if status changes from completed to to-do
-    }
-
-    const { data, error } = await supabase
-      .from('tasks')
-      .update(finalUpdates)
-      .eq('id', taskId)
-      .eq('user_id', userId)
-      .select()
-      .single();
+    );
 
     if (error) throw error;
 
+    showSuccess('Task updated successfully!');
+    invalidateTasksQueries();
+
     if (data.remind_at && data.status === 'to-do') {
-      const d = parseISO(data.remind_at);
-      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
+      scheduleReminder(data.id, `Reminder: ${data.description}`, new Date(data.remind_at));
     } else if (data.status === 'completed' || data.status === 'archived' || data.remind_at === null) {
       cancelReminder(data.id);
     }
-
-    showSuccess('Task updated successfully!');
-    invalidateTasksQueries();
-    return taskId;
+    return data.id;
   } catch (error: any) {
     showError('Failed to update task.');
     console.error('updateTaskMutation error:', error.message);
     return null;
-  } finally {
-    cleanup();
   }
 };
 
-export const deleteTaskMutation = async (taskId: string, context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
-  const cleanup = trackInFlight(taskId, inFlightUpdatesRef);
-
+export const deleteTaskMutation = async (
+  taskId: string,
+  context: MutationContext
+): Promise<boolean> => {
+  const { userId, invalidateTasksQueries, cancelReminder } = context;
   try {
-    // Delete the task and any sub-tasks associated with it
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .or(`id.eq.${taskId},parent_task_id.eq.${taskId}`)
-      .eq('user_id', userId);
+    await withInFlightTracking(
+      taskId,
+      context,
+      async () => {
+        // Delete sub-tasks first
+        await supabase
+          .from('tasks')
+          .delete()
+          .eq('parent_task_id', taskId)
+          .eq('user_id', userId);
 
-    if (error) throw error;
+        const { error } = await supabase
+          .from('tasks')
+          .delete()
+          .eq('id', taskId)
+          .eq('user_id', userId);
+        if (error) throw error;
+      }
+    );
 
-    cancelReminder(taskId);
     showSuccess('Task deleted successfully!');
     invalidateTasksQueries();
+    cancelReminder(taskId);
+    return true;
   } catch (error: any) {
     showError('Failed to delete task.');
     console.error('deleteTaskMutation error:', error.message);
-  } finally {
-    cleanup();
+    return false;
   }
 };
 
-export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: string[], context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
-  const cleanup = trackInFlight('bulk-update-tasks', inFlightUpdatesRef);
-
+export const bulkUpdateTasksMutation = async (
+  updates: Partial<Task>,
+  ids: string[],
+  context: MutationContext
+): Promise<void> => {
+  const { userId, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
   try {
-    const updatesWithCompletedAt = { ...updates };
-    if (updates.status === 'completed') {
-      updatesWithCompletedAt.completed_at = new Date().toISOString();
-    } else if (updates.status === 'to-do') {
-      updatesWithCompletedAt.completed_at = null;
-    }
+    // Optimistic update: Add all IDs to in-flight tracking
+    ids.forEach(id => context.inFlightUpdatesRef.current.add(id));
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .in('id', ids)
+      .eq('user_id', userId)
+      .select();
+
+    if (error) throw error;
+
+    showSuccess('Tasks updated successfully!');
+    invalidateTasksQueries();
+
+    data.forEach(task => {
+      if (task.remind_at && task.status === 'to-do') {
+        scheduleReminder(task.id, `Reminder: ${task.description}`, new Date(task.remind_at));
+      } else if (task.status === 'completed' || task.status === 'archived' || task.remind_at === null) {
+        cancelReminder(task.id);
+      }
+    });
+  } catch (error: any) {
+    showError('Failed to update tasks.');
+    console.error('bulkUpdateTasksMutation error:', error.message);
+  } finally {
+    // Remove all IDs from in-flight tracking
+    ids.forEach(id => context.inFlightUpdatesRef.current.delete(id));
+  }
+};
+
+export const bulkDeleteTasksMutation = async (
+  ids: string[],
+  context: MutationContext
+): Promise<boolean> => {
+  const { userId, invalidateTasksQueries, cancelReminder } = context;
+  try {
+    // Optimistic update: Add all IDs to in-flight tracking
+    ids.forEach(id => context.inFlightUpdatesRef.current.add(id));
+
+    // First, delete all sub-tasks associated with the tasks being deleted
+    await supabase
+      .from('tasks')
+      .delete()
+      .in('parent_task_id', ids)
+      .eq('user_id', userId);
 
     const { error } = await supabase
       .from('tasks')
-      .update(updatesWithCompletedAt)
+      .delete()
       .in('id', ids)
       .eq('user_id', userId);
 
     if (error) throw error;
 
-    ids.forEach(id => {
-      const task = context.processedTasks.find((t: Task) => t.id === id);
-      if (task) {
-        if (updates.remind_at && updates.status === 'to-do') {
-          const d = parseISO(updates.remind_at);
-          if (isValid(d)) scheduleReminder(id, `Reminder: ${task.description}`, d);
-        } else if (updates.status === 'completed' || updates.status === 'archived' || updates.remind_at === null) {
-          cancelReminder(id);
-        }
-      }
-    });
-
-    showSuccess('Tasks updated successfully!');
-    invalidateTasksQueries();
-  } catch (error: any) {
-    showError('Failed to bulk update tasks.');
-    console.error('bulkUpdateTasksMutation error:', error.message);
-  } finally {
-    cleanup();
-  }
-};
-
-export const bulkDeleteTasksMutation = async (ids: string[], context: MutationContext): Promise<boolean> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
-  const cleanup = trackInFlight('bulk-delete-tasks', inFlightUpdatesRef);
-
-  try {
-    // Fetch all tasks to identify sub-tasks of the ones being deleted
-    const { data: allTasks, error: fetchError } = await supabase
-      .from('tasks')
-      .select('id, parent_task_id')
-      .eq('user_id', userId);
-
-    if (fetchError) throw fetchError;
-
-    const idsToDelete = new Set(ids);
-    allTasks.forEach(task => {
-      if (task.parent_task_id && idsToDelete.has(task.parent_task_id)) {
-        idsToDelete.add(task.id); // Add sub-tasks to the deletion list
-      }
-    });
-
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .in('id', Array.from(idsToDelete))
-      .eq('user_id', userId);
-
-    if (error) throw error;
-
-    idsToDelete.forEach(id => cancelReminder(id));
     showSuccess('Tasks deleted successfully!');
     invalidateTasksQueries();
+    ids.forEach(id => cancelReminder(id));
     return true;
   } catch (error: any) {
-    showError('Failed to bulk delete tasks.');
+    showError('Failed to delete tasks.');
     console.error('bulkDeleteTasksMutation error:', error.message);
     return false;
   } finally {
-    cleanup();
+    // Remove all IDs from in-flight tracking
+    ids.forEach(id => context.inFlightUpdatesRef.current.delete(id));
   }
 };
 
-export const archiveAllCompletedTasksMutation = async (context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
-  const cleanup = trackInFlight('archive-all-completed-tasks', inFlightUpdatesRef);
-
+export const archiveAllCompletedTasksMutation = async (
+  context: MutationContext
+): Promise<void> => {
+  const { userId, invalidateTasksQueries } = context;
   try {
     const { data: completedTasks, error: fetchError } = await supabase
       .from('tasks')
@@ -290,204 +221,235 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
     if (fetchError) throw fetchError;
 
     const completedTaskIds = completedTasks.map(task => task.id);
-
-    if (completedTaskIds.length > 0) {
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update({ status: 'archived' })
-        .in('id', completedTaskIds)
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-
-      completedTaskIds.forEach(id => cancelReminder(id));
-      showSuccess('All completed tasks archived!');
-      invalidateTasksQueries();
-    } else {
+    if (completedTaskIds.length === 0) {
       showSuccess('No completed tasks to archive.');
+      return;
     }
+
+    await bulkUpdateTasksMutation({ status: 'archived' }, completedTaskIds, context);
+    showSuccess('All completed tasks archived!');
   } catch (error: any) {
     showError('Failed to archive completed tasks.');
     console.error('archiveAllCompletedTasksMutation error:', error.message);
-  } finally {
-    cleanup();
   }
 };
 
-export const markAllTasksInSectionCompletedMutation = async (sectionId: string | null, context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
-  const cleanup = trackInFlight(`mark-all-in-section-completed-${sectionId}`, inFlightUpdatesRef);
-
+export const markAllTasksInSectionCompletedMutation = async (
+  sectionId: string | null,
+  context: MutationContext
+): Promise<void> => {
+  const { userId, invalidateTasksQueries } = context;
   try {
-    const { data: tasksToComplete, error: fetchError } = await supabase
+    let query = supabase
       .from('tasks')
-      .select('id, description, remind_at')
+      .select('id')
       .eq('user_id', userId)
-      .eq('section_id', sectionId)
-      .eq('status', 'to-do');
+      .eq('status', 'to-do')
+      .is('parent_task_id', null); // Only mark top-level tasks
+
+    if (sectionId === null) {
+      query = query.is('section_id', null);
+    } else {
+      query = query.eq('section_id', sectionId);
+    }
+
+    const { data: tasksToComplete, error: fetchError } = await query;
 
     if (fetchError) throw fetchError;
 
     const taskIdsToComplete = tasksToComplete.map(task => task.id);
-
-    if (taskIdsToComplete.length > 0) {
-      const { error: updateError } = await supabase
-        .from('tasks')
-        .update({ status: 'completed', completed_at: new Date().toISOString() })
-        .in('id', taskIdsToComplete)
-        .eq('user_id', userId);
-
-      if (updateError) throw updateError;
-
-      tasksToComplete.forEach(task => cancelReminder(task.id));
-      showSuccess(`All tasks in section ${sectionId === null ? '"No Section"' : context.sections.find((s: TaskSection) => s.id === sectionId)?.name || ''} marked completed!`);
-      invalidateTasksQueries();
-    } else {
-      showSuccess('No pending tasks in this section to mark completed.');
+    if (taskIdsToComplete.length === 0) {
+      showSuccess('No pending tasks in this section to complete.');
+      return;
     }
+
+    await bulkUpdateTasksMutation({ status: 'completed' }, taskIdsToComplete, context);
+    showSuccess('All tasks in section marked completed!');
   } catch (error: any) {
     showError('Failed to mark all tasks in section completed.');
     console.error('markAllTasksInSectionCompletedMutation error:', error.message);
-  } finally {
-    cleanup();
   }
 };
 
-export const updateTaskParentAndOrderMutation = async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean, context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context;
-  const cleanup = trackInFlight(`reorder-task-${activeId}`, inFlightUpdatesRef);
-
+export const updateTaskParentAndOrderMutation = async (
+  activeId: string,
+  newParentId: string | null,
+  newSectionId: string | null,
+  overId: string | null,
+  isDraggingDown: boolean,
+  context: MutationContext
+): Promise<void> => {
+  const { userId, invalidateTasksQueries, processedTasks } = context;
   try {
-    const activeTask = context.processedTasks.find((t: Task) => t.id === activeId);
+    const activeTask = processedTasks.find(t => t.id === activeId);
     if (!activeTask) throw new Error('Active task not found.');
 
-    const tasksInTargetSectionAndParent = context.processedTasks.filter((t: Task) =>
-      t.section_id === newSectionId && t.parent_task_id === newParentId && t.id !== activeId
-    ).sort((a: Task, b: Task) => (a.order || 0) - (b.order || 0));
+    const tasksInTargetScope = processedTasks.filter(t =>
+      t.parent_task_id === newParentId && t.section_id === newSectionId && t.id !== activeId
+    ).sort((a, b) => (a.order || 0) - (b.order || 0));
 
-    let newOrder: number;
-    if (overId === null) { // Dropped at the end
-      newOrder = tasksInTargetSectionAndParent.length > 0 ? (tasksInTargetSectionAndParent[tasksInTargetSectionAndParent.length - 1].order || 0) + 1 : 0;
-    } else {
-      const overTaskIndex = tasksInTargetSectionAndParent.findIndex((t: Task) => t.id === overId);
-      if (overTaskIndex === -1) { // Should not happen if overId is valid
-        newOrder = getNextTaskOrder(context.processedTasks, newSectionId, newParentId);
+    let newOrder = 0;
+    if (overId) {
+      const overTaskIndex = tasksInTargetScope.findIndex(t => t.id === overId);
+      if (overTaskIndex !== -1) {
+        newOrder = isDraggingDown ? overTaskIndex + 1 : overTaskIndex;
       } else {
-        const overTask = tasksInTargetSectionAndParent[overTaskIndex];
-        if (isDraggingDown) {
-          newOrder = (overTask.order || 0) + 0.5; // Insert after
-        } else {
-          newOrder = (overTask.order || 0) - 0.5; // Insert before
-        }
+        newOrder = tasksInTargetScope.length; // If dropped over nothing in scope, put at end
       }
+    } else {
+      newOrder = tasksInTargetScope.length; // If no overId, put at end
     }
 
-    const updates = {
-      parent_task_id: newParentId,
-      section_id: newSectionId,
-      order: newOrder,
-    };
+    const updatedTasks = [
+      ...tasksInTargetScope.slice(0, newOrder),
+      { ...activeTask, parent_task_id: newParentId, section_id: newSectionId, order: newOrder },
+      ...tasksInTargetScope.slice(newOrder),
+    ];
+
+    const reorderedUpdates = updatedTasks.map((task, index) => ({
+      id: task.id,
+      order: index,
+      parent_task_id: task.parent_task_id,
+      section_id: task.section_id,
+      user_id: userId,
+    }));
+
+    // Optimistic update: Add all IDs to in-flight tracking
+    reorderedUpdates.forEach(update => context.inFlightUpdatesRef.current.add(update.id));
 
     const { error } = await supabase
       .from('tasks')
-      .update(updates)
-      .eq('id', activeId)
-      .eq('user_id', userId);
+      .upsert(reorderedUpdates, { onConflict: 'id' });
 
     if (error) throw error;
 
-    showSuccess('Task reordered successfully!');
     invalidateTasksQueries();
   } catch (error: any) {
     showError('Failed to reorder task.');
     console.error('updateTaskParentAndOrderMutation error:', error.message);
   } finally {
-    cleanup();
+    // Remove all IDs from in-flight tracking
+    const activeTask = processedTasks.find(t => t.id === activeId);
+    if (activeTask) {
+      const tasksInTargetScope = processedTasks.filter(t =>
+        t.parent_task_id === newParentId && t.section_id === newSectionId && t.id !== activeId
+      ).sort((a, b) => (a.order || 0) - (b.order || 0));
+      const updatedTaskIds = [activeId, ...tasksInTargetScope.map(t => t.id)];
+      updatedTaskIds.forEach(id => context.inFlightUpdatesRef.current.delete(id));
+    }
   }
 };
 
-export const toggleDoTodayMutation = async (task: Task, currentDate: Date, doTodayOffIds: Set<string>, context: MutationContext): Promise<boolean> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context;
-  const cleanup = trackInFlight(`toggle-do-today-${task.id}`, inFlightUpdatesRef);
+export const toggleDoTodayMutation = async (
+  task: Task,
+  currentDate: Date,
+  doTodayOffIds: Set<string>,
+  context: MutationContext
+): Promise<void> => {
+  const { userId, invalidateTasksQueries } = context;
+  const todayFormatted = format(startOfDay(currentDate), 'yyyy-MM-dd');
+  const originalId = task.original_task_id || task.id;
+  const isCurrentlyOff = doTodayOffIds.has(originalId);
 
   try {
-    const taskIdToToggle = task.original_task_id || task.id;
-    const formattedDate = format(currentDate, 'yyyy-MM-dd');
-
-    if (doTodayOffIds.has(taskIdToToggle)) {
-      // It's currently off, so remove it from the log to turn it on
-      const { error } = await supabase
-        .from('do_today_off_log')
-        .delete()
-        .eq('user_id', userId)
-        .eq('task_id', taskIdToToggle)
-        .eq('off_date', formattedDate);
-
-      if (error) throw error;
-      showSuccess('Task added to "Do Today"!');
+    if (isCurrentlyOff) {
+      // Remove from do_today_off_log
+      await withInFlightTracking(
+        originalId,
+        context,
+        async () => {
+          const { error } = await supabase
+            .from('do_today_off_log')
+            .delete()
+            .eq('user_id', userId)
+            .eq('task_id', originalId)
+            .eq('off_date', todayFormatted);
+          if (error) throw error;
+        }
+      );
+      showSuccess(`'${task.description}' added back to 'Do Today'.`);
     } else {
-      // It's currently on, so add it to the log to turn it off
-      const { error } = await supabase
-        .from('do_today_off_log')
-        .insert({
-          user_id: userId,
-          task_id: taskIdToToggle,
-          off_date: formattedDate,
-        });
-
-      if (error) throw error;
-      showSuccess('Task removed from "Do Today".');
+      // Add to do_today_off_log
+      await withInFlightTracking(
+        originalId,
+        context,
+        async () => {
+          const { error } = await supabase
+            .from('do_today_off_log')
+            .insert({ user_id: userId, task_id: originalId, off_date: todayFormatted });
+          if (error) throw error;
+        }
+      );
+      showSuccess(`'${task.description}' moved out of 'Do Today'.`);
     }
     invalidateTasksQueries();
-    return true;
   } catch (error: any) {
     showError('Failed to update "Do Today" status.');
     console.error('toggleDoTodayMutation error:', error.message);
-    return false;
-  } finally {
-    cleanup();
   }
 };
 
-export const toggleAllDoTodayMutation = async (tasks: Task[], currentDate: Date, doTodayOffIds: Set<string>, context: MutationContext): Promise<void> => {
-  const { userId, inFlightUpdatesRef, invalidateTasksQueries } = context;
-  const cleanup = trackInFlight('toggle-all-do-today', inFlightUpdatesRef);
+export const toggleAllDoTodayMutation = async (
+  tasks: Task[],
+  currentDate: Date,
+  doTodayOffIds: Set<string>,
+  context: MutationContext
+): Promise<void> => {
+  const { userId, invalidateTasksQueries } = context;
+  const todayFormatted = format(startOfDay(currentDate), 'yyyy-MM-dd');
 
   try {
-    const formattedDate = format(currentDate, 'yyyy-MM-dd');
-    const tasksToToggle = tasks.filter(t => t.parent_task_id === null && t.status === 'to-do');
+    const tasksToToggle = tasks.filter(t => t.parent_task_id === null && t.recurring_type === 'none');
+    if (tasksToToggle.length === 0) {
+      showSuccess('No non-recurring tasks to toggle "Do Today" status.');
+      return;
+    }
 
-    const allCurrentlyOn = tasksToToggle.every(task => !doTodayOffIds.has(task.original_task_id || task.id));
+    const allAreOn = tasksToToggle.every(t => !doTodayOffIds.has(t.id));
 
-    if (allCurrentlyOn) {
+    if (allAreOn) {
       // Turn all off
-      const recordsToInsert = tasksToToggle.map(task => ({
+      const recordsToInsert = tasksToToggle.map(t => ({
         user_id: userId,
-        task_id: task.original_task_id || task.id,
-        off_date: formattedDate,
+        task_id: t.id,
+        off_date: todayFormatted,
       }));
-      const { error } = await supabase
-        .from('do_today_off_log')
-        .insert(recordsToInsert);
-      if (error) throw error;
-      showSuccess('All "Do Today" tasks turned off.');
+      await withInFlightTracking(
+        'bulk-do-today-off',
+        context,
+        async () => {
+          const { error } = await supabase
+            .from('do_today_off_log')
+            .upsert(recordsToInsert, { onConflict: 'user_id, task_id, off_date' });
+          if (error) throw error;
+        }
+      );
+      showSuccess('All non-recurring tasks moved out of "Do Today".');
     } else {
-      // Turn all on (delete all relevant entries from log)
-      const taskIdsToTurnOn = tasksToToggle.map(task => task.original_task_id || task.id);
-      const { error } = await supabase
-        .from('do_today_off_log')
-        .delete()
-        .eq('user_id', userId)
-        .eq('off_date', formattedDate)
-        .in('task_id', taskIdsToTurnOn);
-      if (error) throw error;
-      showSuccess('All "Do Today" tasks turned on.');
+      // Turn all on (delete existing off logs)
+      const taskIdsToTurnOn = tasksToToggle.filter(t => doTodayOffIds.has(t.id)).map(t => t.id);
+      if (taskIdsToTurnOn.length > 0) {
+        await withInFlightTracking(
+          'bulk-do-today-on',
+          context,
+          async () => {
+            const { error } = await supabase
+              .from('do_today_off_log')
+              .delete()
+              .in('task_id', taskIdsToTurnOn)
+              .eq('user_id', userId)
+              .eq('off_date', todayFormatted);
+            if (error) throw error;
+          }
+        );
+        showSuccess('All non-recurring tasks added back to "Do Today".');
+      } else {
+        showSuccess('All non-recurring tasks are already in "Do Today".');
+      }
     }
     invalidateTasksQueries();
   } catch (error: any) {
     showError('Failed to toggle all "Do Today" tasks.');
     console.error('toggleAllDoTodayMutation error:', error.message);
-  } finally {
-    cleanup();
   }
 };
