@@ -8,7 +8,6 @@ import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
   task: Task;
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -42,7 +41,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
-  ...rest
+  onDelete, // Destructure explicitly
+  onUpdate, // Destructure explicitly
+  sections, // Destructure explicitly
+  onOpenOverview, // Destructure explicitly
+  currentDate, // Destructure explicitly
+  onMoveUp, // Destructure explicitly
+  onMoveDown, // Destructure explicitly
+  ...rest // Now rest should be empty or contain other props not directly passed to TaskItem
 }) => {
   const {
     attributes,
@@ -88,7 +94,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isExpanded={isExpanded}
           toggleTask={toggleTask}
           allTasks={allTasks}
-          {...rest}
+          onDelete={onDelete} // Pass explicitly
+          onUpdate={onUpdate} // Pass explicitly
+          sections={sections} // Pass explicitly
+          onOpenOverview={onOpenOverview} // Pass explicitly
+          currentDate={currentDate} // Pass explicitly
+          onMoveUp={onMoveUp} // Pass explicitly
+          onMoveDown={onMoveDown} // Pass explicitly
           isOverlay={isOverlay}
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
@@ -107,7 +119,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 task={subtask}
                 level={level + 1}
                 allTasks={allTasks}
-                {...rest}
+                onDelete={onDelete}
+                onUpdate={onUpdate}
+                sections={sections}
+                onOpenOverview={onOpenOverview}
+                currentDate={currentDate}
+                onMoveUp={onMoveUp}
+                onMoveDown={onMoveDown}
                 expandedTasks={expandedTasks}
                 toggleTask={toggleTask}
                 isOverlay={isOverlay}

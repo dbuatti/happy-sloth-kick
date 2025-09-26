@@ -20,7 +20,9 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
   arrayMove,
+  useSortable, // Added useSortable
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities'; // Added CSS
 import { createPortal } from 'react-dom';
 import TaskItem from './TaskItem';
 import { GripVertical } from 'lucide-react';
@@ -98,9 +100,8 @@ const SortableTaskReorderItem: React.FC<{
         <TaskItem
           task={task}
           allTasks={rest.allTasks}
-          onStatusChange={rest.onUpdateTask}
           onDelete={rest.onDeleteTask}
-          onUpdate={rest.onUpdateTask}
+          onUpdate={rest.onUpdateTask} // Pass onUpdate directly
           sections={rest.sections}
           onOpenOverview={rest.onOpenOverview}
           currentDate={rest.currentDate}

@@ -245,7 +245,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     setIsTaskReorderDialogOpen(true);
   };
 
-  const handleSaveReorderTasks = async (sectionId: string | null, reorderedTasks: Task[]) => {
+  const handleSaveReorderTasks = async (_sectionId: string | null, reorderedTasks: Task[]) => { // Removed unused sectionId
     if (isDemo) return;
     // This function will be called from TaskReorderDialog
     // It needs to update the order of tasks in the database
@@ -363,7 +363,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                           <SortableTaskItem
                             key={task.id}
                             task={task}
-                            onStatusChange={async (taskId, newStatus) => { return await updateTask(taskId, { status: newStatus }); }}
                             onDelete={deleteTask}
                             onUpdate={updateTask}
                             sections={sections}
@@ -427,7 +426,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     <TaskItem
                       task={activeItemData as Task}
                       allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
-                      onStatusChange={async (taskId, newStatus) => { return await updateTask(taskId, { status: newStatus }); }}
                       onDelete={() => {}}
                       onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
                       sections={sections}

@@ -1,146 +1,160 @@
-import { supabase } from './client';
 import { showSuccess, showError } from '@/utils/toast';
-import { Task, NewTaskData, TaskUpdate, TaskSection, MutationContext } from '@/hooks/useTasks';
+import { Task, TaskUpdate, MutationContext } from '@/hooks/useTasks';
 import { format, startOfDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
 
-// Helper to add/remove from in-flight updates set
-const withInFlightTracking = async <T>(
-  id: string,
-  context: MutationContext,
-  mutationFn: () => Promise<T>
-): Promise<T> => {
-  context.inFlightUpdatesRef.current.add(id);
-  try {
-    return await mutationFn();
-  } finally {
-    context.inFlightUpdatesRef.current.delete(id);
-  }
-};
-
+// Helper to add task (used by handleAddTask)
 export const addTaskMutation = async (
   newTaskData: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color' | 'isDoTodayOff'> & { order: number | null },
   context: MutationContext
 ): Promise<string | null> => {
-  const { userId, invalidateTasksQueries, scheduleReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, scheduleReminder } = context;
+
+  const tempId = `temp-${uuidv4()}`;
+  const optimisticTask: Task = {
+    ...newTaskData,
+    id: tempId,
+    user_id: userId,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    completed_at: null,
+    category_color: categoriesMap.get(newTaskData.category || '') || 'gray',
+    isDoTodayOff: newTaskData.recurring_type === 'none' ? true : false, // Default to off for non-recurring
+  };
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? [...old, optimisticTask] : [optimisticTask];
+  });
+  inFlightUpdatesRef.current.add(tempId);
+
   try {
-    const { data, error } = await withInFlightTracking(
-      `temp-${Date.now()}`, // Use a temporary ID for tracking
-      context,
-      async () => {
-        const { data, error } = await supabase
-          .from('tasks')
-          .insert({ ...newTaskData, user_id: userId })
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      }
-    );
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({ ...newTaskData, user_id: userId })
+      .select()
+      .single();
 
     if (error) throw error;
 
-    showSuccess('Task added successfully!');
-    invalidateTasksQueries();
+    queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+      return old ? old.map(task => (task.id === tempId ? { ...data, category_color: categoriesMap.get(data.category || '') || 'gray' } : task)) : [data];
+    });
+    showSuccess('Task added!');
 
     if (data.remind_at && data.status === 'to-do') {
-      scheduleReminder(data.id, `Reminder: ${data.description}`, new Date(data.remind_at));
+      const d = new Date(data.remind_at);
+      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
     }
+
+    invalidateTasksQueries();
     return data.id;
   } catch (error: any) {
+    queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+      return old ? old.filter(task => task.id !== tempId) : [];
+    });
     showError('Failed to add task.');
-    console.error('addTaskMutation error:', error.message);
+    console.error('Error adding task:', error.message);
     return null;
+  } finally {
+    inFlightUpdatesRef.current.delete(tempId);
   }
 };
 
+// Helper to update task (used by updateTask)
 export const updateTaskMutation = async (
   taskId: string,
   updates: TaskUpdate,
   context: MutationContext
 ): Promise<string | null> => {
-  const { userId, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
+
+  const optimisticUpdate = { ...updates, updated_at: new Date().toISOString() };
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? old.map(task => (task.id === taskId ? { ...task, ...optimisticUpdate, category_color: categoriesMap.get(updates.category || task.category || '') || 'gray' } : task)) : [];
+  });
+  inFlightUpdatesRef.current.add(taskId);
+
   try {
-    const { data, error } = await withInFlightTracking(
-      taskId,
-      context,
-      async () => {
-        const { data, error } = await supabase
-          .from('tasks')
-          .update(updates)
-          .eq('id', taskId)
-          .eq('user_id', userId)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      }
-    );
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', taskId)
+      .eq('user_id', userId)
+      .select()
+      .single();
 
     if (error) throw error;
 
-    showSuccess('Task updated successfully!');
-    invalidateTasksQueries();
-
     if (data.remind_at && data.status === 'to-do') {
-      scheduleReminder(data.id, `Reminder: ${data.description}`, new Date(data.remind_at));
+      const d = new Date(data.remind_at);
+      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
     } else if (data.status === 'completed' || data.status === 'archived' || data.remind_at === null) {
       cancelReminder(data.id);
     }
+
+    invalidateTasksQueries();
     return data.id;
   } catch (error: any) {
     showError('Failed to update task.');
-    console.error('updateTaskMutation error:', error.message);
+    console.error('Error updating task:', error.message);
+    invalidateTasksQueries(); // Re-fetch to revert optimistic update on error
     return null;
+  } finally {
+    inFlightUpdatesRef.current.delete(taskId);
   }
 };
 
+// Helper to delete task (used by deleteTask)
 export const deleteTaskMutation = async (
   taskId: string,
   context: MutationContext
-): Promise<boolean> => {
-  const { userId, invalidateTasksQueries, cancelReminder } = context;
+): Promise<void> => {
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? old.filter(task => task.id !== taskId && task.parent_task_id !== taskId) : [];
+  });
+  inFlightUpdatesRef.current.add(taskId);
+
   try {
-    await withInFlightTracking(
-      taskId,
-      context,
-      async () => {
-        // Delete sub-tasks first
-        await supabase
-          .from('tasks')
-          .delete()
-          .eq('parent_task_id', taskId)
-          .eq('user_id', userId);
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .or(`id.eq.${taskId},parent_task_id.eq.${taskId}`)
+      .eq('user_id', userId);
 
-        const { error } = await supabase
-          .from('tasks')
-          .delete()
-          .eq('id', taskId)
-          .eq('user_id', userId);
-        if (error) throw error;
-      }
-    );
+    if (error) throw error;
 
-    showSuccess('Task deleted successfully!');
-    invalidateTasksQueries();
+    showSuccess('Task deleted!');
     cancelReminder(taskId);
-    return true;
+    invalidateTasksQueries();
   } catch (error: any) {
     showError('Failed to delete task.');
-    console.error('deleteTaskMutation error:', error.message);
-    return false;
+    console.error('Error deleting task:', error.message);
+    invalidateTasksQueries(); // Re-fetch to revert optimistic update on error
+  } finally {
+    inFlightUpdatesRef.current.delete(taskId);
   }
 };
 
+// Helper for bulk update tasks
 export const bulkUpdateTasksMutation = async (
   updates: Partial<Task>,
   ids: string[],
   context: MutationContext
 ): Promise<void> => {
-  const { userId, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
-  try {
-    // Optimistic update: Add all IDs to in-flight tracking
-    ids.forEach(id => context.inFlightUpdatesRef.current.add(id));
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, categoriesMap, scheduleReminder, cancelReminder } = context;
 
+  const optimisticUpdate = { ...updates, updated_at: new Date().toISOString() };
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? old.map(task => (ids.includes(task.id) ? { ...task, ...optimisticUpdate, category_color: categoriesMap.get(updates.category || task.category || '') || 'gray' } : task)) : [];
+  });
+  ids.forEach(id => inFlightUpdatesRef.current.add(id));
+
+  try {
     const { data, error } = await supabase
       .from('tasks')
       .update(updates)
@@ -150,41 +164,38 @@ export const bulkUpdateTasksMutation = async (
 
     if (error) throw error;
 
-    showSuccess('Tasks updated successfully!');
-    invalidateTasksQueries();
-
+    showSuccess(`${data.length} tasks updated!`);
     data.forEach(task => {
       if (task.remind_at && task.status === 'to-do') {
-        scheduleReminder(task.id, `Reminder: ${task.description}`, new Date(task.remind_at));
+        const d = new Date(task.remind_at);
+        if (isValid(d)) scheduleReminder(task.id, `Reminder: ${task.description}`, d);
       } else if (task.status === 'completed' || task.status === 'archived' || task.remind_at === null) {
         cancelReminder(task.id);
       }
     });
+    invalidateTasksQueries();
   } catch (error: any) {
-    showError('Failed to update tasks.');
-    console.error('bulkUpdateTasksMutation error:', error.message);
+    showError('Failed to bulk update tasks.');
+    console.error('Error bulk updating tasks:', error.message);
+    invalidateTasksQueries(); // Re-fetch to revert optimistic update on error
   } finally {
-    // Remove all IDs from in-flight tracking
-    ids.forEach(id => context.inFlightUpdatesRef.current.delete(id));
+    ids.forEach(id => inFlightUpdatesRef.current.delete(id));
   }
 };
 
+// Helper for bulk delete tasks
 export const bulkDeleteTasksMutation = async (
   ids: string[],
   context: MutationContext
 ): Promise<boolean> => {
-  const { userId, invalidateTasksQueries, cancelReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? old.filter(task => !ids.includes(task.id) && !ids.includes(task.parent_task_id || '')) : [];
+  });
+  ids.forEach(id => inFlightUpdatesRef.current.add(id));
+
   try {
-    // Optimistic update: Add all IDs to in-flight tracking
-    ids.forEach(id => context.inFlightUpdatesRef.current.add(id));
-
-    // First, delete all sub-tasks associated with the tasks being deleted
-    await supabase
-      .from('tasks')
-      .delete()
-      .in('parent_task_id', ids)
-      .eq('user_id', userId);
-
     const { error } = await supabase
       .from('tasks')
       .delete()
@@ -193,84 +204,102 @@ export const bulkDeleteTasksMutation = async (
 
     if (error) throw error;
 
-    showSuccess('Tasks deleted successfully!');
-    invalidateTasksQueries();
+    showSuccess(`${ids.length} tasks deleted!`);
     ids.forEach(id => cancelReminder(id));
+    invalidateTasksQueries();
     return true;
   } catch (error: any) {
-    showError('Failed to delete tasks.');
-    console.error('bulkDeleteTasksMutation error:', error.message);
+    showError('Failed to bulk delete tasks.');
+    console.error('Error bulk deleting tasks:', error.message);
+    invalidateTasksQueries(); // Re-fetch to revert optimistic update on error
     return false;
   } finally {
-    // Remove all IDs from in-flight tracking
-    ids.forEach(id => context.inFlightUpdatesRef.current.delete(id));
+    ids.forEach(id => inFlightUpdatesRef.current.delete(id));
   }
 };
 
+// Helper to archive all completed tasks
 export const archiveAllCompletedTasksMutation = async (
   context: MutationContext
 ): Promise<void> => {
-  const { userId, invalidateTasksQueries } = context;
+  const { userId, queryClient, inFlightUpdatesRef, processedTasks, invalidateTasksQueries } = context;
+  const completedTaskIds = processedTasks.filter(task => task.status === 'completed').map(task => task.id);
+
+  if (completedTaskIds.length === 0) {
+    showSuccess('No completed tasks to archive.');
+    return;
+  }
+
+  const updates = { status: 'archived', updated_at: new Date().toISOString() };
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? old.map(task => (completedTaskIds.includes(task.id) ? { ...task, ...updates } : task)) : [];
+  });
+  completedTaskIds.forEach(id => inFlightUpdatesRef.current.add(id));
+
   try {
-    const { data: completedTasks, error: fetchError } = await supabase
+    const { error } = await supabase
       .from('tasks')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'completed');
+      .update(updates)
+      .in('id', completedTaskIds)
+      .eq('user_id', userId);
 
-    if (fetchError) throw fetchError;
+    if (error) throw error;
 
-    const completedTaskIds = completedTasks.map(task => task.id);
-    if (completedTaskIds.length === 0) {
-      showSuccess('No completed tasks to archive.');
-      return;
-    }
-
-    await bulkUpdateTasksMutation({ status: 'archived' }, completedTaskIds, context);
-    showSuccess('All completed tasks archived!');
+    showSuccess(`${completedTaskIds.length} completed tasks archived!`);
+    invalidateTasksQueries();
   } catch (error: any) {
     showError('Failed to archive completed tasks.');
-    console.error('archiveAllCompletedTasksMutation error:', error.message);
+    console.error('Error archiving completed tasks:', error.message);
+    invalidateTasksQueries(); // Re-fetch to revert optimistic update on error
+  } finally {
+    completedTaskIds.forEach(id => inFlightUpdatesRef.current.delete(id));
   }
 };
 
+// Helper to mark all tasks in a section as completed
 export const markAllTasksInSectionCompletedMutation = async (
   sectionId: string | null,
   context: MutationContext
 ): Promise<void> => {
-  const { userId, invalidateTasksQueries } = context;
+  const { userId, queryClient, inFlightUpdatesRef, processedTasks, invalidateTasksQueries } = context;
+  const tasksToCompleteIds = processedTasks
+    .filter(task => task.section_id === sectionId && task.status === 'to-do' && task.parent_task_id === null)
+    .map(task => task.id);
+
+  if (tasksToCompleteIds.length === 0) {
+    showSuccess('No pending tasks in this section to complete.');
+    return;
+  }
+
+  const updates = { status: 'completed', updated_at: new Date().toISOString(), completed_at: new Date().toISOString() };
+
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    return old ? old.map(task => (tasksToCompleteIds.includes(task.id) ? { ...task, ...updates } : task)) : [];
+  });
+  tasksToCompleteIds.forEach(id => inFlightUpdatesRef.current.add(id));
+
   try {
-    let query = supabase
+    const { error } = await supabase
       .from('tasks')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'to-do')
-      .is('parent_task_id', null); // Only mark top-level tasks
+      .update(updates)
+      .in('id', tasksToCompleteIds)
+      .eq('user_id', userId);
 
-    if (sectionId === null) {
-      query = query.is('section_id', null);
-    } else {
-      query = query.eq('section_id', sectionId);
-    }
+    if (error) throw error;
 
-    const { data: tasksToComplete, error: fetchError } = await query;
-
-    if (fetchError) throw fetchError;
-
-    const taskIdsToComplete = tasksToComplete.map(task => task.id);
-    if (taskIdsToComplete.length === 0) {
-      showSuccess('No pending tasks in this section to complete.');
-      return;
-    }
-
-    await bulkUpdateTasksMutation({ status: 'completed' }, taskIdsToComplete, context);
-    showSuccess('All tasks in section marked completed!');
+    showSuccess(`${tasksToCompleteIds.length} tasks marked as completed!`);
+    invalidateTasksQueries();
   } catch (error: any) {
-    showError('Failed to mark all tasks in section completed.');
-    console.error('markAllTasksInSectionCompletedMutation error:', error.message);
+    showError('Failed to mark tasks as completed.');
+    console.error('Error marking tasks as completed:', error.message);
+    invalidateTasksQueries(); // Re-fetch to revert optimistic update on error
+  } finally {
+    tasksToCompleteIds.forEach(id => inFlightUpdatesRef.current.delete(id));
   }
 };
 
+// Helper to update task parent and order
 export const updateTaskParentAndOrderMutation = async (
   activeId: string,
   newParentId: string | null,
@@ -279,64 +308,85 @@ export const updateTaskParentAndOrderMutation = async (
   isDraggingDown: boolean,
   context: MutationContext
 ): Promise<void> => {
-  const { userId, invalidateTasksQueries, processedTasks } = context;
-  try {
-    const activeTask = processedTasks.find(t => t.id === activeId);
-    if (!activeTask) throw new Error('Active task not found.');
+  const { userId, queryClient, inFlightUpdatesRef, processedTasks, sections, invalidateTasksQueries } = context;
 
-    const tasksInTargetScope = processedTasks.filter(t =>
-      t.parent_task_id === newParentId && t.section_id === newSectionId && t.id !== activeId
-    ).sort((a, b) => (a.order || 0) - (b.order || 0));
+  const activeTask = processedTasks.find(t => t.id === activeId);
+  if (!activeTask) return;
 
-    let newOrder = 0;
-    if (overId) {
-      const overTaskIndex = tasksInTargetScope.findIndex(t => t.id === overId);
-      if (overTaskIndex !== -1) {
-        newOrder = isDraggingDown ? overTaskIndex + 1 : overTaskIndex;
-      } else {
-        newOrder = tasksInTargetScope.length; // If dropped over nothing in scope, put at end
-      }
-    } else {
-      newOrder = tasksInTargetScope.length; // If no overId, put at end
+  const tasksInTargetSectionOrParent = processedTasks.filter(t =>
+    (newParentId ? t.parent_task_id === newParentId : t.parent_task_id === null) &&
+    (newSectionId ? t.section_id === newSectionId : t.section_id === null)
+  ).sort((a, b) => (a.order || 0) - (b.order || 0));
+
+  let newOrder = 0;
+  if (overId) {
+    const overTaskIndex = tasksInTargetSectionOrParent.findIndex(t => t.id === overId);
+    if (overTaskIndex !== -1) {
+      newOrder = isDraggingDown ? overTaskIndex + 1 : overTaskIndex;
     }
+  } else {
+    newOrder = tasksInTargetSectionOrParent.length;
+  }
 
-    const updatedTasks = [
-      ...tasksInTargetScope.slice(0, newOrder),
-      { ...activeTask, parent_task_id: newParentId, section_id: newSectionId, order: newOrder },
-      ...tasksInTargetScope.slice(newOrder),
-    ];
+  // Adjust orders of other tasks in the target list
+  const updatedTasksForOrder: { id: string; order: number; parent_task_id: string | null; section_id: string | null; user_id: string; }[] = [];
+  let currentOrder = 0;
+  for (const task of tasksInTargetSectionOrParent) {
+    if (task.id === activeId) continue; // Skip the active task for now
 
-    const reorderedUpdates = updatedTasks.map((task, index) => ({
-      id: task.id,
-      order: index,
-      parent_task_id: task.parent_task_id,
-      section_id: task.section_id,
-      user_id: userId,
-    }));
+    if (currentOrder === newOrder) {
+      currentOrder++; // Make space for the active task
+    }
+    if (task.order !== currentOrder) {
+      updatedTasksForOrder.push({
+        id: task.id,
+        order: currentOrder,
+        parent_task_id: task.parent_task_id,
+        section_id: task.section_id,
+        user_id: userId,
+      });
+    }
+    currentOrder++;
+  }
 
-    // Optimistic update: Add all IDs to in-flight tracking
-    reorderedUpdates.forEach(update => context.inFlightUpdatesRef.current.add(update.id));
+  if (currentOrder === newOrder) { // If newOrder is at the very end
+    currentOrder++;
+  }
 
+  updatedTasksForOrder.push({
+    id: activeId,
+    order: newOrder,
+    parent_task_id: newParentId,
+    section_id: newSectionId,
+    user_id: userId,
+  });
+
+  // Optimistic update
+  queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
+    if (!old) return [];
+    const updatedOld = old.map(task => {
+      const update = updatedTasksForOrder.find(u => u.id === task.id);
+      return update ? { ...task, order: update.order, parent_task_id: update.parent_task_id, section_id: update.section_id } : task;
+    });
+    return updatedOld;
+  });
+  updatedTasksForOrder.forEach(u => inFlightUpdatesRef.current.add(u.id));
+
+  try {
     const { error } = await supabase
       .from('tasks')
-      .upsert(reorderedUpdates, { onConflict: 'id' });
+      .upsert(updatedTasksForOrder, { onConflict: 'id' });
 
     if (error) throw error;
 
+    showSuccess('Task order updated!');
     invalidateTasksQueries();
   } catch (error: any) {
     showError('Failed to reorder task.');
-    console.error('updateTaskParentAndOrderMutation error:', error.message);
+    console.error('Error reordering task:', error.message);
+    invalidateTasksQueries(); // Revert optimistic update on error
   } finally {
-    // Remove all IDs from in-flight tracking
-    const activeTask = processedTasks.find(t => t.id === activeId);
-    if (activeTask) {
-      const tasksInTargetScope = processedTasks.filter(t =>
-        t.parent_task_id === newParentId && t.section_id === newSectionId && t.id !== activeId
-      ).sort((a, b) => (a.order || 0) - (b.order || 0));
-      const updatedTaskIds = [activeId, ...tasksInTargetScope.map(t => t.id)];
-      updatedTaskIds.forEach(id => context.inFlightUpdatesRef.current.delete(id));
-    }
+    updatedTasksForOrder.forEach(u => inFlightUpdatesRef.current.delete(u.id));
   }
 };
 
@@ -346,110 +396,119 @@ export const toggleDoTodayMutation = async (
   doTodayOffIds: Set<string>,
   context: MutationContext
 ): Promise<void> => {
-  const { userId, invalidateTasksQueries } = context;
-  const todayFormatted = format(startOfDay(currentDate), 'yyyy-MM-dd');
-  const originalId = task.original_task_id || task.id;
-  const isCurrentlyOff = doTodayOffIds.has(originalId);
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const originalTaskId = task.original_task_id || task.id;
+  const formattedDate = format(currentDate, 'yyyy-MM-dd');
+  const isCurrentlyOff = doTodayOffIds.has(originalTaskId);
+
+  // Optimistic update
+  queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (old: Set<string> | undefined) => {
+    const newSet = new Set(old || []);
+    if (isCurrentlyOff) {
+      newSet.delete(originalTaskId);
+    } else {
+      newSet.add(originalTaskId);
+    }
+    return newSet;
+  });
+  inFlightUpdatesRef.current.add(originalTaskId); // Use originalTaskId for tracking
 
   try {
     if (isCurrentlyOff) {
       // Remove from do_today_off_log
-      await withInFlightTracking(
-        originalId,
-        context,
-        async () => {
-          const { error } = await supabase
-            .from('do_today_off_log')
-            .delete()
-            .eq('user_id', userId)
-            .eq('task_id', originalId)
-            .eq('off_date', todayFormatted);
-          if (error) throw error;
-        }
-      );
-      showSuccess(`'${task.description}' added back to 'Do Today'.`);
+      const { error } = await supabase
+        .from('do_today_off_log')
+        .delete()
+        .eq('user_id', userId)
+        .eq('task_id', originalTaskId)
+        .eq('off_date', formattedDate);
+      if (error) throw error;
+      showSuccess('Task added to "Do Today"!');
     } else {
       // Add to do_today_off_log
-      await withInFlightTracking(
-        originalId,
-        context,
-        async () => {
-          const { error } = await supabase
-            .from('do_today_off_log')
-            .insert({ user_id: userId, task_id: originalId, off_date: todayFormatted });
-          if (error) throw error;
-        }
-      );
-      showSuccess(`'${task.description}' moved out of 'Do Today'.`);
+      const { error } = await supabase
+        .from('do_today_off_log')
+        .insert({ user_id: userId, task_id: originalTaskId, off_date: formattedDate });
+      if (error) throw error;
+      showSuccess('Task removed from "Do Today".');
     }
-    invalidateTasksQueries();
+    invalidateTasksQueries(); // Invalidate tasks to re-render with new doToday status
   } catch (error: any) {
-    showError('Failed to update "Do Today" status.');
-    console.error('toggleDoTodayMutation error:', error.message);
+    showError(`Failed to update "Do Today" status: ${error.message}`);
+    console.error('Error toggling Do Today:', error.message);
+    invalidateTasksQueries(); // Revert optimistic update on error
+  } finally {
+    inFlightUpdatesRef.current.delete(originalTaskId);
   }
 };
 
 export const toggleAllDoTodayMutation = async (
-  tasks: Task[],
+  filteredTasks: Task[],
   currentDate: Date,
   doTodayOffIds: Set<string>,
   context: MutationContext
 ): Promise<void> => {
-  const { userId, invalidateTasksQueries } = context;
-  const todayFormatted = format(startOfDay(currentDate), 'yyyy-MM-dd');
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const formattedDate = format(currentDate, 'yyyy-MM-dd');
+
+  const tasksToToggle = filteredTasks.filter(task => task.parent_task_id === null && task.recurring_type === 'none');
+  if (tasksToToggle.length === 0) {
+    showSuccess('No non-recurring tasks to toggle "Do Today" status.');
+    return;
+  }
+
+  const allAreOff = tasksToToggle.every(task => doTodayOffIds.has(task.original_task_id || task.id));
+
+  // Optimistic update
+  queryClient.setQueryData(['do_today_off_log', userId, formattedDate], (old: Set<string> | undefined) => {
+    const newSet = new Set(old || []);
+    tasksToToggle.forEach(task => {
+      const originalId = task.original_task_id || task.id;
+      if (allAreOff) {
+        newSet.delete(originalId);
+      } else {
+        newSet.add(originalId);
+      }
+    });
+    return newSet;
+  });
+  tasksToToggle.forEach(task => inFlightUpdatesRef.current.add(task.original_task_id || task.id));
 
   try {
-    const tasksToToggle = tasks.filter(t => t.parent_task_id === null && t.recurring_type === 'none');
-    if (tasksToToggle.length === 0) {
-      showSuccess('No non-recurring tasks to toggle "Do Today" status.');
-      return;
-    }
-
-    const allAreOn = tasksToToggle.every(t => !doTodayOffIds.has(t.id));
-
-    if (allAreOn) {
-      // Turn all off
-      const recordsToInsert = tasksToToggle.map(t => ({
-        user_id: userId,
-        task_id: t.id,
-        off_date: todayFormatted,
-      }));
-      await withInFlightTracking(
-        'bulk-do-today-off',
-        context,
-        async () => {
-          const { error } = await supabase
-            .from('do_today_off_log')
-            .upsert(recordsToInsert, { onConflict: 'user_id, task_id, off_date' });
-          if (error) throw error;
-        }
-      );
-      showSuccess('All non-recurring tasks moved out of "Do Today".');
+    if (allAreOff) {
+      // Delete all from do_today_off_log for these tasks
+      const idsToDelete = tasksToToggle.map(task => task.original_task_id || task.id);
+      const { error } = await supabase
+        .from('do_today_off_log')
+        .delete()
+        .in('task_id', idsToDelete)
+        .eq('user_id', userId)
+        .eq('off_date', formattedDate);
+      if (error) throw error;
+      showSuccess('All tasks added to "Do Today"!');
     } else {
-      // Turn all on (delete existing off logs)
-      const taskIdsToTurnOn = tasksToToggle.filter(t => doTodayOffIds.has(t.id)).map(t => t.id);
-      if (taskIdsToTurnOn.length > 0) {
-        await withInFlightTracking(
-          'bulk-do-today-on',
-          context,
-          async () => {
-            const { error } = await supabase
-              .from('do_today_off_log')
-              .delete()
-              .in('task_id', taskIdsToTurnOn)
-              .eq('user_id', userId)
-              .eq('off_date', todayFormatted);
-            if (error) throw error;
-          }
-        );
-        showSuccess('All non-recurring tasks added back to "Do Today".');
-      } else {
-        showSuccess('All non-recurring tasks are already in "Do Today".');
+      // Insert all into do_today_off_log for these tasks
+      const recordsToInsert = tasksToToggle
+        .filter(task => !doTodayOffIds.has(task.original_task_id || task.id)) // Only insert if not already off
+        .map(task => ({
+          user_id: userId,
+          task_id: task.original_task_id || task.id,
+          off_date: formattedDate,
+        }));
+      if (recordsToInsert.length > 0) {
+        const { error } = await supabase
+          .from('do_today_off_log')
+          .insert(recordsToInsert);
+        if (error) throw error;
       }
+      showSuccess('All tasks removed from "Do Today".');
     }
     invalidateTasksQueries();
   } catch (error: any) {
-    showError('Failed to toggle all "Do Today" tasks.');
-    console.error('toggleAllDoTodayMutation error:', error.message);
+    showError(`Failed to toggle all "Do Today" statuses: ${error.message}`);
+    console.error('Error toggling all Do Today:', error.message);
+    invalidateTasksQueries();
+  } finally {
+    tasksToToggle.forEach(task => inFlightUpdatesRef.current.delete(task.original_task_id || task.id));
   }
 };

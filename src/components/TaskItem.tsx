@@ -29,7 +29,6 @@ import { Appointment } from '@/hooks/useAppointments';
 interface TaskItemProps {
   task: Task;
   allTasks: Task[];
-  onStatusChange: (taskId: string, newStatus: Task['status']) => Promise<string | null>;
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -54,7 +53,6 @@ interface TaskItemProps {
 const TaskItem: React.FC<TaskItemProps> = ({
   task,
   allTasks,
-  onStatusChange,
   onDelete,
   onUpdate,
   sections,
@@ -136,7 +134,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const handleCheckboxChange = async (checked: boolean) => {
     if (isOverlay || isDemo) return;
-    await onStatusChange(task.id, checked ? 'completed' : 'to-do');
+    await onUpdate(task.id, { status: checked ? 'completed' : 'to-do' });
     if (checked) {
       playSound('success');
       setShowCompletionEffect(true);
@@ -292,6 +290,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   >
                     <LinkIcon className="h-4 w-4" />
+                    <span className="truncate max-w-[150px]">{task.link}</span>
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -378,22 +377,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
               <Target className="mr-2 h-4 w-4" /> Set as Focus
             </DropdownMenuItem>
             {task.status === 'archived' && (
-              <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+              <DropdownMenuItem onSelect={async () => { await onUpdate(task.id, { status: 'to-do' }); playSound('success'); }}>
                 <Undo2 className="mr-2 h-4 w-4" /> Restore
               </DropdownMenuItem>
             )}
             {task.status !== 'archived' && (
               <>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'to-do'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onUpdate(task.id, { status: 'to-do' }); playSound('success'); }}>
                   Mark as To-Do
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'completed'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onUpdate(task.id, { status: 'completed' }); playSound('success'); }}>
                   Mark as Completed
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'skipped'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onUpdate(task.id, { status: 'skipped' }); playSound('success'); }}>
                   Mark as Skipped
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={async () => { await onStatusChange(task.id, 'archived'); playSound('success'); }}>
+                <DropdownMenuItem onSelect={async () => { await onUpdate(task.id, { status: 'archived' }); playSound('success'); }}>
                   <Archive className="mr-2 h-4 w-4" /> Archive
                 </DropdownMenuItem>
               </>
