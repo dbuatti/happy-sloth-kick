@@ -126,7 +126,8 @@ export const useTaskProcessing = ({
 
           // For daily recurring, isDailyMatch is always true.
           // For weekly/monthly, it depends on the day/date match.
-          if ((isDailyRecurring || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
+          // Removed the check for templateTask.status !== 'archived' to allow virtual tasks for archived templates
+          if ((isDailyRecurring || isWeeklyMatch || isMonthlyMatch)) {
             const virtualTask: Task = {
               ...baseTaskForVirtual,
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
