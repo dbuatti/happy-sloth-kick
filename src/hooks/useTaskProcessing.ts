@@ -97,33 +97,36 @@ export const useTaskProcessing = ({
           isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
         ) ?? null;
 
-        // 2. If no instance was completed today, find the most recent 'to-do' instance created today
+        // 2. If no instance was completed today, look for an instance created today (to-do)
         if (!relevantInstance) {
           relevantInstance = sortedInstances.find(t => 
-            t.status === 'to-do' && // Explicitly check for 'to-do'
+            t.status === 'to-do' && 
             isSameDay(startOfDay(parseISO(t.created_at)), todayStart)
           ) ?? null;
         }
 
-        // 3. If still no relevant instance for today, find the most recent 'to-do' instance carried over from before today
-        if (!relevantInstance) {
+        const isDailyRecurring = templateTask.recurring_type === 'daily';
+
+        // 3. If still not found and it's NOT a daily recurring task, look for an uncompleted instance carried over from before today
+        if (!relevantInstance && !isDailyRecurring) { 
           relevantInstance = sortedInstances.find(t => 
-            t.status === 'to-do' && // Explicitly check for 'to-do'
+            t.status === 'to-do' && 
             isBefore(startOfDay(parseISO(t.created_at)), todayStart)
           ) ?? null;
         }
 
         if (!relevantInstance) {
-          // No real instance found for today or carried over, consider creating a virtual one
+          // No real instance found for today or carried over (if not daily recurring), consider creating a virtual one
           const mostRecentRealInstance = sortedInstances.find(t => isBefore(startOfDay(parseISO(t.created_at)), todayStart));
           const baseTaskForVirtual = mostRecentRealInstance || templateTask;
 
           const templateCreatedAt = parseISO(templateTask.created_at);
-          const isDailyMatch = templateTask.recurring_type === 'daily';
-          const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getUTCDay() === templateCreatedAt.getUTCDay();
-          const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getUTCDate() === templateCreatedAt.getUTCDate();
+          const isWeeklyMatch = templateTask.recurring_type === 'weekly' && todayStart.getDay() === templateCreatedAt.getDay();
+          const isMonthlyMatch = templateTask.recurring_type === 'monthly' && todayStart.getDate() === templateCreatedAt.getDate();
 
-          if ((isDailyMatch || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
+          // For daily recurring, isDailyMatch is always true.
+          // For weekly/monthly, it depends on the day/date match.
+          if ((isDailyRecurring || isWeeklyMatch || isMonthlyMatch) && templateTask.status !== 'archived') {
             const virtualTask: Task = {
               ...baseTaskForVirtual,
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
