@@ -244,6 +244,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
   // Filter out virtual IDs for DB operation, but apply optimistic update to all
   const realTaskIds = ids.filter(id => !isVirtualId(id));
   const virtualTaskIds = ids.filter(id => isVirtualId(id));
+  void virtualTaskIds; // Explicitly mark as read to satisfy TS6133
 
   // Optimistic update
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
