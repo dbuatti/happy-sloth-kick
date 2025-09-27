@@ -309,6 +309,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
   // Filter out virtual IDs for DB operation
   const realTaskIds = ids.filter(id => !isVirtualId(id));
   const virtualTaskIds = ids.filter(id => isVirtualId(id));
+  void virtualTaskIds; // Explicitly mark as read to satisfy TS6133
 
   // Optimistic update
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
