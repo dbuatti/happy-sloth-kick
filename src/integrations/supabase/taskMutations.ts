@@ -431,7 +431,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
     console.error('Error marking tasks as completed:', error.message);
     // Revert optimistic update
     queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
-      (old || []).map(task => (taskIdsToComplete.includes(task.id) ? { ...task, status: 'to-do' : task))
+      (old || []).map(task => (taskIdsToComplete.includes(task.id) ? { ...task, status: 'to-do' } : task))
     );
   } finally {
     taskIdsToComplete.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
