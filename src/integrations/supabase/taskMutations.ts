@@ -131,7 +131,7 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+  const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
   const tasksToDelete: Task[] = previousTasks.filter((t: Task) => t.id === taskId || t.parent_task_id === taskId);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).filter(task => task.id !== taskId && task.parent_task_id !== taskId)
@@ -166,7 +166,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+  const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (ids.includes(task.id) ? { ...task, ...updates } : task))
   );
@@ -206,7 +206,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+  const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
   const tasksToDelete: Task[] = previousTasks.filter((t: Task) => ids.includes(t.id));
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).filter(task => !ids.includes(task.id))
@@ -240,7 +240,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
 export const archiveAllCompletedTasksMutation = async (context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
-  const completedTasks: Task[] = (queryClient.getQueryData(['tasks', userId]) || []).filter((t: Task) => t.status === 'completed');
+  const completedTasks: Task[] = (queryClient.getQueryData(['tasks', userId]) as Task[] || []).filter((t: Task) => t.status === 'completed');
   const completedTaskIds: string[] = completedTasks.map((t: Task) => t.id);
 
   if (completedTaskIds.length === 0) {
@@ -280,7 +280,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
 export const markAllTasksInSectionCompletedMutation = async (sectionId: string | null, context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
-  const tasksInSection: Task[] = (queryClient.getQueryData(['tasks', userId]) || []).filter((t: Task) =>
+  const tasksInSection: Task[] = (queryClient.getQueryData(['tasks', userId]) as Task[] || []).filter((t: Task) =>
     t.status === 'to-do' && t.parent_task_id === null && (sectionId === null ? t.section_id === null : t.section_id === sectionId)
   );
   const taskIdsToComplete: string[] = tasksInSection.map((t: Task) => t.id);
@@ -322,7 +322,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
 export const updateTaskParentAndOrderMutation = async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean, context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
-  const allTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+  const allTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
   const activeTask = allTasks.find((t: Task) => t.id === activeId);
 
   if (!activeTask) return;
@@ -368,11 +368,11 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
     if (error) throw error;
 
     // Re-normalize order if necessary (e.g., if fractional orders accumulate)
-    const updatedTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+    const updatedTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
     const tasksToReorder: Task[] = updatedTasks.filter((t: Task) => t.parent_task_id === newParentId && t.section_id === newSectionId)
       .sort((a: Task, b: Task) => (a.order || 0) - (b.order || 0));
 
-    const reorderPayload = tasksToRereorder.map((task: Task, index: number) => ({
+    const reorderPayload = tasksToReorder.map((task: Task, index: number) => ({
       id: task.id,
       order: index,
       user_id: userId,
