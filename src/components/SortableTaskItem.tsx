@@ -41,14 +41,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
-  onDelete, // Destructure explicitly
-  onUpdate, // Destructure explicitly
-  sections, // Destructure explicitly
-  onOpenOverview, // Destructure explicitly
-  currentDate, // Destructure explicitly
-  onMoveUp, // Destructure explicitly
-  onMoveDown, // Destructure explicitly
-  ...rest // Now rest should be empty or contain other props not directly passed to TaskItem
+  onDelete,
+  onUpdate,
+  sections,
+  onOpenOverview,
+  currentDate,
+  onMoveUp,
+  onMoveDown,
 }) => {
   const {
     attributes,
@@ -94,13 +93,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isExpanded={isExpanded}
           toggleTask={toggleTask}
           allTasks={allTasks}
-          onDelete={onDelete} // Pass explicitly
-          onUpdate={onUpdate} // Pass explicitly
-          sections={sections} // Pass explicitly
-          onOpenOverview={onOpenOverview} // Pass explicitly
-          currentDate={currentDate} // Pass explicitly
-          onMoveUp={onMoveUp} // Pass explicitly
-          onMoveDown={onMoveDown} // Pass explicitly
+          onDelete={onDelete}
+          onUpdate={onUpdate}
+          sections={sections}
+          onOpenOverview={onOpenOverview}
+          currentDate={currentDate}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
           isOverlay={isOverlay}
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
@@ -108,8 +107,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
           level={level}
-          attributes={attributes} // Pass attributes for drag handle
-          listeners={listeners}   // Pass listeners for drag handle
+          attributes={attributes}
+          listeners={listeners}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
