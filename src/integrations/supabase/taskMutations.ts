@@ -113,7 +113,6 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
     if (isVirtual) {
       // If it's a virtual task, create a new concrete task based on it
       const newTaskData: NewTaskData = {
-        user_id: userId,
         description: updates.description || previousTask.description,
         status: updates.status || previousTask.status,
         priority: updates.priority || previousTask.priority,
@@ -455,7 +454,6 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
   if (isVirtualId(activeId)) {
     // Create a new concrete task from the virtual one
     const newTaskData: NewTaskData = {
-      user_id: userId,
       description: activeTask.description,
       status: activeTask.status,
       priority: activeTask.priority,
