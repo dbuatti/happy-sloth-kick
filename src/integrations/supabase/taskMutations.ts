@@ -1,9 +1,7 @@
-import { QueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { format, parseISO, isValid, startOfDay, isBefore } from 'date-fns';
-import { Task, TaskSection, Category, NewTaskData, TaskUpdate } from '@/hooks/useTasks';
-import { MutationContext } from '@/hooks/useTasks';
+import { format, parseISO, isValid } from 'date-fns';
+import { Task, NewTaskData, TaskUpdate, MutationContext } from '@/hooks/useTasks';
 
 // Helper to ensure task data is consistent for DB operations
 const prepareTaskForDb = (task: Partial<Task>): Partial<Task> => {
@@ -18,7 +16,7 @@ const prepareTaskForDb = (task: Partial<Task>): Partial<Task> => {
 };
 
 export const addTaskMutation = async (newTaskData: NewTaskData, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Generate a temporary client-side ID for optimistic update
   const tempId = `temp-${Date.now()}`;
@@ -83,10 +81,10 @@ export const addTaskMutation = async (newTaskData: NewTaskData, context: Mutatio
 };
 
 export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTask = queryClient.getQueryData(['tasks', userId])?.find((t: Task) => t.id === taskId);
+  const previousTask = (queryClient.getQueryData(['tasks', userId]) as Task[] | undefined)?.find((t: Task) => t.id === taskId);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (task.id === taskId ? { ...task, ...updates, category_color: context.categoriesMap.get(updates.category || task.category || '') || 'gray' } : task))
   );
@@ -107,9 +105,9 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 
     if (data.remind_at && data.status === 'to-do') {
       const d = parseISO(data.remind_at);
-      if (isValid(d)) scheduleReminder(data.id, `Reminder: ${data.description}`, d);
+      if (isValid(d)) context.scheduleReminder(data.id, `Reminder: ${data.description}`, d);
     } else if (data.status === 'completed' || data.status === 'archived' || data.remind_at === null) {
-      cancelReminder(data.id);
+      context.cancelReminder(data.id);
     }
 
     return data.id;
@@ -130,15 +128,15 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTasks = queryClient.getQueryData(['tasks', userId]) || [];
-  const tasksToDelete = previousTasks.filter((t: Task) => t.id === taskId || t.parent_task_id === taskId);
+  const previousTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+  const tasksToDelete: Task[] = previousTasks.filter((t: Task) => t.id === taskId || t.parent_task_id === taskId);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).filter(task => task.id !== taskId && task.parent_task_id !== taskId)
   );
-  tasksToDelete.forEach(task => inFlightUpdatesRef.current.add(task.id));
+  tasksToDelete.forEach((task: Task) => inFlightUpdatesRef.current.add(task.id));
 
   try {
     const { error } = await supabase
@@ -150,7 +148,7 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
     if (error) throw error;
 
     showSuccess('Task deleted successfully!');
-    tasksToDelete.forEach(task => cancelReminder(task.id));
+    tasksToDelete.forEach((task: Task) => context.cancelReminder(task.id));
     return true;
   } catch (error: any) {
     showError('Failed to delete task.');
@@ -159,16 +157,16 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
     queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => [...(old || []), ...previousTasks]);
     return false;
   } finally {
-    tasksToDelete.forEach(task => inFlightUpdatesRef.current.delete(task.id));
+    tasksToDelete.forEach((task: Task) => inFlightUpdatesRef.current.delete(task.id));
     invalidateTasksQueries();
   }
 };
 
 export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: string[], context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, scheduleReminder, cancelReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTasks = queryClient.getQueryData(['tasks', userId]) || [];
+  const previousTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (ids.includes(task.id) ? { ...task, ...updates } : task))
   );
@@ -188,9 +186,9 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
     data.forEach(updatedTask => {
       if (updatedTask.remind_at && updatedTask.status === 'to-do') {
         const d = parseISO(updatedTask.remind_at);
-        if (isValid(d)) scheduleReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, d);
+        if (isValid(d)) context.scheduleReminder(updatedTask.id, `Reminder: ${updatedTask.description}`, d);
       } else if (updatedTask.status === 'completed' || updatedTask.status === 'archived' || updatedTask.remind_at === null) {
-        cancelReminder(updatedTask.id);
+        context.cancelReminder(updatedTask.id);
       }
     });
   } catch (error: any) {
@@ -205,11 +203,11 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
 };
 
 export const bulkDeleteTasksMutation = async (ids: string[], context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, cancelReminder } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
   // Optimistic update
-  const previousTasks = queryClient.getQueryData(['tasks', userId]) || [];
-  const tasksToDelete = previousTasks.filter((t: Task) => ids.includes(t.id));
+  const previousTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+  const tasksToDelete: Task[] = previousTasks.filter((t: Task) => ids.includes(t.id));
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).filter(task => !ids.includes(task.id))
   );
@@ -225,7 +223,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
     if (error) throw error;
 
     showSuccess('Tasks deleted successfully!');
-    tasksToDelete.forEach(task => cancelReminder(task.id));
+    tasksToDelete.forEach((task: Task) => context.cancelReminder(task.id));
     return true;
   } catch (error: any) {
     showError('Failed to bulk delete tasks.');
@@ -242,8 +240,8 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
 export const archiveAllCompletedTasksMutation = async (context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
-  const completedTasks = (queryClient.getQueryData(['tasks', userId]) || []).filter((t: Task) => t.status === 'completed');
-  const completedTaskIds = completedTasks.map(t => t.id);
+  const completedTasks: Task[] = (queryClient.getQueryData(['tasks', userId]) || []).filter((t: Task) => t.status === 'completed');
+  const completedTaskIds: string[] = completedTasks.map((t: Task) => t.id);
 
   if (completedTaskIds.length === 0) {
     showSuccess('No completed tasks to archive.');
@@ -254,7 +252,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (task.status === 'completed' ? { ...task, status: 'archived' } : task))
   );
-  completedTaskIds.forEach(id => inFlightUpdatesRef.current.add(id));
+  completedTaskIds.forEach((id: string) => inFlightUpdatesRef.current.add(id));
 
   try {
     const { error } = await supabase
@@ -274,7 +272,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
       (old || []).map(task => (completedTaskIds.includes(task.id) ? { ...task, status: 'completed' } : task))
     );
   } finally {
-    completedTaskIds.forEach(id => inFlightUpdatesRef.current.delete(id));
+    completedTaskIds.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
   }
 };
@@ -282,10 +280,10 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
 export const markAllTasksInSectionCompletedMutation = async (sectionId: string | null, context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
-  const tasksInSection = (queryClient.getQueryData(['tasks', userId]) || []).filter((t: Task) =>
+  const tasksInSection: Task[] = (queryClient.getQueryData(['tasks', userId]) || []).filter((t: Task) =>
     t.status === 'to-do' && t.parent_task_id === null && (sectionId === null ? t.section_id === null : t.section_id === sectionId)
   );
-  const taskIdsToComplete = tasksInSection.map(t => t.id);
+  const taskIdsToComplete: string[] = tasksInSection.map((t: Task) => t.id);
 
   if (taskIdsToComplete.length === 0) {
     showSuccess('No pending tasks in this section to mark as completed.');
@@ -296,7 +294,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (taskIdsToComplete.includes(task.id) ? { ...task, status: 'completed' } : task))
   );
-  taskIdsToComplete.forEach(id => inFlightUpdatesRef.current.add(id));
+  taskIdsToComplete.forEach((id: string) => inFlightUpdatesRef.current.add(id));
 
   try {
     const { error } = await supabase
@@ -316,7 +314,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
       (old || []).map(task => (taskIdsToComplete.includes(task.id) ? { ...task, status: 'to-do' } : task))
     );
   } finally {
-    taskIdsToComplete.forEach(id => inFlightUpdatesRef.current.delete(id));
+    taskIdsToComplete.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
   }
 };
@@ -324,7 +322,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
 export const updateTaskParentAndOrderMutation = async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean, context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
 
-  const allTasks = queryClient.getQueryData(['tasks', userId]) || [];
+  const allTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
   const activeTask = allTasks.find((t: Task) => t.id === activeId);
 
   if (!activeTask) return;
@@ -336,7 +334,7 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
 
   // Determine new order
   let newOrder: number | null = null;
-  const siblings = allTasks.filter(t => t.parent_task_id === newParentId && t.section_id === newSectionId && t.id !== activeId);
+  const siblings: Task[] = allTasks.filter((t: Task) => t.parent_task_id === newParentId && t.section_id === newSectionId && t.id !== activeId);
 
   if (overId) {
     const overTask = allTasks.find((t: Task) => t.id === overId);
@@ -349,7 +347,7 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
     }
   } else {
     // If no overId, place at the end of the list
-    newOrder = siblings.length > 0 ? Math.max(...siblings.map(s => s.order || 0)) + 1 : 0;
+    newOrder = siblings.length > 0 ? Math.max(...siblings.map((s: Task) => s.order || 0)) + 1 : 0;
   }
 
   updates.order = newOrder;
@@ -370,11 +368,11 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
     if (error) throw error;
 
     // Re-normalize order if necessary (e.g., if fractional orders accumulate)
-    const updatedTasks = queryClient.getQueryData(['tasks', userId]) || [];
-    const tasksToReorder = updatedTasks.filter(t => t.parent_task_id === newParentId && t.section_id === newSectionId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
+    const updatedTasks = (queryClient.getQueryData(['tasks', userId]) || []) as Task[];
+    const tasksToReorder: Task[] = updatedTasks.filter((t: Task) => t.parent_task_id === newParentId && t.section_id === newSectionId)
+      .sort((a: Task, b: Task) => (a.order || 0) - (b.order || 0));
 
-    const reorderPayload = tasksToReorder.map((task, index) => ({
+    const reorderPayload = tasksToRereorder.map((task: Task, index: number) => ({
       id: task.id,
       order: index,
       user_id: userId,
