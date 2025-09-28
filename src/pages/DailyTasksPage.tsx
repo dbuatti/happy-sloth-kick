@@ -8,7 +8,6 @@ import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
-import { useSettings } from '@/context/SettingsContext'; // Import useSettings
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -69,7 +68,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   });
 
   const { appointments: allAppointments } = useAllAppointments();
-  const { settings: userSettings } = useSettings(); // Get user settings
 
   const scheduledTasksMap = useMemo(() => {
     const map = new Map<string, Appointment>();
@@ -140,14 +138,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
 
-  // Determine if we are in a "focused" state based on user settings
-  const isFocusedMode = !!userSettings?.focused_task_id;
-
   return (
-    <div className={cn(
-      "flex-1 flex flex-col h-full transition-all duration-300",
-      isFocusedMode && "bg-muted/30" // Subtle background change for focused mode
-    )}>
+    <div className="flex-1 flex flex-col h-full"> {/* Added flex-col and h-full for sticky header */}
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
@@ -189,7 +181,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setIsManageSectionsOpen={setIsManageSectionsOpen}
       />
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto"> {/* This div will scroll */}
         <div className="p-4 lg:p-6">
           <TaskList
             processedTasks={processedTasks}

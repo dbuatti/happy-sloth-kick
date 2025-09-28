@@ -13,13 +13,13 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image, Play, Clock, PlusCircle } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image } from 'lucide-react'; // Added FileText and Image icons
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { CheckCircle2, Circle } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
@@ -49,7 +49,6 @@ interface TaskItemProps {
   showDragHandle?: boolean; // New prop for drag handle visibility
   attributes?: React.HTMLAttributes<HTMLButtonElement>; // Added for Dnd-kit
   listeners?: React.HTMLAttributes<HTMLButtonElement>; // Added for Dnd-kit
-  isFocused?: boolean; // New prop to indicate if this is the focused task
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -72,7 +71,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   showDragHandle = false, // Default to false
   attributes, // Destructured
   listeners, // Destructured
-  isFocused = false, // Default to false
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -182,20 +180,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
     toggleDoToday(task);
   };
 
-  const handleSetFocus = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    await setFocusTask(task.id);
-    // The UI transition to focus mode will be handled by the parent page based on the focused_task_id setting.
-  };
-
-  const handleAddSubtask = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // This will open the task overview and then the user can add a subtask.
-    // Alternatively, we could add a quick input here, but that's more complex.
-    onOpenOverview(task);
-    // A more advanced implementation might open a small inline input or a dedicated subtask modal.
-  };
-
   const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
   const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
 
@@ -209,8 +193,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         isOverdue && task.status === 'to-do' && "bg-red-500/10 border-red-500/30", // Distinct background for overdue
         !isDoToday && "opacity-60",
         "group",
-        !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer",
-        isFocused && "ring-2 ring-primary ring-offset-2" // Highlight if focused
+        !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer"
       )}
     >
       {/* Priority Pill */}
@@ -395,7 +378,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       </div>
 
-      {/* Enhanced Actions Area */}
+      {/* Actions Area */}
       <div className="flex-shrink-0 flex items-center gap-1 pr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {recurringType !== 'none' && (
           <Tooltip>
@@ -415,39 +398,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
           taskId={task.id}
           isDemo={isDemo}
         />
-        {/* Quick Action Buttons */}
-        {!isOverlay && (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-primary hover:bg-primary/10"
-                  onClick={handleSetFocus}
-                  aria-label="Set as Focus"
-                >
-                  <Target className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Focus on this task</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-primary"
-                  onClick={handleAddSubtask}
-                  aria-label="Add Subtask"
-                >
-                  <PlusCircle className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add a subtask</TooltipContent>
-            </Tooltip>
-          </>
-        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -465,7 +415,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={handleSetFocus}>
+            <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>
               <Target className="mr-2 h-4 w-4" /> Set as Focus
             </DropdownMenuItem>
             {task.status === 'archived' && (
