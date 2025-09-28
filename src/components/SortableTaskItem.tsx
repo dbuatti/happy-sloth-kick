@@ -64,8 +64,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform: CSS.Transform.toString(transform || null),
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    // Removed paddingLeft from here as it's handled by the wrapper div below
+    visibility: isDragging && !isOverlay ? 'hidden' : undefined,
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -91,8 +90,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     >
       <div className={cn(
         "flex-1",
-        level > 0 && "relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30 before:ml-2", // Vertical line
-        `pl-${level * 4}` // Tailwind's `pl-4`, `pl-8`, etc. for indentation
+        level > 0 && "relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30", // Vertical line
+        `pl-${level * 6}` // Tailwind's `pl-6`, `pl-12`, etc. for indentation
       )}>
         <TaskItem
           task={task}
@@ -105,8 +104,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           sections={sections}
           onOpenOverview={onOpenOverview}
           currentDate={currentDate}
-          onMoveUp={async () => {}}
-          onMoveDown={async () => {}}
+          onMoveUp={onMoveUp}
+          onMoveDown={onMoveDown}
           level={level}
           isOverlay={isOverlay}
           setFocusTask={setFocusTask}

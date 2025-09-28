@@ -61,7 +61,7 @@ const SortableTaskReorderItem: React.FC<{
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean;
+  isDoToday: boolean; // This prop already exists
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
@@ -104,7 +104,7 @@ const SortableTaskReorderItem: React.FC<{
       className={cn(
         "relative group flex items-center",
         isOverlay ? "bg-card rounded-lg" : "", // Base styling for the li wrapper
-        isDropTarget && "border-2 border-primary-foreground bg-primary/5", // Enhanced drop target highlight
+        isDropTarget && "border-2 border-primary bg-primary/10", // Enhanced drop target highlight
         !isOverlay && "hover:shadow-md hover:scale-[1.005] transition-all duration-200" // Add hover effects for non-overlay items
       )}
     >
@@ -122,7 +122,7 @@ const SortableTaskReorderItem: React.FC<{
           level={0}
           isOverlay={isOverlay}
           setFocusTask={rest.setFocusTask}
-          isDoToday={rest.isDoToday}
+          isDoToday={rest.isDoToday} // FIX: Use the prop directly
           toggleDoToday={rest.toggleDoToday}
           scheduledTasksMap={rest.scheduledTasksMap}
           isDemo={rest.isDemo}
@@ -242,7 +242,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setFocusTask={setFocusTask}
-                  isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                  isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)} // This is the correct calculation
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
@@ -263,7 +263,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setFocusTask={setFocusTask}
-                  isDoToday={!doTodayOffIds.has(activeTask.original_task_id || activeTask.id)}
+                  isDoToday={!doTodayOffIds.has(activeTask.original_task_id || activeTask.id)} // This is the correct calculation
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}

@@ -186,7 +186,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-3 shadow-sm border", // Adjusted pl-4 to pl-3
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border", // Adjusted pl-3 to pl-4
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
           : "bg-card text-foreground border-border",
@@ -197,7 +197,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
     >
       {/* Priority Pill */}
       <div className={cn(
-        "absolute left-0 top-0 h-full w-1 rounded-l-xl", // Adjusted width to w-1
+        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", // Adjusted width to w-1.5
         getPriorityDotColor(task.priority)
       )} />
 
