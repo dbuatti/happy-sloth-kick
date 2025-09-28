@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, ShoppingCart, ListFilter, SortAsc } from 'lucide-react';
+import { Plus, UtensilsCrossed, ShoppingCart, ListFilter, SortAsc, Minus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useMealStaples, MealStaple, NewMealStapleData, StapleSortOption } from '@/hooks/useMealStaples';
 import {
@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { showError } from '@/utils/toast';
+import { Separator } from '@/components/ui/separator'; // Import Separator
 
 import {
   DndContext,
@@ -206,7 +207,7 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
   return (
     <>
       <div className="space-y-4">
-        <form onSubmit={handleQuickAddStaple} className="flex items-center gap-2">
+        <form onSubmit={handleQuickAddStaple} className="flex items-center gap-2 p-2 border rounded-md bg-muted/20">
           <ShoppingCart className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <Input
             placeholder="Add a staple (e.g., 'Canned Tomatoes') and press Enter..."
@@ -225,6 +226,8 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
             {isQuickAdding ? <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> : <Plus className="h-3.5 w-3.5" />}
           </Button>
         </form>
+
+        <Separator />
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2 rounded-md bg-muted/30">
           <div className="flex items-center gap-2">
@@ -273,6 +276,11 @@ const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, dem
             <p className="text-sm">
               {showShoppingList ? "All your staples are currently in stock or meet their target quantities." : "Add your essential ingredients to keep track of your pantry."}
             </p>
+            {!showShoppingList && !isDemo && (
+              <Button onClick={() => handleOpenAddEditDialog(null)} className="mt-4">
+                <Plus className="h-4 w-4 mr-2" /> Add First Staple
+              </Button>
+            )}
           </div>
         ) : (
           <DndContext

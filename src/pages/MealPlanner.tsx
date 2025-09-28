@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UtensilsCrossed, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { useMeals } from '@/hooks/useMeals';
-import { Meal } from '@/types/meals'; // Updated import path
+import { Meal } from '@/types/meals';
 import MealItem from '@/components/MealItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaplesInventory from '@/components/StaplesInventory';
 import { format, isSameDay, addDays, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator'; // Import Separator
 
 interface MealPlannerProps {
   isDemo?: boolean;
@@ -113,7 +114,7 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {sortedDates.map(dateKey => {
+                    {sortedDates.map((dateKey, index) => {
                       const mealsForDay = mealsGroupedByDate[dateKey];
                       const displayDate = parseISO(dateKey);
                       const isToday = isSameDay(displayDate, currentDate);
@@ -123,22 +124,27 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
                       if (mealsForDay.length === 0) return null;
 
                       return (
-                        <div key={dateKey}>
+                        <React.Fragment key={dateKey}>
+                          {index > 0 && <Separator className="my-4" />}
                           <h3 className="text-xl font-bold mb-3 text-foreground">
                             {isToday ? 'Today' : isTomorrow ? 'Tomorrow' : format(displayDate, 'EEEE, MMM d')}
                           </h3>
                           <div className="space-y-4">
-                            {mealsForDay.map(meal => (
-                              <MealItem
-                                key={meal.id}
-                                meal={meal}
-                                onUpdate={handleUpdateMeal}
-                                isDemo={isDemo}
-                                isPlaceholder={meal.id.startsWith('placeholder-')}
-                              />
-                            ))}
+                            {mealsForDay.length > 0 ? (
+                              mealsForDay.map(meal => (
+                                <MealItem
+                                  key={meal.id}
+                                  meal={meal}
+                                  onUpdate={handleUpdateMeal}
+                                  isDemo={isDemo}
+                                  isPlaceholder={meal.id.startsWith('placeholder-')}
+                                />
+                              ))
+                            ) : (
+                              <p className="text-muted-foreground text-center py-4">No meals planned for this day.</p>
+                            )}
                           </div>
-                        </div>
+                        </React.Fragment>
                       );
                     })}
                   </div>

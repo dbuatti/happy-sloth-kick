@@ -1,10 +1,13 @@
+"use client";
+
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { MealStaple } from '@/hooks/useMealStaples';
-import { cn } from '@/lib/utils';
+import StapleItemDisplay from './StapleItemDisplay'; // Import the new display component
 import { GripVertical } from 'lucide-react';
-import StapleItemDisplay from './StapleItemDisplay'; // Import the new component
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SortableStapleItemProps {
   staple: MealStaple;
@@ -12,7 +15,7 @@ interface SortableStapleItemProps {
   onOpenEditDialog: (staple: MealStaple) => void;
   onOpenDeleteDialog: (staple: MealStaple) => void;
   isDemo?: boolean;
-  isOverlay?: boolean;
+  isOverlay?: boolean; // Prop to indicate if it's a drag overlay
 }
 
 const SortableStapleItem: React.FC<SortableStapleItemProps> = ({
@@ -35,8 +38,8 @@ const SortableStapleItem: React.FC<SortableStapleItemProps> = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 'auto',
+    zIndex: isDragging ? 10 : 0,
+    opacity: isDragging ? 0.8 : 1,
   };
 
   return (
@@ -44,27 +47,38 @@ const SortableStapleItem: React.FC<SortableStapleItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative group flex items-center",
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-xl" : ""
+        "relative",
+        isDragging && "shadow-lg",
+        isOverlay && "shadow-xl" // Stronger shadow for overlay
       )}
     >
-      {!isDemo && (
-        <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 p-1 cursor-grab touch-none opacity-0 group-hover:opacity-100 transition-opacity"
-          {...listeners}
-          {...attributes}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-2">
+        {!isDemo && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-8 w-8 text-muted-foreground cursor-grab",
+              isDragging && "cursor-grabbing",
+              isOverlay && "hidden" // Hide handle in overlay
+            )}
+            {...listeners}
+            {...attributes}
+            aria-label="Drag staple"
+          >
+            <GripVertical className="h-4 w-4" />
+          </Button>
+        )}
+        <div className="flex-1">
+          <StapleItemDisplay
+            staple={staple}
+            onUpdate={onUpdate}
+            onOpenEditDialog={onOpenEditDialog}
+            onOpenDeleteDialog={onOpenDeleteDialog}
+            isDemo={isDemo}
+            isOverlay={isOverlay}
+          />
         </div>
-      )}
-      <div className={cn("flex-1", !isDemo && "pl-6")}>
-        <StapleItemDisplay
-          staple={staple}
-          onUpdate={onUpdate}
-          onOpenEditDialog={onOpenEditDialog}
-          onOpenDeleteDialog={onOpenDeleteDialog}
-          isDemo={isDemo}
-        />
       </div>
     </li>
   );
