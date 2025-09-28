@@ -21,6 +21,7 @@ import { showError } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import ImageUploadArea from './ImageUploadArea';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
@@ -111,6 +112,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   className,
   allTasks, // This is the prop, assumed to be processedTasks
 }) => {
+  const { user } = useAuth(); // Use useAuth to get the current user
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -258,8 +260,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
-      const userId = 'anonymous'; // This needs to be the actual user ID
-      const filePath = `${userId}/${uuidv4()}`;
+      if (!user?.id) {
+        showError('User not authenticated for image upload.');
+        setIsSaving(false);
+        return;
+      }
+      const filePath = `${user.id}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
         .from('taskimages')
         .upload(filePath, imageFile);

@@ -51,7 +51,6 @@ interface TaskListProps {
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
   allCategories: Category[];
-  setIsAddTaskOpen: (open: boolean) => void;
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   // setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // Removed as it's not used directly by TaskList
@@ -98,9 +97,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     isDemo = false,
   } = props;
 
-  // Removed unused userId variable
-  const userId = ''; 
-
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
 
@@ -132,12 +128,12 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId, // userId is not used here, but keeping for type consistency if it were to be used
+      user_id: '', // Placeholder, as userId is not used here
       order: sections.length,
       include_in_focus_mode: true,
     };
     return [...sections, noSection];
-  }, [sections, userId]);
+  }, [sections]);
 
   const allVisibleItemIds = useMemo(() => {
     const ids: UniqueIdentifier[] = [];

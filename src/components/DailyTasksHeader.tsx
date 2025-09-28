@@ -121,8 +121,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       />
 
       <TaskFilter
-        currentDate={currentDate}
-        setCurrentDate={setCurrentDate}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
         statusFilter={statusFilter}
@@ -135,7 +133,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        searchRef={searchInputRef}
       />
 
       <ManageCategoriesDialog
