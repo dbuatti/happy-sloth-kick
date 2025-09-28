@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image } from 'lucide-react'; // Added FileText and Image icons
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -186,18 +186,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border", // Adjusted pl-3 to pl-4
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border",
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
           : "bg-card text-foreground border-border",
+        isOverdue && task.status === 'to-do' && "bg-red-500/10 border-red-500/30", // Distinct background for overdue
         !isDoToday && "opacity-60",
         "group",
-        !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer" // Added cursor-pointer
+        !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer"
       )}
     >
       {/* Priority Pill */}
       <div className={cn(
-        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", // Adjusted width to w-1.5
+        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl",
         getPriorityDotColor(task.priority)
       )} />
 
@@ -265,14 +266,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium" // Adjusted text size to text-lg
+              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium"
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
               <span
                 className={cn(
-                  "block text-lg leading-tight font-medium", // Changed to block, adjusted text size to text-lg
+                  "block text-lg leading-tight font-medium",
                   task.status === 'completed' ? 'line-through opacity-75' : '',
                   "cursor-text"
                 )}
@@ -281,7 +282,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 {task.description}
               </span>
               {scheduledAppointment && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"> {/* Adjusted text size to text-xs */}
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <CalendarClock className="h-3 w-3" />
                   <span>
                     Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
@@ -329,6 +330,32 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 </TooltipContent>
               </Tooltip>
             )
+          )}
+
+          {task.notes && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Has notes</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
+          {task.image_url && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
+                  <Image className="h-4 w-4" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Has image</p>
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {task.due_date && (

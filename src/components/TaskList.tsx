@@ -36,6 +36,7 @@ import TaskReorderDialog from './TaskReorderDialog'; // Import the new dialog
 import EmptyState from './EmptyState'; // Import EmptyState
 import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { isPast, parseISO, isSameDay } from 'date-fns'; // Removed startOfDay
 
 interface TaskListProps {
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
@@ -75,6 +76,7 @@ interface TaskListProps {
 interface SortableSectionHeaderPropsForWrapper { // Define the interface for SortableSectionHeader props
   section: TaskSection;
   sectionTasksCount: number;
+  sectionOverdueCount: number; // New prop
   isExpanded: boolean;
   toggleSection: (sectionId: string) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
@@ -363,6 +365,26 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     return sections.find(s => s.id === sectionToReorderId);
   }, [sectionToReorderId, sections, allSortableSections]);
 
+  const sectionTaskSummaries = useMemo(() => {
+    const summaries = new Map<string, { pending: number; overdue: number }>();
+    allSortableSections.forEach(section => {
+      const tasksInSection = processedTasks.filter(t => 
+        t.parent_task_id === null && 
+        (t.section_id === section.id || (t.section_id === null && section.id === 'no-section-header'))
+      );
+
+      const pending = tasksInSection.filter(t => t.status === 'to-do').length;
+      const overdue = tasksInSection.filter(t => 
+        t.status === 'to-do' && 
+        t.due_date && 
+        isPast(parseISO(t.due_date)) && 
+        !isSameDay(parseISO(t.due_date), currentDate)
+      ).length;
+      summaries.set(section.id, { pending, overdue });
+    });
+    return summaries;
+  }, [allSortableSections, processedTasks, currentDate]);
+
 
   return (
     <>
@@ -397,7 +419,10 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
               const topLevelTasksInSection = filteredTasks
                 .filter(t => t.parent_task_id === null && (t.section_id === currentSection.id || (t.section_id === null && currentSection.id === 'no-section-header')))
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
-              const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
+              
+              const summary = sectionTaskSummaries.get(currentSection.id) || { pending: 0, overdue: 0 };
+              const remainingTasksCount = summary.pending;
+              const overdueTasksCount = summary.overdue;
 
               const isNoSection = currentSection.id === 'no-section-header';
 
@@ -413,6 +438,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                   <SortableSectionWrapper
                     section={currentSection}
                     sectionTasksCount={remainingTasksCount}
+                    sectionOverdueCount={overdueTasksCount} // Pass new prop
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
                     handleAddTaskToSpecificSection={(sectionId: string | null) => openAddTaskForSection(sectionId)}
@@ -491,7 +517,10 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                   <SortableSectionHeader
                     section={activeItemData as TaskSection}
                     sectionTasksCount={
-                      filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === activeItemData.id || (t.section_id === null && activeItemData.id === 'no-section-header'))).filter(t => t.status === 'to-do').length
+                      (sectionTaskSummaries.get(activeItemData.id)?.pending || 0)
+                    }
+                    sectionOverdueCount={
+                      (sectionTaskSummaries.get(activeItemData.id)?.overdue || 0)
                     }
                     isExpanded={true}
                     toggleSection={() => {}}

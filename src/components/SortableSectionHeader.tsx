@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings, GripVertical } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings, GripVertical, AlertCircle } from 'lucide-react'; // Added AlertCircle icon
 import { cn } from "@/lib/utils";
 import { TaskSection } from '@/hooks/useTasks';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +23,7 @@ import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 interface SortableSectionHeaderProps {
   section: TaskSection;
   sectionTasksCount: number;
+  sectionOverdueCount: number; // New prop
   isExpanded: boolean;
   toggleSection: (sectionId: string) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
@@ -46,6 +47,7 @@ interface SortableSectionHeaderProps {
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   section,
   sectionTasksCount,
+  sectionOverdueCount, // Destructured
   isExpanded,
   toggleSection,
   handleAddTaskToSpecificSection,
@@ -184,8 +186,29 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               isNoSection && "text-muted-foreground"
             )} onClick={() => !isOverlay && !isNoSection && toggleSection(section.id)}>
               {section.name}
-              {!isNoSection && sectionTasksCount > 0 && (
-                <span className="text-base font-medium text-muted-foreground ml-1">({sectionTasksCount})</span> // Adjusted font size and weight
+              {!isExpanded && !isNoSection && (sectionTasksCount > 0 || sectionOverdueCount > 0) && (
+                <span className="text-base font-medium text-muted-foreground ml-1 flex items-center gap-1">
+                  {sectionOverdueCount > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center text-red-500">
+                          <AlertCircle className="h-4 w-4 mr-0.5" /> {sectionOverdueCount}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>Overdue Tasks</TooltipContent>
+                    </Tooltip>
+                  )}
+                  {sectionTasksCount > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="flex items-center">
+                          ({sectionTasksCount} pending)
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>Pending Tasks</TooltipContent>
+                    </Tooltip>
+                  )}
+                </span>
               )}
             </h2>
           )}
