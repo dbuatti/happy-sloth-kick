@@ -31,7 +31,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isFullScreenTaskOpen, setIsFullScreenTaskOpen] = useState(false); // New state for full screen
   const [fullScreenTask, setFullScreenTask] = useState<Task | null>(null); // New state for full screen task
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Explicitly type as Set<string>
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -177,7 +177,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onOpenOverview={handleOpenOverview}
         onOpenFocusView={() => setFocusTask(nextAvailableTask?.id || null)}
         onOpenFullScreenTask={handleOpenFullScreenTask}
-        {/* Pass the new handler */}
+        // Pass the new handler
         tasksLoading={tasksLoading}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
