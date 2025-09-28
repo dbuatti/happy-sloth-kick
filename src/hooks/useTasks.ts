@@ -3,7 +3,6 @@
 import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess } from '@/utils/toast';
-import { useReminders } from '@/context/ReminderContext';
 import { parseISO, isValid, format, startOfDay, isBefore, isSameDay } from 'date-fns';
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
@@ -30,6 +29,7 @@ import {
 } from '@/integrations/supabase/sectionMutations';
 import { useTaskProcessing } from './useTaskProcessing';
 import { useAuth } from '@/context/AuthContext';
+import { useReminders } from '@/context/ReminderContext'; // Ensure this is imported
 
 export interface Task {
   id: string;
@@ -99,10 +99,11 @@ export interface MutationContext {
   invalidateTasksQueries: () => void;
   invalidateSectionsQueries: () => void;
   invalidateCategoriesQueries: () => void;
-  processedTasks: Task[]; // Added processedTasks to context
+  processedTasks: Task[];
   sections: TaskSection[];
   scheduleReminder: (id: string, message: string, date: Date) => void;
   cancelReminder: (id: string) => void;
+  currentDate: Date; // Added currentDate to MutationContext
 }
 
 interface UseTasksProps {
@@ -281,11 +282,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     invalidateTasksQueries,
     invalidateSectionsQueries,
     invalidateCategoriesQueries,
-    processedTasks, // Now includes processedTasks
+    processedTasks,
     sections,
     scheduleReminder,
     cancelReminder,
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, scheduleReminder, cancelReminder]);
+    currentDate: effectiveCurrentDate, // Pass currentDate here
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, scheduleReminder, cancelReminder, effectiveCurrentDate]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }

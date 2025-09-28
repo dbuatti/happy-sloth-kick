@@ -97,6 +97,8 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   }
 
   const isVirtual = isVirtualId(taskId);
+  const isRecurringTemplate = previousTask.recurring_type !== 'none';
+  const isStatusUpdate = updates.status !== undefined && updates.status !== previousTask.status;
 
   // Optimistic update (applies to both real and virtual tasks for immediate UI feedback)
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
@@ -107,8 +109,35 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   try {
     let resultId: string | null = null;
 
-    if (isVirtual) {
-      // If it's a virtual task, create a new concrete task based on it
+    if (isVirtual && isRecurringTemplate && isStatusUpdate) {
+      // This is a virtual instance of a recurring task, and its status is changing.
+      // We should log its completion/uncompletion for the current day, not create a new task.
+      const originalTaskId = previousTask.original_task_id || previousTask.id;
+      const completionDate = format(context.currentDate, 'yyyy-MM-dd'); // Assuming currentDate is available in context
+
+      if (updates.status === 'completed') {
+        // Log completion for today
+        const { error } = await supabase
+          .from('recurring_task_completion_log')
+          .insert({ user_id: userId, original_task_id: originalTaskId, completion_date: completionDate });
+        if (error) throw error;
+        showSuccess('Recurring task completed for today!');
+      } else if (updates.status === 'to-do') {
+        // Remove completion log for today
+        const { error } = await supabase
+          .from('recurring_task_completion_log')
+          .delete()
+          .eq('user_id', userId)
+          .eq('original_task_id', originalTaskId)
+          .eq('completion_date', completionDate);
+        if (error) throw error;
+        showSuccess('Recurring task marked as to-do for today.');
+      }
+      resultId = taskId; // Keep the virtual ID for optimistic update consistency
+      // No need to update the 'tasks' table for this virtual instance
+    } else if (isVirtual) {
+      // If it's a virtual task, but not a status update for a recurring template,
+      // or if it's a virtual subtask, convert it to a real task.
       const newTaskData: NewTaskData = {
         description: updates.description || previousTask.description,
         status: updates.status || previousTask.status,
@@ -121,7 +150,6 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
         category: updates.category || previousTask.category,
         link: updates.link || previousTask.link,
         image_url: updates.image_url || previousTask.image_url,
-        // Crucially, this new task is no longer recurring, but it references its origin
         recurring_type: 'none', // This instance becomes a one-off
         original_task_id: previousTask.original_task_id || previousTask.id, // Link to the original recurring task
         parent_task_id: previousTask.parent_task_id, // Maintain parent if it was a subtask of a virtual parent
@@ -129,7 +157,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId }) // Added user_id here
+        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId })
         .select()
         .single();
 
@@ -160,9 +188,8 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
       showSuccess('Task updated successfully!');
     }
 
-    // Handle reminders for both cases
-    if (resultId) {
-      // Fetch the latest state of the task from the cache after potential updates
+    // Handle reminders for real tasks or newly created tasks
+    if (resultId && !isVirtual) { // Only for real tasks or newly created ones
       const finalTask = (queryClient.getQueryData(['tasks', userId]) as Task[] || []).find(t => t.id === resultId);
       if (finalTask) {
         if (finalTask.remind_at && finalTask.status === 'to-do') {
@@ -181,8 +208,11 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
     console.error('Error updating task:', error.message);
     // Revert optimistic update
     queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => {
-      if (isVirtual) {
-        // If it was a virtual task, just remove the optimistic update (it was never in DB)
+      if (isVirtual && isRecurringTemplate && isStatusUpdate) {
+        // For recurring task completion, revert the status in the cache
+        return (old || []).map(task => (task.id === taskId ? { ...task, status: previousTask.status } : task));
+      } else if (isVirtual) {
+        // If it was a virtual task that was supposed to be converted, just remove the optimistic update
         return (old || []).filter(task => task.id !== taskId);
       } else {
         // If it was a real task, revert to previous state
@@ -236,12 +266,11 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
 };
 
 export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: string[], context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
 
-  // Filter out virtual IDs for DB operation, but apply optimistic update to all
+  // Separate real and virtual task IDs
   const realTaskIds = ids.filter(id => !isVirtualId(id));
   const virtualTaskIds = ids.filter(id => isVirtualId(id));
-  void virtualTaskIds; // Explicitly mark as read to satisfy TS6133
 
   // Optimistic update
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
@@ -260,26 +289,41 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
         .select();
 
       if (error) throw error;
-
-      // No need to iterate over data, as the optimistic update already applied the changes.
-      // The invalidateQueries will refetch the actual state.
     }
 
-    // For virtual tasks in a bulk update, if they are being marked completed/archived,
-    // they should probably be converted to real tasks or handled via do_today_off_log.
-    // For simplicity, if a virtual task is part of a bulk update, we'll just remove it from the cache
-    // if its status changes to completed/archived, assuming it's a one-off completion.
-    // More complex logic might involve creating new tasks for each virtual instance.
-    if (virtualTaskIds.length > 0 && (updates.status === 'completed' || updates.status === 'archived')) {
-        queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
-            (old || []).filter(task => !virtualTaskIds.includes(task.id))
-        );
-        showSuccess('Virtual tasks completed/archived in bulk.');
-    } else if (virtualTaskIds.length > 0) {
-        // If other updates are applied to virtual tasks, they should ideally be converted to real tasks.
+    // Handle virtual tasks in bulk update
+    if (virtualTaskIds.length > 0 && updates.status !== undefined) {
+      const completionDate = format(context.currentDate, 'yyyy-MM-dd');
+      const virtualRecurringTasks = processedTasks.filter(t => virtualTaskIds.includes(t.id) && t.recurring_type !== 'none');
+
+      if (updates.status === 'completed') {
+        const payload = virtualRecurringTasks.map(task => ({
+          user_id: userId,
+          original_task_id: task.original_task_id || task.id,
+          completion_date: completionDate,
+        }));
+        if (payload.length > 0) {
+          const { error } = await supabase.from('recurring_task_completion_log').insert(payload);
+          if (error) throw error;
+        }
+        showSuccess('Recurring tasks completed in bulk for today!');
+      } else if (updates.status === 'to-do') {
+        const originalTaskIdsToUncomplete = virtualRecurringTasks.map(task => task.original_task_id || task.id);
+        if (originalTaskIdsToUncomplete.length > 0) {
+          const { error } = await supabase
+            .from('recurring_task_completion_log')
+            .delete()
+            .eq('user_id', userId)
+            .eq('completion_date', completionDate)
+            .in('original_task_id', originalTaskIdsToUncomplete);
+          if (error) throw error;
+        }
+        showSuccess('Recurring tasks marked as to-do in bulk for today.');
+      } else {
+        // For other updates to virtual tasks (not status change), they should ideally be converted to real tasks.
         // For now, we'll just let the optimistic update stand in the cache.
-        // A more robust solution would involve creating new tasks for each virtual ID here.
         console.warn('Bulk updating virtual tasks with non-completion status changes. Consider converting to real tasks.');
+      }
     }
 
     showSuccess('Tasks updated successfully!');
@@ -389,7 +433,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
     return;
   }
 
-  // Filter out virtual IDs for DB operation, but apply optimistic update to all
+  // Separate real and virtual task IDs
   const realTaskIdsToComplete = taskIdsToComplete.filter(id => !isVirtualId(id));
   const virtualTaskIdsToComplete = taskIdsToComplete.filter(id => isVirtualId(id));
 
@@ -410,11 +454,19 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
       if (error) throw error;
     }
 
-    // For virtual tasks marked completed, remove them from the cache as they are one-off completions
+    // For virtual recurring tasks marked completed, log their completion
     if (virtualTaskIdsToComplete.length > 0) {
-        queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
-            (old || []).filter(task => !virtualTaskIdsToComplete.includes(task.id))
-        );
+      const completionDate = format(context.currentDate, 'yyyy-MM-dd');
+      const virtualRecurringTasks = processedTasks.filter(t => virtualTaskIdsToComplete.includes(t.id) && t.recurring_type !== 'none');
+      const payload = virtualRecurringTasks.map(task => ({
+        user_id: userId,
+        original_task_id: task.original_task_id || task.id,
+        completion_date: completionDate,
+      }));
+      if (payload.length > 0) {
+        const { error } = await supabase.from('recurring_task_completion_log').insert(payload);
+        if (error) throw error;
+      }
     }
 
     showSuccess('All tasks in section marked as completed!');
@@ -465,7 +517,7 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId }) // Added user_id here
+        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId })
         .select()
         .single();
 
