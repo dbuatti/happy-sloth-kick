@@ -1,383 +1,531 @@
-"use client";
-
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar as CalendarUI } from "@/components/ui/calendar"; // Renamed import
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Loader2, Sparkles } from "lucide-react";
-import { format, parseISO, isValid, startOfDay } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
-import { cn } from '@/lib/utils';
-import { showLoading, dismissToast, showError, showSuccess } from '@/utils/toast'; // Import toast utilities
-import { supabase } from '@/integrations/supabase/client'; // Import supabase client
+import { Calendar as CalendarIcon, BellRing, Lightbulb } from 'lucide-react'; // Renamed Calendar import to CalendarIcon
+import { cn } from "@/lib/utils";
+import CategorySelector from "./CategorySelector";
+import PrioritySelector from "./PrioritySelector";
+import SectionSelector from "./SectionSelector";
+import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import NewTaskData
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
+import { showError } from '@/utils/toast';
+import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+import ImageUploadArea from './ImageUploadArea';
+
+const taskFormSchema = z.object({
+  description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
+  category: z.string().min(1, { message: 'Category is required.' }),
+  priority: z.string().min(1, { message: 'Priority is required.' }),
+  dueDate: z.date().nullable().optional().transform(v => v ?? null),
+  notes: z.string().max(500, { message: 'Notes must be 500 characters or less.' }).nullable().optional().transform(v => v ?? null),
+  remindAtDate: z.date().nullable().optional().transform(v => v ?? null),
+  remindAtTime: z.string().optional(),
+  sectionId: z.string().nullable().optional().transform(v => v ?? null),
+  recurringType: z.enum(['none', 'daily', 'weekly', 'monthly']),
+  parentTaskId: z.string().nullable().optional().transform(v => v ?? null),
+  link: z.string().optional().transform((val) => {
+    if (!val || val.trim() === '') return null;
+    let trimmedVal = val.trim();
+    if (trimmedVal.startsWith('/') || trimmedVal.startsWith('~') || trimmedVal.startsWith('file:')) {
+        return trimmedVal;
+    }
+    if (!/^https?:\/\//i.test(trimmedVal) && trimmedVal.includes('.')) {
+        return `https://${trimmedVal}`;
+    }
+    return trimmedVal;
+  }).nullable(),
+  image_url: z.string().nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (data.remindAtDate) {
+    if (!data.remindAtTime || data.remindAtTime.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Reminder time is required if a reminder date is set.',
+        path: ['remindAtTime'],
+      });
+    } else {
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(data.remindAtTime)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Invalid time format (HH:MM).',
+          path: ['remindAtTime'],
+        });
+      }
+    }
+  } else {
+    if (data.remindAtTime && data.remindAtTime.trim() !== "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Cannot set a reminder time without a reminder date.',
+        path: ['remindAtTime'],
+      });
+    }
+  }
+});
+
+export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
-  onSave: (taskData: NewTaskData) => Promise<string | null>;
+  initialData?: Partial<Task> | null;
+  onSave: (taskData: NewTaskData) => Promise<any>; // Changed from TaskFormData to NewTaskData
   onCancel: () => void;
-  initialData?: Partial<Task>;
   sections: TaskSection[];
   allCategories: Category[];
-  preselectedSectionId?: string;
-  currentDate: Date;
   autoFocus?: boolean;
+  preselectedSectionId?: string | null;
+  parentTaskId?: string | null;
+  currentDate?: Date;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  allTasks: Task[]; // For subtask parent selection
+  className?: string;
+  allTasks?: Task[]; // This prop should now receive processedTasks
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
+  initialData,
   onSave,
   onCancel,
-  initialData,
   sections,
   allCategories,
-  preselectedSectionId,
-  currentDate,
   autoFocus = false,
+  preselectedSectionId = null,
+  parentTaskId = null,
+  currentDate = new Date(),
   createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  allTasks,
+  className,
+  allTasks, // This is the prop, assumed to be processedTasks
 }) => {
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [notes, setNotes] = useState(initialData?.notes || '');
-  const [category, setCategory] = useState(initialData?.category || allCategories[0]?.id || '');
-  const [priority, setPriority] = useState(initialData?.priority || 'medium');
-  const [dueDate, setDueDate] = useState<Date | undefined>(initialData?.due_date ? parseISO(initialData.due_date) : undefined);
-  const [remindAt, setRemindAt] = useState<Date | undefined>(initialData?.remind_at ? parseISO(initialData.remind_at) : undefined);
-  const [sectionId, setSectionId] = useState<string | null>(initialData?.section_id || preselectedSectionId || null);
-  const [parentTaskId, setParentTaskId] = useState<string | null>(initialData?.parent_task_id || null);
-  const [link, setLink] = useState(initialData?.link || '');
-  const [imageUrl, setImageUrl] = useState(initialData?.image_url || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false); // New state for AI suggestions
-  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]); // New state for AI suggestions
-  const descriptionRef = useRef<HTMLInputElement>(null);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const form = useForm<TaskFormData>({
+    resolver: zodResolver(taskFormSchema),
+    defaultValues: {
+      description: '',
+      category: '',
+      priority: 'medium',
+      dueDate: null,
+      notes: null,
+      remindAtDate: null,
+      remindAtTime: '',
+      sectionId: preselectedSectionId,
+      recurringType: 'none',
+      parentTaskId: parentTaskId ?? null,
+      link: null,
+      image_url: null,
+    },
+  });
+
+  const { register, handleSubmit, control, reset, setValue, watch, formState: { errors } } = form;
+
+  const description = watch('description');
+  const remindAtDate = watch('remindAtDate');
 
   useEffect(() => {
-    if (autoFocus && descriptionRef.current) {
-      descriptionRef.current.focus();
-    }
-  }, [autoFocus]);
+    const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
+    const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    let parentTask: Task | undefined;
+    if (parentTaskId && allTasks) { // Use allTasks (processed) here
+      parentTask = allTasks.find(t => t.id === parentTaskId);
+    }
+
+    const defaultValues = {
+      description: '',
+      category: parentTask?.category || defaultCategoryId,
+      priority: parentTask?.priority || 'medium',
+      dueDate: null,
+      notes: null,
+      remindAtDate: null,
+      remindAtTime: '',
+      sectionId: parentTask?.section_id || preselectedSectionId,
+      recurringType: 'none' as const,
+      parentTaskId: parentTaskId ?? null,
+      link: null,
+      image_url: null,
+    };
+
+    if (initialData) {
+      reset({
+        ...defaultValues,
+        description: initialData.description || '',
+        category: initialData.category || defaultValues.category,
+        priority: initialData.priority || 'medium',
+        dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
+        notes: initialData.notes || null,
+        remindAtDate: initialData.remind_at ? parseISO(initialData.remind_at) : null,
+        remindAtTime: initialData.remind_at ? format(parseISO(initialData.remind_at), 'HH:mm') : '',
+        sectionId: initialData.section_id,
+        recurringType: initialData.recurring_type || 'none',
+        parentTaskId: initialData.parent_task_id,
+        link: initialData.link ?? null,
+        image_url: initialData.image_url ?? null,
+      });
+      setImagePreview(initialData.image_url || null);
+    } else {
+      reset(defaultValues);
+      setImagePreview(null);
+    }
+    setImageFile(null);
+  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset, allTasks]);
+
+  const handleSuggest = useCallback(async () => {
     if (!description.trim()) {
-      showError('Task description cannot be empty.');
+      showError('Please enter a task description to get suggestions.');
       return;
+    }
+    setIsSuggesting(true);
+    try {
+      const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
+      const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
+
+      if (suggestions) {
+        setValue('description', suggestions.cleanedDescription);
+        setValue('priority', suggestions.priority);
+        setValue('category', allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories[0]?.id || ''); // Map AI category name to ID
+        
+        if (suggestions.dueDate) {
+          setValue('dueDate', parseISO(suggestions.dueDate));
+        } else {
+          setValue('dueDate', null);
+        }
+
+        if (suggestions.remindAt) {
+          const parsedRemindAt = parseISO(suggestions.remindAt);
+          if (isValid(parsedRemindAt)) {
+            setValue('remindAtDate', parsedRemindAt);
+            setValue('remindAtTime', format(parsedRemindAt, 'HH:mm'));
+          }
+        }
+
+        // Fix: Ensure suggestions.section is a string before comparison
+        const suggestedSection = sections.find(s => s.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''));
+        if (suggestedSection) {
+          setValue('sectionId', suggestedSection.id);
+        } else {
+          setValue('sectionId', null);
+        }
+        setValue('link', suggestions.link || null);
+        setValue('notes', suggestions.notes || null);
+      }
+    } catch (error) {
+      console.error('Error getting AI suggestions:', error);
+      showError('Failed to get AI suggestions. Please try again.');
+    } finally {
+      setIsSuggesting(false);
+    }
+  }, [description, allCategories, sections, setValue, currentDate]);
+
+  const onSubmit = async (data: TaskFormData) => {
+    let finalRemindAt: Date | null = null;
+    if (data.remindAtDate && data.remindAtTime && data.remindAtTime.trim() !== "") {
+      const [hours, minutes] = data.remindAtTime.split(':').map(Number);
+      finalRemindAt = setMinutes(setHours(data.remindAtDate, hours), minutes);
     }
 
     setIsSaving(true);
+
+    let imageUrlToSave = initialData?.image_url || null;
+
+    if (imagePreview === null && initialData?.image_url) {
+      imageUrlToSave = null;
+      try {
+        const imagePath = initialData.image_url.split('/taskimages/')[1];
+        if (imagePath) {
+          await supabase.storage.from('taskimages').remove([imagePath]);
+        }
+      } catch (imgErr) {
+        console.error("Failed to delete old image, but proceeding with task deletion:", imgErr);
+      }
+    }
+
+    if (imageFile) {
+      const userId = 'anonymous'; // This needs to be the actual user ID
+      const filePath = `${userId}/${uuidv4()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('taskimages')
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        showError(`Image upload failed: ${uploadError.message}`);
+        setIsSaving(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('taskimages')
+        .getPublicUrl(filePath);
+      
+      imageUrlToSave = urlData.publicUrl;
+    }
+
+    // Construct NewTaskData object
     const newTaskData: NewTaskData = {
-      description: description.trim(),
-      notes: notes.trim() || null,
-      category: category || null,
-      priority,
-      due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
-      remind_at: remindAt ? remindAt.toISOString() : null,
-      section_id: sectionId,
-      parent_task_id: parentTaskId,
-      link: link.trim() || null,
-      image_url: imageUrl.trim() || null,
+      description: data.description.trim(),
+      category: data.category,
+      priority: data.priority,
+      due_date: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
+      notes: data.notes,
+      remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
+      section_id: data.sectionId,
+      recurring_type: data.recurringType,
+      parent_task_id: data.parentTaskId,
+      link: data.link,
+      image_url: imageUrlToSave,
     };
 
-    const success = await onSave(newTaskData);
-    if (success) {
-      // Optionally clear form or close dialog handled by parent
-    }
+    const success = await onSave(newTaskData); // Call onSave with NewTaskData
     setIsSaving(false);
+    if (success) {
+      onCancel();
+    }
+    return success;
   };
 
-  const handleGenerateSuggestions = async () => {
-    if (!description.trim()) {
-      showError('Please enter a partial description to get AI suggestions.');
-      return;
-    }
-
-    setIsGeneratingSuggestions(true);
-    const toastId = showLoading('Getting AI suggestions...');
-
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-task-suggestions', {
-        body: { partialDescription: description.trim() },
-      });
-
-      if (error) throw error;
-
-      setAiSuggestions(data.suggestions || []);
-      showSuccess('AI suggestions generated!');
-    } catch (error: any) {
-      console.error('Error generating AI suggestions:', error.message);
-      showError('Failed to get AI suggestions.');
-    } finally {
-      dismissToast(toastId);
-      setIsGeneratingSuggestions(false);
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && !event.shiftKey && description.trim()) {
+      event.preventDefault();
+      if (form.formState.isValid) {
+        handleSubmit(onSubmit)();
+      } else {
+        form.trigger();
+      }
     }
   };
-
-  const handleApplySuggestion = (suggestion: string) => {
-    setDescription(suggestion);
-    setAiSuggestions([]); // Clear suggestions after applying one
-  };
-
-  const topLevelTasks = useMemo(() => {
-    return allTasks.filter(task => task.parent_task_id === null && task.id !== initialData?.id);
-  }, [allTasks, initialData?.id]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="description">Task Description</Label>
-        <div className="flex gap-2">
+    <form onSubmit={handleSubmit(onSubmit)} className={cn("space-y-3 py-3", className)}>
+      <div>
+        <Label htmlFor="task-description">Task Description</Label>
+        <div className="flex gap-1.5">
           <Input
-            id="description"
-            ref={descriptionRef}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="e.g., Finish project report"
-            disabled={isSaving}
-            className="flex-grow"
+            id="task-description"
+            placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority at 6pm personal')"
+            {...register('description')}
+            onKeyDown={handleKeyDown}
+            disabled={isSaving || isSuggesting}
+            autoFocus={autoFocus}
+            className="flex-1 h-9 text-base"
           />
           <Button
             type="button"
             variant="outline"
             size="icon"
-            onClick={handleGenerateSuggestions}
-            disabled={isGeneratingSuggestions || isSaving || !description.trim()}
-            aria-label="Get AI Suggestions"
+            onClick={handleSuggest}
+            disabled={isSaving || isSuggesting || !description.trim()}
+            title="Suggest details from description"
+            aria-label="Suggest task details"
+            className="h-9 w-9"
           >
-            {isGeneratingSuggestions ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+            {isSuggesting ? (
+              <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
             ) : (
-              <Sparkles className="h-4 w-4" />
+              <Lightbulb className="h-3.5 w-3.5" />
             )}
           </Button>
         </div>
-        {aiSuggestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {aiSuggestions.map((suggestion, index) => (
-              <Button
-                key={index}
-                variant="secondary"
-                size="sm"
-                onClick={() => handleApplySuggestion(suggestion)}
-                disabled={isSaving}
-              >
-                {suggestion}
-              </Button>
-            ))}
-          </div>
-        )}
+        {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="notes">Notes</Label>
+      <ImageUploadArea
+        imagePreview={imagePreview}
+        setImagePreview={setImagePreview}
+        setImageFile={setImageFile}
+        disabled={isSaving}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Controller
+          control={control}
+          name="category"
+          render={({ field }) => (
+            <CategorySelector value={field.value} onChange={field.onChange} categories={allCategories} />
+          )}
+        />
+        {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
+
+        <Controller
+          control={control}
+          name="priority"
+          render={({ field }) => (
+            <PrioritySelector value={field.value} onChange={field.onChange} />
+          )}
+        />
+        {errors.priority && <p className="text-destructive text-sm mt-1">{errors.priority.message}</p>}
+      </div>
+
+      <div>
+        <Controller
+          control={control}
+          name="sectionId"
+          render={({ field }) => (
+            <SectionSelector
+              value={field.value}
+              onChange={field.onChange}
+              sections={sections}
+              createSection={createSection}
+              updateSection={updateSection}
+              deleteSection={deleteSection}
+              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            />
+          )}
+        />
+        {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>
+          <Label>Due Date</Label>
+          <Controller
+            control={control}
+            name="dueDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal h-9 text-base",
+                      !field.value && "text-muted-foreground"
+                    )}
+                    disabled={isSaving || isSuggesting}
+                    aria-label="Select due date"
+                  >
+                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarUI // Corrected component usage
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
+          {errors.dueDate && <p className="text-destructive text-sm mt-1">{errors.dueDate.message}</p>}
+        </div>
+
+        <div>
+          <Label>Recurring</Label>
+          <Controller
+            control={control}
+            name="recurringType"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
+                <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
+                  <SelectValue placeholder="Select recurrence" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
+          {errors.recurringType && <p className="text-destructive text-sm mt-1">{errors.recurringType.message}</p>}
+        </div>
+      </div>
+
+      <div>
+        <Label>Reminder</Label>
+        <div className="flex gap-2">
+          <Controller
+            control={control}
+            name="remindAtDate"
+            render={({ field }) => (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-start text-left font-normal h-9 text-base",
+                      !field.value && "text-muted-foreground"
+                    )}
+                    disabled={isSaving || isSuggesting}
+                    aria-label="Set reminder date"
+                  >
+                    <BellRing className="mr-2 h-3.5 w-3.5" />
+                    {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarUI // Corrected component usage
+                    mode="single"
+                    selected={field.value || undefined}
+                    onSelect={field.onChange}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+          />
+          <Input
+            type="time"
+            {...register('remindAtTime')}
+            className="w-24 h-9 text-base"
+            disabled={isSaving || isSuggesting || !remindAtDate}
+            aria-label="Set reminder time"
+          />
+        </div>
+        {errors.remindAtDate && <p className="text-destructive text-sm mt-1">{errors.remindAtDate.message}</p>}
+        {errors.remindAtTime && <p className="text-destructive text-sm mt-1">{errors.remindAtTime.message}</p>}
+      </div>
+
+      <div>
+        <Label htmlFor="task-link">Link / File Path (Optional)</Label>
+        <Input
+          id="task-link"
+          placeholder="URL or local file path (e.g., /Users/...)"
+          {...register('link')}
+          disabled={isSaving || isSuggesting}
+          className="h-9 text-base"
+        />
+        {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
+      </div>
+
+      <div>
+        <Label htmlFor="task-notes">Notes</Label>
         <Textarea
-          id="notes"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Add any additional notes or details"
-          disabled={isSaving}
+          id="task-notes"
+          placeholder="Add notes about this task..."
+          {...register('notes')}
+          rows={2}
+          disabled={isSaving || isSuggesting}
+          className="min-h-[60px] text-base"
         />
+        {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select value={category} onValueChange={setCategory} disabled={isSaving}>
-            <SelectTrigger id="category">
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              {allCategories.map(cat => (
-                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority</Label>
-          <Select value={priority} onValueChange={setPriority} disabled={isSaving}>
-            <SelectTrigger id="priority">
-              <SelectValue placeholder="Select a priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="urgent">Urgent</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="due-date">Due Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !dueDate && "text-muted-foreground"
-                )}
-                disabled={isSaving}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={dueDate}
-                onSelect={setDueDate}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="remind-at">Remind At</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-full justify-start text-left font-normal",
-                  !remindAt && "text-muted-foreground"
-                )}
-                disabled={isSaving}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {remindAt ? format(remindAt, "PPP HH:mm") : <span>Set reminder time</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={remindAt}
-                onSelect={(date) => {
-                  if (date) {
-                    const newRemindAt = date;
-                    if (remindAt) {
-                      newRemindAt.setHours(remindAt.getHours());
-                      newRemindAt.setMinutes(remindAt.getMinutes());
-                    } else {
-                      // Default to current time if no previous remindAt
-                      const now = new Date();
-                      newRemindAt.setHours(now.getHours());
-                      newRemindAt.setMinutes(now.getMinutes());
-                    }
-                    setRemindAt(newRemindAt);
-                  } else {
-                    setRemindAt(undefined);
-                  }
-                }}
-                initialFocus
-              />
-              <div className="p-3 border-t border-border">
-                <Input
-                  type="time"
-                  value={remindAt ? format(remindAt, 'HH:mm') : ''}
-                  onChange={(e) => {
-                    const [hours, minutes] = e.target.value.split(':').map(Number);
-                    if (remindAt) {
-                      const newRemindAt = new Date(remindAt);
-                      newRemindAt.setHours(hours);
-                      newRemindAt.setMinutes(minutes);
-                      setRemindAt(newRemindAt);
-                    } else {
-                      const newRemindAt = startOfDay(currentDate);
-                      newRemindAt.setHours(hours);
-                      newRemindAt.setMinutes(minutes);
-                      setRemindAt(newRemindAt);
-                    }
-                  }}
-                  className="w-full"
-                  disabled={isSaving}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="section">Section</Label>
-        <Select value={sectionId || ''} onValueChange={setSectionId} disabled={isSaving}>
-          <SelectTrigger id="section">
-            <SelectValue placeholder="No Section" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">No Section</SelectItem>
-            {sections.map(sec => (
-              <SelectItem key={sec.id} value={sec.id}>{sec.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="parent-task">Parent Task (for subtasks)</Label>
-        <Select value={parentTaskId || ''} onValueChange={setParentTaskId} disabled={isSaving}>
-          <SelectTrigger id="parent-task">
-            <SelectValue placeholder="No Parent Task" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">No Parent Task</SelectItem>
-            {topLevelTasks.map(task => (
-              <SelectItem key={task.id} value={task.id}>{task.description}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="link">Link</Label>
-        <Input
-          id="link"
-          value={link}
-          onChange={(e) => setLink(e.target.value)}
-          placeholder="e.g., https://example.com"
-          disabled={isSaving}
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="image-url">Image URL</Label>
-        <Input
-          id="image-url"
-          value={imageUrl}
-          onChange={(e) => setImageUrl(e.target.value)}
-          placeholder="e.g., https://example.com/image.jpg"
-          disabled={isSaving}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
+      <div className="flex justify-end space-x-1.5 mt-3">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9 text-base">
           Cancel
         </Button>
-        <Button type="submit" disabled={isSaving || !description.trim()}>
-          {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          {initialData ? 'Save Changes' : 'Create Task'}
+        <Button type="submit" disabled={isSaving || isSuggesting || (!form.formState.isValid && form.formState.isSubmitted)} className="h-9 text-base">
+          {isSaving ? 'Saving...' : (initialData ? 'Save Changes' : 'Add Task')}
         </Button>
       </div>
     </form>
