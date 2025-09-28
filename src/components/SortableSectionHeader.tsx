@@ -176,7 +176,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               onBlur={handleSaveName}
               onKeyDown={handleInputKeyDown}
               className="h-8 text-lg font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-              onPointerDown={(e) => e.PointerEvent.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()} // FIX: Changed e.PointerEvent.stopPropagation() to e.stopPropagation()
             />
           ) : (
             <h2 className={cn(
