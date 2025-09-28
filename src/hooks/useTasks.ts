@@ -7,7 +7,7 @@ import { parseISO, isValid, format, startOfDay, isBefore, isSameDay } from 'date
 import { arrayMove } from '@dnd-kit/sortable';
 import { useSettings } from '@/context/SettingsContext';
 import { useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { fetchSections, fetchCategories, fetchDoTodayOffLog, fetchTasks } from '@/integrations/supabase/queries';
+import { fetchSections, fetchCategories, fetchDoTodayOffLog, fetchTasks, fetchRecurringTaskCompletionLog } from '@/integrations/supabase/queries';
 import {
   addTaskMutation,
   updateTaskMutation,
@@ -150,6 +150,13 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     staleTime: 60 * 1000,
   });
 
+  const { data: recurringTaskCompletions = new Set(), isLoading: recurringCompletionsLoading } = useQuery<Set<string>, Error>({
+    queryKey: ['recurring_task_completion_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')],
+    queryFn: () => fetchRecurringTaskCompletionLog(userId!, effectiveCurrentDate),
+    enabled: !!userId && !authLoading,
+    staleTime: 60 * 1000,
+  });
+
   const { data: rawTasks = [], isLoading: tasksLoading } = useQuery<Omit<Task, 'category_color'>[], Error>({
     queryKey: ['tasks', userId],
     queryFn: () => fetchTasks(userId!),
@@ -157,7 +164,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     staleTime: 60 * 1000,
   });
 
-  const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || tasksLoading;
+  const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || recurringCompletionsLoading || tasksLoading;
 
   const categoriesMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -168,6 +175,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
   const invalidateTasksQueries = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
     queryClient.invalidateQueries({ queryKey: ['do_today_off_log', userId] });
+    queryClient.invalidateQueries({ queryKey: ['recurring_task_completion_log', userId] }); // Invalidate this too
     queryClient.invalidateQueries({ queryKey: ['dailyTaskCount', userId] });
   }, [queryClient, userId]);
 
@@ -251,11 +259,24 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
       )
       .subscribe();
 
+    const recurringCompletionChannel = supabase
+      .channel('recurring_completion_channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'recurring_task_completion_log', filter: `user_id=eq.${userId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['recurring_task_completion_log', userId, format(effectiveCurrentDate, 'yyyy-MM-dd')] });
+          invalidateTasksQueries();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(tasksChannel);
       supabase.removeChannel(sectionsChannel);
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(doTodayOffLogChannel);
+      supabase.removeChannel(recurringCompletionChannel);
     };
   }, [userId, scheduleReminder, cancelReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]);
 
@@ -272,6 +293,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     userSettings,
     sections,
     doTodayOffIds,
+    recurringTaskCompletions, // Pass recurringTaskCompletions here
   });
 
   const mutationContext: MutationContext = useMemo(() => ({

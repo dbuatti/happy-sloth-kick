@@ -1,28 +1,36 @@
+import { supabase } from './client';
 import { format } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
-import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import types from useTasks
 
-export const fetchSections = async (userId: string): Promise<TaskSection[]> => {
+export const fetchTasks = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', userId);
+  if (error) throw error;
+  return data;
+};
+
+export const fetchSections = async (userId: string) => {
   const { data, error } = await supabase
     .from('task_sections')
     .select('*')
     .eq('user_id', userId)
-    .order('order');
+    .order('order', { ascending: true });
   if (error) throw error;
-  return data || [];
+  return data;
 };
 
-export const fetchCategories = async (userId: string): Promise<Category[]> => {
+export const fetchCategories = async (userId: string) => {
   const { data, error } = await supabase
     .from('task_categories')
     .select('*')
     .eq('user_id', userId)
-    .order('name');
+    .order('name', { ascending: true });
   if (error) throw error;
-  return data || [];
+  return data;
 };
 
-export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Set<string>> => {
+export const fetchDoTodayOffLog = async (userId: string, date: Date) => {
   const formattedDate = format(date, 'yyyy-MM-dd');
   const { data, error } = await supabase
     .from('do_today_off_log')
@@ -30,37 +38,16 @@ export const fetchDoTodayOffLog = async (userId: string, date: Date): Promise<Se
     .eq('user_id', userId)
     .eq('off_date', formattedDate);
   if (error) throw error;
-  return new Set((data || []).map(item => item.task_id));
+  return new Set(data.map(item => item.task_id));
 };
 
-const BATCH_SIZE = 1000; // Define a batch size for fetching
-
-export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_color'>[]> => {
-  let allTasks: Omit<Task, 'category_color'>[] = [];
-  let offset = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*') // Select all columns, category_color will be added in useTasks
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true }) // Add a default order for consistent results
-      .range(offset, offset + BATCH_SIZE - 1); // Fetch in batches
-
-    if (error) {
-      console.error('fetchTasks: Supabase query error for all tasks:', error);
-      throw error; // Re-throw the error to be caught by react-query
-    }
-
-    if (data && data.length > 0) {
-      allTasks = allTasks.concat(data);
-      offset += data.length;
-      hasMore = data.length === BATCH_SIZE; // Continue if we got a full batch
-    } else {
-      hasMore = false; // No more data
-    }
-  }
-  
-  return allTasks;
+export const fetchRecurringTaskCompletionLog = async (userId: string, date: Date) => {
+  const formattedDate = format(date, 'yyyy-MM-dd');
+  const { data, error } = await supabase
+    .from('recurring_task_completion_log')
+    .select('original_task_id')
+    .eq('user_id', userId)
+    .eq('completion_date', formattedDate);
+  if (error) throw error;
+  return new Set(data.map(item => item.original_task_id));
 };
