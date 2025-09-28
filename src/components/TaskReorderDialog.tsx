@@ -147,7 +147,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 2, // Reduced from 8 to 2 for easier drag initiation
       },
     }),
     useSensor(KeyboardSensor, {
