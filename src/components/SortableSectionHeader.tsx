@@ -120,6 +120,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         "flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200",
         isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/30",
         isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
+        isDemo && "opacity-70 cursor-not-allowed", // Added conditional class for isDemo
         "group"
       )}
     >
