@@ -17,7 +17,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
-import { showError } from '@/utils/toast';
+import { showError, showLoading, dismissToast } from '@/utils/toast'; // Import showLoading and dismissToast
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import ImageUploadArea from './ImageUploadArea';
@@ -193,6 +193,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       return;
     }
     setIsSuggesting(true);
+    const toastId = showLoading('Getting AI suggestions...'); // Show loading toast
     try {
       const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
       const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
@@ -231,6 +232,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       showError('Failed to get AI suggestions. Please try again.');
     } finally {
       setIsSuggesting(false);
+      dismissToast(toastId); // Dismiss toast
     }
   }, [description, allCategories, sections, setValue, currentDate]);
 
