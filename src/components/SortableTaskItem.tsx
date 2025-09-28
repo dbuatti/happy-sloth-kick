@@ -3,12 +3,12 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-// import { GripVertical } from 'lucide-react'; // Removed
+// import { GripVertical } from 'lucide-react'; // Removed unused import
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import { Task } from '@/hooks/useTasks';
 import { UniqueIdentifier } from '@dnd-kit/core';
-// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed
+// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed unused import
 import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
@@ -20,8 +20,8 @@ interface SortableTaskItemProps {
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
-  onMoveUp: (taskId: string) => Promise<void>;
-  onMoveDown: (taskId: string) => Promise<void>;
+  // onMoveUp: (taskId: string) => Promise<void>; // Removed unused prop
+  // onMoveDown: (taskId: string) => Promise<void>; // Removed unused prop
   level: number;
   isOverlay?: boolean;
   hasSubtasks?: boolean;
@@ -32,7 +32,7 @@ interface SortableTaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  expandedTasks?: Record<string, boolean>; // Added for TaskList error
+  expandedTasks?: Record<string, boolean>;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -44,8 +44,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   sections,
   onOpenOverview,
   currentDate,
-  onMoveUp,
-  onMoveDown,
+  // onMoveUp, // Removed unused variable
+  // onMoveDown, // Removed unused variable
   level,
   isOverlay = false,
   hasSubtasks = false,
@@ -56,11 +56,11 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  expandedTasks, // Destructure here
+  expandedTasks,
 }) => {
   const {
-    // attributes, // Removed
-    // listeners, // Removed
+    // attributes, // Removed unused variable
+    // listeners, // Removed unused variable
     setNodeRef,
     transform,
     transition,
@@ -72,7 +72,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 0,
-    // position: 'relative', // Removed, handled by className
+    // position: 'relative', // Removed, as 'relative' is already applied via Tailwind className
   };
 
   return (
@@ -85,8 +85,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         sections={sections}
         onOpenOverview={onOpenOverview}
         currentDate={currentDate}
-        onMoveUp={() => Promise.resolve()} // Placeholder
-        onMoveDown={() => Promise.resolve()} // Placeholder
+        onMoveUp={() => Promise.resolve()} // Placeholder, but not passed as prop
+        onMoveDown={() => Promise.resolve()} // Placeholder, but not passed as prop
         level={level}
         isOverlay={isOverlay}
         hasSubtasks={hasSubtasks}
@@ -97,7 +97,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         toggleDoToday={toggleDoToday}
         scheduledTasksMap={scheduledTasksMap}
         isDemo={isDemo}
-        expandedTasks={expandedTasks} // Pass it down
+        expandedTasks={expandedTasks}
       />
     </div>
   );

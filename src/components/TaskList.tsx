@@ -28,7 +28,7 @@ import { Switch } from '@/components/ui/switch';
 
 // Define QuickAddTaskProps locally to resolve type errors
 interface QuickAddTaskProps {
-  onAddTask: (description: string) => Promise<string | null | void>;
+  onAddTask: (description: string) => Promise<string | null>; // Corrected return type
   placeholder: string;
   isDemo?: boolean;
 }
@@ -471,7 +471,7 @@ const TaskList: React.FC<TaskListProps> = ({
               toggleDoToday={toggleDoToday}
               scheduledTasksMap={scheduledTasksMap}
               isDemo={isDemo}
-              expandedTasks={expandedTasks} // Pass expandedTasks here
+              expandedTasks={expandedTasks}
             />
           ) : activeSection ? (
             <div className="rounded-xl border bg-card text-card-foreground shadow-lg p-4 opacity-80">

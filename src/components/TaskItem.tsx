@@ -46,9 +46,7 @@ interface TaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  expandedTasks?: Record<string, boolean>; // Added this prop
-  // attributes?: React.HTMLAttributes<HTMLDivElement>; // Removed
-  // listeners?: React.HTMLAttributes<HTMLDivElement>; // Removed
+  // expandedTasks?: Record<string, boolean>; // Removed this prop as it's not used in TaskItem
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -68,9 +66,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  expandedTasks, // Destructure here
-  // attributes, // Removed
-  // listeners, // Removed
+  // expandedTasks, // Removed from destructuring
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
