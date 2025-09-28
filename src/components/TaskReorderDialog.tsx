@@ -73,8 +73,11 @@ const SortableTaskReorderItem: React.FC<{
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : 'auto',
+    // When the original item is dragging, make it transparent
+    opacity: isDragging && !isOverlay ? 0 : 1,
+    // When it's the overlay, ensure it's fully opaque and has a strong shadow
+    boxShadow: isOverlay ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' : 'none',
+    zIndex: isOverlay ? 999 : 'auto', // Ensure overlay is on top
   };
 
   return (
@@ -82,8 +85,8 @@ const SortableTaskReorderItem: React.FC<{
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative group flex items-center",
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : ""
+        "relative group flex items-center cursor-grab", // Added cursor-grab
+        isOverlay ? "bg-card rounded-lg" : "" // Base styling for the li wrapper
       )}
       {...listeners}
       {...attributes}
@@ -136,8 +139,6 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
-  // Update local tasks when the prop changes, but only if the dialog is opened
-  // or if the underlying tasks array reference changes (e.g., due to external updates)
   useEffect(() => {
     if (isOpen) {
       setLocalTasks(tasks);
@@ -147,7 +148,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 2, // Reduced from 8 to 2 for easier drag initiation
+        distance: 2,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -186,7 +187,10 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const Content = () => (
     <div className="space-y-4 py-4">
       {localTasks.length === 0 ? (
-        <p className="text-muted-foreground text-center">No tasks in this section to reorder.</p>
+        <div className="text-center text-muted-foreground p-6 border border-dashed rounded-lg">
+          <p className="text-lg font-medium mb-2">No tasks to reorder here!</p>
+          <p>Add some tasks to this section to organize them.</p>
+        </div>
       ) : (
         <DndContext
           sensors={sensors}
