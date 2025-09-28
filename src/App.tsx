@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -21,7 +20,7 @@ import FloatingTimer from "./components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
 import { SettingsProvider } from "./context/SettingsContext";
-import Dashboard from "./pages/Dashboard";
+import DashboardPage from "./features/dashboard/pages/DashboardPage"; // Updated import path
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
@@ -29,13 +28,14 @@ import SleepPage from "./pages/SleepPage";
 import CommandPalette from "./components/CommandPalette";
 import MealPlanner from "./pages/MealPlanner";
 import ResonanceGoalsPage from "./pages/ResonanceGoalsPage"; // Import the new ResonanceGoalsPage
+import { ThemeProvider } from "./context/ThemeContext"; // New import
+import { CommandPaletteProvider } from "./context/CommandPaletteContext"; // New import
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user, loading: authLoading } = useAuth();
   const location = useLocation();
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   if (authLoading) {
     return (
@@ -63,8 +63,8 @@ const AppContent = () => {
           <div className="relative h-screen w-screen">
             <Sidebar isDemo={true}>
               <Routes>
-                <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo" element={<DashboardPage isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/dashboard" element={<DashboardPage isDemo={true} demoUserId={demoUserId} />} />
                 <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} />
                 <Route path="/demo/help" element={<Help />} />
                 <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
@@ -98,8 +98,8 @@ const AppContent = () => {
             <div className="relative h-screen w-screen">
               <Sidebar>
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/daily-tasks" element={<DailyTasksPage />} />
                   <Route path="/help" element={<Help />} />
                   <Route path="/projects" element={<ProjectBalanceTracker />} />
@@ -116,10 +116,7 @@ const AppContent = () => {
                 </Routes>
               </Sidebar>
               <FloatingTimer />
-              <CommandPalette
-                isCommandPaletteOpen={isCommandPaletteOpen}
-                setIsCommandPaletteOpen={setIsCommandPaletteOpen}
-              />
+              <CommandPalette /> {/* No longer needs props */}
             </div>
           ) : (
             <Routes>
@@ -143,7 +140,11 @@ const App = () => {
           <SoundProvider>
             <TimerProvider>
               <BrowserRouter>
-                <AppContent />
+                <ThemeProvider> {/* New ThemeProvider */}
+                  <CommandPaletteProvider> {/* New CommandPaletteProvider */}
+                    <AppContent />
+                  </CommandPaletteProvider>
+                </ThemeProvider>
               </BrowserRouter>
             </TimerProvider>
           </SoundProvider>
