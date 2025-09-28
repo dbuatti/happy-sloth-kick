@@ -99,28 +99,28 @@ export interface MutationContext {
   invalidateTasksQueries: () => void;
   invalidateSectionsQueries: () => void;
   invalidateCategoriesQueries: () => void;
-  processedTasks: Task[];
+  processedTasks: Task[]; // Added processedTasks to context
   sections: TaskSection[];
-  scheduleReminder: (id: string, message: string, date: Date) => void; // Corrected name
-  cancelReminder: (id: string) => void; // Corrected name
+  scheduleReminder: (id: string, message: string, date: Date) => void;
+  cancelReminder: (id: string) => void;
 }
 
 interface UseTasksProps {
   currentDate: Date;
   viewMode?: 'daily' | 'archive' | 'focus';
   userId?: string;
-  searchFilter?: string; // Added
-  statusFilter?: string; // Added
-  categoryFilter?: string; // Added
-  priorityFilter?: string; // Added
-  sectionFilter?: string; // Added
+  searchFilter?: string;
+  statusFilter?: string;
+  categoryFilter?: string;
+  priorityFilter?: string;
+  sectionFilter?: string;
 }
 
 export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, searchFilter = '', statusFilter = 'all', categoryFilter = 'all', priorityFilter = 'all', sectionFilter = 'all' }: UseTasksProps) => {
   const { user, loading: authLoading } = useAuth();
-  const userId = propUserId ?? user?.id ?? undefined; // Fixed: Ensure userId is string | undefined
+  const userId = propUserId ?? user?.id ?? undefined;
   const { settings: userSettings, updateSettings } = useSettings();
-  const { scheduleReminder, cancelReminder } = useReminders(); // Corrected names
+  const { scheduleReminder, cancelReminder } = useReminders();
   const queryClient = useQueryClient();
 
   const inFlightUpdatesRef = useRef<Set<string>>(new Set());
@@ -195,12 +195,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
           if (payload.eventType === 'UPDATE') {
             if (newOrOldTask.remind_at && newOrOldTask.status === 'to-do') {
               const d = parseISO(newOrOldTask.remind_at);
-              if (isValid(d)) scheduleReminder(newOrOldTask.id, `Reminder: ${newOrOldTask.description}`, d); // Corrected name
+              if (isValid(d)) scheduleReminder(newOrOldTask.id, `Reminder: ${newOrOldTask.description}`, d);
             } else if (newOrOldTask.status === 'completed' || newOrOldTask.status === 'archived' || newOrOldTask.remind_at === null) {
-              cancelReminder(newOrOldTask.id); // Corrected name
+              cancelReminder(newOrOldTask.id);
             }
           } else if (payload.eventType === 'DELETE') {
-            cancelReminder(newOrOldTask.id); // Corrected name
+            cancelReminder(newOrOldTask.id);
           }
         }
       )
@@ -256,7 +256,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
       supabase.removeChannel(categoriesChannel);
       supabase.removeChannel(doTodayOffLogChannel);
     };
-  }, [userId, scheduleReminder, cancelReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]); // Corrected names
+  }, [userId, scheduleReminder, cancelReminder, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, queryClient, effectiveCurrentDate]);
 
   const { processedTasks, filteredTasks: finalFilteredTasks } = useTaskProcessing({
     rawTasks,
@@ -281,11 +281,11 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     invalidateTasksQueries,
     invalidateSectionsQueries,
     invalidateCategoriesQueries,
-    processedTasks,
+    processedTasks, // Now includes processedTasks
     sections,
-    scheduleReminder, // Corrected name
-    cancelReminder, // Corrected name
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, scheduleReminder, cancelReminder]); // Corrected names
+    scheduleReminder,
+    cancelReminder,
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, scheduleReminder, cancelReminder]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
@@ -304,7 +304,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
       original_task_id: newTaskData.original_task_id ?? null,
       link: newTaskData.link ?? null,
       image_url: newTaskData.image_url ?? null,
-      order: newTaskData.order ?? null, // Explicitly ensure order is number | null
+      order: newTaskData.order ?? null,
     };
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
