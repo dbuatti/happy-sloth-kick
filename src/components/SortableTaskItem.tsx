@@ -1,13 +1,20 @@
+"use client";
+
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/hooks/useTasks';
-import TaskItem from './TaskItem';
+import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import TaskItem from './TaskItem';
+import { Task } from '@/hooks/useTasks';
+import { UniqueIdentifier } from '@dnd-kit/core';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
+  id: UniqueIdentifier;
   task: Task;
+  allTasks: Task[];
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -16,31 +23,21 @@ interface SortableTaskItemProps {
   onMoveUp: (taskId: string) => Promise<void>;
   onMoveDown: (taskId: string) => Promise<void>;
   level: number;
-  allTasks: Task[];
   isOverlay?: boolean;
-  expandedTasks: Record<string, boolean>;
-  toggleTask: (taskId: string) => void;
+  hasSubtasks?: boolean;
+  isExpanded?: boolean;
+  toggleTask?: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
+  id,
   task,
-  level,
   allTasks,
-  isOverlay = false,
-  expandedTasks,
-  toggleTask,
-  setFocusTask,
-  isDoToday,
-  toggleDoToday,
-  doTodayOffIds,
-  scheduledTasksMap,
-  isDemo = false,
   onDelete,
   onUpdate,
   sections,
@@ -48,6 +45,16 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   currentDate,
   onMoveUp,
   onMoveDown,
+  level,
+  isOverlay = false,
+  hasSubtasks = false,
+  isExpanded = true,
+  toggleTask,
+  setFocusTask,
+  isDoToday,
+  toggleDoToday,
+  scheduledTasksMap,
+  isDemo = false,
 }) => {
   const {
     attributes,
@@ -56,90 +63,43 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task }, disabled: isDemo || !!task.parent_task_id }); // Disable drag for subtasks and in demo mode
+  } = useSortable({ id });
 
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform || null),
+  const style = {
+    transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    marginLeft: `${level * 16}px`, // Use marginLeft for indentation
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 0,
+    position: 'relative',
   };
 
-  const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
-                                 .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
-
-  const isExpanded = expandedTasks[task.id] !== false;
-
-  if (isDragging && !isOverlay) {
-    return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
-  }
-
   return (
-    <li
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "relative last:border-b-0 group select-none",
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
-        level > 0 ? "border-l border-l-primary/50" : "",
-        "flex items-center"
-      )}
-    >
-      <div className="flex-1">
-        <TaskItem
-          task={task}
-          hasSubtasks={directSubtasks.length > 0}
-          isExpanded={isExpanded}
-          toggleTask={toggleTask}
-          allTasks={allTasks}
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-          sections={sections}
-          onOpenOverview={onOpenOverview}
-          currentDate={currentDate}
-          onMoveUp={onMoveUp}
-          onMoveDown={onMoveDown}
-          isOverlay={isOverlay}
-          setFocusTask={setFocusTask}
-          isDoToday={isDoToday}
-          toggleDoToday={toggleDoToday}
-          scheduledTasksMap={scheduledTasksMap}
-          isDemo={isDemo}
-          level={level}
-          attributes={attributes}
-          listeners={listeners}
-        />
-        {isExpanded && directSubtasks.length > 0 && (
-          <ul className="list-none mt-1.5 space-y-1.5">
-            {directSubtasks.map(subtask => (
-              <SortableTaskItem
-                key={subtask.id}
-                task={subtask}
-                level={level + 1}
-                allTasks={allTasks}
-                onDelete={onDelete}
-                onUpdate={onUpdate}
-                sections={sections}
-                onOpenOverview={onOpenOverview}
-                currentDate={currentDate}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
-                expandedTasks={expandedTasks}
-                toggleTask={toggleTask}
-                isOverlay={isOverlay}
-                setFocusTask={setFocusTask}
-                isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
-                toggleDoToday={toggleDoToday}
-                doTodayOffIds={doTodayOffIds}
-                scheduledTasksMap={scheduledTasksMap}
-                isDemo={isDemo}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
-    </li>
+    <div ref={setNodeRef} style={style} className={cn("relative", isDragging && "shadow-lg rounded-xl")}>
+      {/* Drag handle is removed from here */}
+      <TaskItem
+        task={task}
+        allTasks={allTasks}
+        onDelete={onDelete}
+        onUpdate={onUpdate}
+        sections={sections}
+        onOpenOverview={onOpenOverview}
+        currentDate={currentDate}
+        onMoveUp={onMoveUp}
+        onMoveDown={onMoveDown}
+        level={level}
+        isOverlay={isOverlay}
+        hasSubtasks={hasSubtasks}
+        isExpanded={isExpanded}
+        toggleTask={toggleTask}
+        setFocusTask={setFocusTask}
+        isDoToday={isDoToday}
+        toggleDoToday={toggleDoToday}
+        scheduledTasksMap={scheduledTasksMap}
+        isDemo={isDemo}
+        // attributes={attributes} // Removed
+        // listeners={listeners}   // Removed
+      />
+    </div>
   );
 };
 

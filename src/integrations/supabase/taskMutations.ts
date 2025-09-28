@@ -100,6 +100,8 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   const isRecurringTemplate = previousTask.recurring_type !== 'none';
   const isStatusUpdate = updates.status !== undefined && updates.status !== previousTask.status;
 
+  // console.log(`[updateTaskMutation] Task ID: ${taskId}, isVirtual: ${isVirtual}, isRecurringTemplate: ${isRecurringTemplate}, isStatusUpdate: ${isStatusUpdate}, updates:`, updates);
+
   // Optimistic update (applies to both real and virtual tasks for immediate UI feedback)
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (task.id === taskId ? { ...task, ...updates, category_color: context.categoriesMap.get(updates.category || task.category || '') || 'gray' } : task))
@@ -322,7 +324,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
       } else {
         // For other updates to virtual tasks (not status change), they should ideally be converted to real tasks.
         // For now, we'll just let the optimistic update stand in the cache.
-        console.warn('Bulk updating virtual tasks with non-completion status changes. Consider converting to real tasks.');
+        // console.warn('Bulk updating virtual tasks with non-completion status changes. Consider converting to real tasks.');
       }
     }
 
