@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react'; // Removed useRef
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Filter as FilterIcon } from 'lucide-react'; // Import Filter icon
 
 interface DailyTasksHeaderProps {
-  currentDate: React.SetStateAction<Date>;
+  currentDate: Date; // FIX: Changed type from React.SetStateAction<Date> to Date
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   tasks: Task[]; // Added
   filteredTasks: Task[]; // Added
