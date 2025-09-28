@@ -149,30 +149,14 @@ export const useMealStaples = (props?: UseMealStaplesProps) => {
     mutationFn: async (orderedStapleIds) => {
       if (!userId) throw new Error('User not authenticated.');
       
-      // Fetch current staples to get their names and other non-nullable fields
-      const currentStaples = queryClient.getQueryData<MealStaple[]>(['mealStaples', userId, sortOption]) || [];
-
-      const updates = orderedStapleIds.map((id, index) => {
-        const existingStaple = currentStaples.find(s => s.id === id);
-        if (!existingStaple) {
-          throw new Error(`Staple with ID ${id} not found for reordering.`);
-        }
-        return {
-          id,
-          item_order: index,
-          user_id: userId,
-          name: existingStaple.name, // Include the existing name
-          target_quantity: existingStaple.target_quantity, // Include other non-nullable fields
-          current_quantity: existingStaple.current_quantity, // Include other non-nullable fields
-          unit: existingStaple.unit, // Include nullable fields to preserve them
-          created_at: existingStaple.created_at, // Include created_at
-          updated_at: existingStaple.updated_at, // Include updated_at
-        };
-      });
+      const updates = orderedStapleIds.map((id, index) => ({
+        id,
+        item_order: index,
+      }));
 
       const { error } = await supabase
         .from('meal_staples')
-        .upsert(updates, { onConflict: 'id' });
+        .upsert(updates, { onConflict: 'id' }); // Use upsert with onConflict to update existing rows
       if (error) throw error;
       return true;
     },

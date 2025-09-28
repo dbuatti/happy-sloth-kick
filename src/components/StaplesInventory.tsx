@@ -1,403 +1,224 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Plus, UtensilsCrossed, ShoppingCart, ListFilter, SortAsc } from 'lucide-react';
+import React, { useState } from 'react';
+import { useMealStaples, NewMealStapleData, StapleSortOption } from '@/hooks/useMealStaples';
+import StapleItem from './StapleItem';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Plus, ListOrdered, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMealStaples, MealStaple, NewMealStapleData, StapleSortOption } from '@/hooks/useMealStaples';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { showError } from '@/utils/toast';
-
 import {
   DndContext,
+  closestCenter,
   KeyboardSensor,
+  PointerSensor,
   useSensor,
   useSensors,
   DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  PointerSensor,
-  closestCorners,
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  verticalListSortingStrategy,
   sortableKeyboardCoordinates,
-  arrayMove,
+  verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { createPortal } from 'react-dom';
-import SortableStapleItem from './SortableStapleItem';
-
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
 interface StaplesInventoryProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-const commonUnits = ['unit', 'g', 'kg', 'ml', 'L', 'cans', 'bags', 'boxes', 'bottles', 'pieces', 'packs'];
+const newStapleSchema = z.object({
+  name: z.string().min(1, { message: 'Staple name is required.' }),
+  target_quantity: z.coerce.number().min(0, { message: 'Target quantity cannot be negative.' }).default(0),
+  unit: z.string().optional(),
+});
 
 const StaplesInventory: React.FC<StaplesInventoryProps> = ({ isDemo = false, demoUserId }) => {
-  const [sortOption, setSortOption] = useState<StapleSortOption>('item_order_asc'); // State for sort option
-  const { staples, loading, addStaple, updateStaple, deleteStaple, reorderStaples } = useMealStaples({ userId: demoUserId, sortOption });
+  const [sortOption, setSortOption] = useState<StapleSortOption>('item_order_asc');
+  const { staples, loading, addStaple, updateStaple, deleteStaple, reorderStaples } = useMealStaples({
+    userId: demoUserId,
+    sortOption,
+  });
 
-  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false);
-  const [editingStaple, setEditingStaple] = useState<MealStaple | null>(null);
-  const [stapleName, setStapleName] = useState('');
-  const [targetQuantity, setTargetQuantity] = useState<number | ''>(0);
-  const [currentQuantity, setCurrentQuantity] = useState<number | ''>(0);
-  const [unit, setUnit] = useState('unit');
-  const [isSaving, setIsSaving] = useState(false);
-
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [stapleToDelete, setStapleToDelete] = useState<MealStaple | null>(null);
-
-  const [quickAddStapleName, setQuickAddStapleName] = useState('');
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
-
-  const [showShoppingList, setShowShoppingList] = useState(false);
-
-  // DND state
-  const [activeStaple, setActiveStaple] = useState<MealStaple | null>(null);
+  const form = useForm<z.infer<typeof newStapleSchema>>({
+    resolver: zodResolver(newStapleSchema),
+    defaultValues: {
+      name: '',
+      target_quantity: 0,
+      unit: '',
+    },
+  });
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
+    useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-      enabled: !isDemo && sortOption === 'item_order_asc', // Enable DND only for custom order
     })
   );
 
-  const filteredStaples = showShoppingList
-    ? staples.filter(s => s.current_quantity < s.target_quantity)
-    : staples;
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (isDemo) return;
+    const { active, over } = event;
 
-  const stapleIds = filteredStaples.map(s => s.id);
+    if (active.id !== over?.id) {
+      const oldIndex = staples.findIndex((staple) => staple.id === active.id);
+      const newIndex = staples.findIndex((staple) => staple.id === over?.id);
 
-  useEffect(() => {
-    if (isAddEditDialogOpen) {
-      if (editingStaple) {
-        setStapleName(editingStaple.name);
-        setTargetQuantity(editingStaple.target_quantity);
-        setCurrentQuantity(editingStaple.current_quantity);
-        setUnit(editingStaple.unit || 'unit');
-      } else {
-        setStapleName('');
-        setTargetQuantity(0);
-        setCurrentQuantity(0);
-        setUnit('unit');
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newOrder = Array.from(staples);
+        const [movedItem] = newOrder.splice(oldIndex, 1);
+        newOrder.splice(newIndex, 0, movedItem);
+
+        const orderedIds = newOrder.map(s => s.id);
+        await reorderStaples(orderedIds);
       }
     }
-  }, [isAddEditDialogOpen, editingStaple]);
-
-  const handleOpenAddEditDialog = (staple: MealStaple | null) => {
-    setEditingStaple(staple);
-    setIsAddEditDialogOpen(true);
   };
 
-  const handleSaveStaple = async () => {
-    if (!stapleName.trim()) return;
-    setIsSaving(true);
-
-    const data: NewMealStapleData = {
-      name: stapleName.trim(),
-      target_quantity: Number(targetQuantity),
-      current_quantity: Number(currentQuantity),
-      unit: unit === 'unit' ? null : unit,
-    };
-
-    if (editingStaple) {
-      await updateStaple({ id: editingStaple.id, updates: data });
-    } else {
-      await addStaple(data);
-    }
-    setIsSaving(false);
-    setIsAddEditDialogOpen(false);
-  };
-
-  const handleOpenDeleteDialog = (staple: MealStaple) => {
-    setStapleToDelete(staple);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteStaple = async () => {
-    if (stapleToDelete) {
-      setIsSaving(true);
-      await deleteStaple(stapleToDelete.id);
-      setIsSaving(false);
-      setIsDeleteDialogOpen(false);
-      setStapleToDelete(null);
-    }
-  };
-
-  // Wrapper function for onUpdate to match StapleItemDisplay's expected signature
-  const handleUpdateStapleWrapper = async (id: string, updates: Partial<MealStaple>) => {
+  const onSubmit = async (values: z.infer<typeof newStapleSchema>) => {
     if (isDemo) return;
-    await updateStaple({ id, updates });
-  };
-
-  const handleQuickAddStaple = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!quickAddStapleName.trim()) {
-      showError('Staple name cannot be empty.');
-      return;
-    }
-    if (isDemo) return;
-
-    setIsQuickAdding(true);
-    try {
-      await addStaple({
-        name: quickAddStapleName.trim(),
-        target_quantity: 0,
-        current_quantity: 0,
-        unit: null,
-      });
-      setQuickAddStapleName('');
-    } catch (error) {
-      console.error('Error quick adding staple:', error);
-      showError('Failed to add staple.');
-    } finally {
-      setIsQuickAdding(false);
-    }
-  };
-
-  // DND Handlers
-  const handleDragStart = (event: DragStartEvent) => {
-    const activeStaple = staples.find(s => s.id === event.active.id);
-    setActiveStaple(activeStaple || null);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveStaple(null);
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const currentStapleIds = staples.map(s => s.id);
-
-    const oldIndex = currentStapleIds.indexOf(String(active.id));
-    const newIndex = currentStapleIds.indexOf(String(over.id));
-
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    const newOrderedIds = arrayMove(currentStapleIds, oldIndex, newIndex);
-    await reorderStaples(newOrderedIds);
+    await addStaple({
+      name: values.name,
+      target_quantity: values.target_quantity,
+      current_quantity: 0, // New staples start with 0 current quantity
+      unit: values.unit || null,
+    });
+    form.reset();
   };
 
   return (
-    <>
-      <div className="space-y-4">
-        <form onSubmit={handleQuickAddStaple} className="flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <Input
-            placeholder="Add a staple (e.g., 'Canned Tomatoes') and press Enter..."
-            value={quickAddStapleName}
-            onChange={(e) => setQuickAddStapleName(e.target.value)}
-            className="flex-1 h-9 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
-            disabled={isQuickAdding || isDemo}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleQuickAddStaple(e as any);
-              }
-            }}
+    <div className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-4 border rounded-lg bg-muted/20">
+          <h4 className="text-lg font-semibold flex items-center gap-2">
+            <Plus className="h-5 w-5 text-primary" /> Add New Staple
+          </h4>
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Staple Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Eggs, Milk, Bread" {...field} disabled={isDemo} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <Button type="submit" size="icon" variant="ghost" className="h-8 w-8" disabled={isQuickAdding || isDemo || !quickAddStapleName.trim()}>
-            {isQuickAdding ? <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" /> : <Plus className="h-3.5 w-3.5" />}
-          </Button>
-        </form>
-
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2 rounded-md bg-muted/30">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="shopping-list-mode" className="flex items-center gap-2 text-sm font-medium cursor-pointer">
-              <ListFilter className="h-4 w-4" /> Shopping List Mode
-            </Label>
-            <Switch
-              id="shopping-list-mode"
-              checked={showShoppingList}
-              onCheckedChange={setShowShoppingList}
-              disabled={isDemo}
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="target_quantity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Target Quantity</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} disabled={isDemo} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="unit"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Unit (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., dozen, liter, loaf" {...field} disabled={isDemo} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="sort-by" className="flex items-center gap-2 text-sm font-medium">
-              <SortAsc className="h-4 w-4" /> Sort by:
-            </Label>
-            <Select value={sortOption} onValueChange={(value: StapleSortOption) => setSortOption(value)} disabled={isDemo}>
-              <SelectTrigger className="w-[180px] h-9">
-                <SelectValue placeholder="Sort staples" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="item_order_asc">Custom Order</SelectItem>
-                <SelectItem value="name_asc">Name (A-Z)</SelectItem>
-                <SelectItem value="current_quantity_asc">Current Qty (Low to High)</SelectItem>
-                <SelectItem value="current_quantity_desc">Current Qty (High to Low)</SelectItem>
-                <SelectItem value="target_quantity_asc">Target Qty (Low to High)</SelectItem>
-                <SelectItem value="target_quantity_desc">Target Qty (High to Low)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : filteredStaples.length === 0 ? (
-          <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-            <UtensilsCrossed className="h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-medium mb-2">
-              {showShoppingList ? "No items needed for shopping!" : "No staples added yet!"}
-            </p>
-            <p className="text-sm">
-              {showShoppingList ? "All your staples are currently in stock or meet their target quantities." : "Add your essential ingredients to keep track of your pantry."}
-            </p>
-          </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={stapleIds} strategy={verticalListSortingStrategy}>
-              <ul className="space-y-3">
-                {filteredStaples.map(staple => (
-                  <SortableStapleItem
-                    key={staple.id}
-                    staple={staple}
-                    onUpdate={handleUpdateStapleWrapper}
-                    onOpenEditDialog={handleOpenAddEditDialog}
-                    onOpenDeleteDialog={handleOpenDeleteDialog}
-                    isDemo={isDemo}
-                  />
-                ))}
-              </ul>
-            </SortableContext>
-            {createPortal(
-              <DragOverlay dropAnimation={null}>
-                {activeStaple ? (
-                  <SortableStapleItem
-                    staple={activeStaple}
-                    onUpdate={handleUpdateStapleWrapper}
-                    onOpenEditDialog={handleOpenAddEditDialog}
-                    onOpenDeleteDialog={handleOpenDeleteDialog}
-                    isDemo={isDemo}
-                    isOverlay={true}
-                  />
-                ) : null}
-              </DragOverlay>,
-              document.body
+          <Button type="submit" className="w-full" disabled={isDemo || form.formState.isSubmitting}>
+            {form.formState.isSubmitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
             )}
-          </DndContext>
-        )}
+            Add Staple
+          </Button>
+        </form>
+      </Form>
+
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold flex items-center gap-2">
+          <ShoppingCart className="h-6 w-6 text-primary" /> Your Staples
+        </h3>
+        <div className="flex items-center gap-2">
+          <Label htmlFor="sort-staples" className="sr-only">Sort by</Label>
+          <Select
+            value={sortOption}
+            onValueChange={(value: StapleSortOption) => setSortOption(value)}
+            disabled={isDemo || loading}
+          >
+            <SelectTrigger id="sort-staples" className="w-[180px]">
+              <ListOrdered className="mr-2 h-4 w-4" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="item_order_asc">Order</SelectItem>
+              <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+              <SelectItem value="current_quantity_asc">Current Qty (Low to High)</SelectItem>
+              <SelectItem value="current_quantity_desc">Current Qty (High to Low)</SelectItem>
+              <SelectItem value="target_quantity_asc">Target Qty (Low to High)</SelectItem>
+              <SelectItem value="target_quantity_desc">Target Qty (High to Low)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <Dialog open={isAddEditDialogOpen} onOpenChange={setIsAddEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingStaple ? 'Edit Staple' : 'Add New Staple'}</DialogTitle>
-            <DialogDescription>
-              {editingStaple ? 'Edit the details of your meal staple.' : 'Fill in the details to add a new meal staple.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div>
-              <Label htmlFor="staple-name">Staple Name</Label>
-              <Input
-                id="staple-name"
-                value={stapleName}
-                onChange={(e) => setStapleName(e.target.value)}
-                placeholder="e.g., Canned Tomatoes"
-                autoFocus
-                disabled={isSaving || isDemo}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="target-quantity">Target Quantity</Label>
-                <Input
-                  id="target-quantity"
-                  type="number"
-                  value={targetQuantity}
-                  onChange={(e) => setTargetQuantity(Number(e.target.value))}
-                  min="0"
-                  disabled={isSaving || isDemo}
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      ) : staples.length === 0 ? (
+        <p className="text-center text-muted-foreground p-8 border rounded-lg">
+          No meal staples added yet. Use the form above to add your first staple!
+        </p>
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis]}
+        >
+          <SortableContext items={staples.map(s => s.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {staples.map((staple) => (
+                <StapleItem
+                  key={staple.id}
+                  staple={staple}
+                  onUpdate={updateStaple}
+                  onDelete={deleteStaple}
+                  isDemo={isDemo}
                 />
-              </div>
-              <div>
-                <Label htmlFor="current-quantity">Current Quantity</Label>
-                <Input
-                  id="current-quantity"
-                  type="number"
-                  value={currentQuantity}
-                  onChange={(e) => setCurrentQuantity(Number(e.target.value))}
-                  min="0"
-                  disabled={isSaving || isDemo}
-                />
-              </div>
+              ))}
             </div>
-            <div>
-              <Label htmlFor="unit">Unit</Label>
-              <Select value={unit} onValueChange={setUnit} disabled={isSaving || isDemo}>
-                <SelectTrigger id="unit">
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {commonUnits.map(u => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddEditDialogOpen(false)} disabled={isSaving || isDemo}>Cancel</Button>
-            <Button onClick={handleSaveStaple} disabled={isSaving || isDemo || !stapleName.trim()}>
-              {isSaving ? 'Saving...' : 'Save Staple'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete "{stapleToDelete?.name}" from your staples.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving || isDemo}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteStaple} disabled={isSaving || isDemo}>
-              {isSaving ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+          </SortableContext>
+        </DndContext>
+      )}
+    </div>
   );
 };
 
