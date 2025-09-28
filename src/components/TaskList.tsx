@@ -108,11 +108,11 @@ const SortableSectionWrapper: React.FC<SortableSectionWrapperProps> = ({ section
     isDragging,
   } = useSortable({ id: section.id, data: { type: 'section', section }, disabled: isDemo || section.id === 'no-section-header' });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0 : 1,
-    visibility: isDragging ? 'hidden' : 'visible', // Changed from undefined to 'visible'
+    visibility: isDragging ? 'hidden' : undefined, // Omit visibility when not hidden
   };
 
   if (isDragging && !rest.isOverlay) {

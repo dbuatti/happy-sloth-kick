@@ -105,11 +105,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     showSuccess(`Section ${checked ? 'included in' : 'excluded from'} Focus Mode.`);
   };
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : 'visible', // Changed from undefined to 'visible'
+    visibility: isDragging && !isOverlay ? 'hidden' : undefined, // Omit visibility when not hidden
   };
 
   return (
@@ -176,7 +176,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               onBlur={handleSaveName}
               onKeyDown={handleInputKeyDown}
               className="h-8 text-lg font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-              onPointerDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.PointerEvent.stopPropagation()}
             />
           ) : (
             <h2 className={cn(
