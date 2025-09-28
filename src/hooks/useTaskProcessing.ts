@@ -140,6 +140,7 @@ export const useTaskProcessing = ({
               created_at: todayStart.toISOString(),
               status: isCompletedTodayInLog ? 'completed' : 'to-do', // Set status based on completion log
               original_task_id: templateTask.id,
+              recurring_type: templateTask.recurring_type, // <--- Explicitly set this from templateTask
               remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
