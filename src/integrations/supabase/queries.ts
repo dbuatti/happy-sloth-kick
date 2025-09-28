@@ -1,7 +1,6 @@
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskSection, Category } from '@/hooks/useTasks'; // Import types from useTasks
-import { Meal } from '@/types/meals'; // Import the new Meal type
 
 export const fetchSections = async (userId: string): Promise<TaskSection[]> => {
   const { data, error } = await supabase
@@ -64,25 +63,4 @@ export const fetchTasks = async (userId: string): Promise<Omit<Task, 'category_c
   }
   
   return allTasks;
-};
-
-export const fetchMeals = async (userId: string, startDate: Date, numberOfDays: number = 7): Promise<Meal[]> => {
-  const endDate = addDays(startDate, numberOfDays - 1);
-  const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-  const formattedEndDate = format(endDate, 'yyyy-MM-dd');
-
-  const { data, error } = await supabase
-    .from('meals')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('meal_date', formattedStartDate)
-    .lte('meal_date', formattedEndDate)
-    .order('meal_date', { ascending: true })
-    .order('created_at', { ascending: true }); // Consistent order for meals
-
-  if (error) {
-    console.error('fetchMeals: Supabase query error:', error);
-    throw error;
-  }
-  return data || [];
 };

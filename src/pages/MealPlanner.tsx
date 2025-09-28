@@ -1,103 +1,121 @@
-"use client";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UtensilsCrossed, ShoppingCart } from 'lucide-react';
+import { useMeals, Meal } from '@/hooks/useMeals';
+import MealItem from '@/components/MealItem';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import StaplesInventory from '@/components/StaplesInventory';
+import { format, isSameDay, addDays, parseISO } from 'date-fns'; // Added parseISO
 
-import React, { useState } from 'react';
-import { addDays, format } from 'date-fns';
-import { useAuth } from '@/hooks/useAuth';
-import { useMeals } from '@/hooks/useMeals';
-import MealSlot from '@/components/MealSlot';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Plus, Minus } from 'lucide-react';
-import { showError, showSuccess } from '@/utils/toast'; // Assuming these exist
+interface MealPlannerProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-const MealPlanner: React.FC = () => {
-  const { userId, isLoading: isAuthLoading } = useAuth();
-  const [numberOfDays, setNumberOfDays] = useState(3); // Default to 3 days
-  const today = new Date();
+const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId }) => {
+  const { upcomingMeals, loading, addMeal, updateMeal, currentDate } = useMeals({ userId: demoUserId });
 
-  const { data: meals, isLoading: isMealsLoading, error: mealsError } = useMeals(userId, today, numberOfDays);
+  const handleUpdateMeal = async (id: string, updates: Partial<Meal>) => {
+    if (id.startsWith('placeholder-')) {
+      const parts = id.split('-');
+      const meal_date = `${parts[1]}-${parts[2]}-${parts[3]}`;
+      const meal_type = parts[4] as Meal['meal_type'];
 
-  const handleAddMeal = (date: Date, mealType: string) => {
-    showSuccess(`Adding a new ${mealType} for ${format(date, 'PPP')}. (Functionality to be implemented)`);
-    // In a real app, this would open a modal or navigate to a form to add a meal
+      const newMealData = {
+        meal_date: meal_date,
+        meal_type: meal_type,
+        name: updates.name || '',
+        notes: updates.notes || null,
+        has_ingredients: updates.has_ingredients ?? false,
+        is_completed: updates.is_completed ?? false,
+      };
+      await addMeal(newMealData);
+    } else {
+      await updateMeal({ id, updates });
+    }
   };
 
-  const handleIncreaseDays = () => {
-    setNumberOfDays(prev => Math.min(prev + 1, 7)); // Max 7 days
-  };
+  // Group meals by date
+  const mealsGroupedByDate = upcomingMeals.reduce((acc, meal) => {
+    const dateKey = meal.meal_date;
+    if (!acc[dateKey]) {
+      acc[dateKey] = [];
+    }
+    acc[dateKey].push(meal);
+    return acc;
+  }, {} as Record<string, Meal[]>);
 
-  const handleDecreaseDays = () => {
-    setNumberOfDays(prev => Math.max(prev - 1, 1)); // Min 1 day
-  };
-
-  if (isAuthLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
-
-  if (!userId) {
-    return <p className="p-4 text-center text-red-500">Please log in to view your meal planner.</p>;
-  }
-
-  if (mealsError) {
-    showError(`Error loading meals: ${mealsError.message}`);
-    return <p className="p-4 text-center text-red-500">Error loading meals. Please try again.</p>;
-  }
-
-  const mealTypes = ['Breakfast', 'Lunch', 'Dinner'];
-  const daysToDisplay = Array.from({ length: numberOfDays }, (_, i) => addDays(today, i));
+  const sortedDates = Object.keys(mealsGroupedByDate).sort();
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Meal Planner</h1>
-        <div className="flex items-center space-x-2">
-          <Button onClick={handleDecreaseDays} disabled={numberOfDays === 1} variant="outline" size="sm">
-            <Minus className="h-4 w-4" />
-          </Button>
-          <span className="text-lg font-medium">{numberOfDays} Day{numberOfDays !== 1 ? 's' : ''}</span>
-          <Button onClick={handleIncreaseDays} disabled={numberOfDays === 7} variant="outline" size="sm">
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+    <div className="flex-1 flex flex-col">
+      <main className="flex-grow p-4 flex justify-center">
+        <Card className="w-full max-w-xl mx-auto shadow-lg rounded-xl">
+          <CardHeader className="px-6 pb-2">
+            <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden text-ellipsis">
+              <UtensilsCrossed className="h-7 w-7 text-primary" /> Meal Planner
+            </CardTitle>
+            <p className="text-sm text-muted-foreground text-center line-clamp-2">Plan your next 9 meals (3 days) and track ingredients.</p>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Tabs defaultValue="meals" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="meals">
+                  <UtensilsCrossed className="h-4 w-4 mr-2" /> Meals
+                </TabsTrigger>
+                <TabsTrigger value="staples">
+                  <ShoppingCart className="h-4 w-4 mr-2" /> Staples
+                </TabsTrigger>
+              </TabsList>
 
-      {isMealsLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {daysToDisplay.map(date => (
-            <Card key={format(date, 'yyyy-MM-dd')} className="flex flex-col">
-              <CardHeader className="bg-gray-50 dark:bg-gray-800 p-4 rounded-t-lg">
-                <CardTitle className="text-lg font-semibold text-center">
-                  {format(date, 'EEEE, MMM d')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4 flex-grow">
-                {mealTypes.map(mealType => {
-                  const mealForSlot = meals?.find(
-                    m => format(new Date(m.meal_date), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && m.meal_type.toLowerCase() === mealType.toLowerCase()
-                  );
-                  return (
-                    <MealSlot
-                      key={`${format(date, 'yyyy-MM-dd')}-${mealType}`}
-                      meal={mealForSlot}
-                      mealType={mealType}
-                      date={date}
-                      onAddMeal={handleAddMeal}
-                    />
-                  );
-                })}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+              <TabsContent value="meals" className="mt-4 p-6">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(9)].map((_, i) => (
+                      <Skeleton key={i} className="h-32 w-full rounded-xl" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {sortedDates.map(dateKey => {
+                      const mealsForDay = mealsGroupedByDate[dateKey];
+                      const displayDate = parseISO(dateKey);
+                      const isToday = isSameDay(displayDate, currentDate);
+                      const isTomorrow = isSameDay(displayDate, addDays(currentDate, 1));
+
+                      return (
+                        <div key={dateKey}>
+                          <h3 className="text-xl font-bold mb-3 text-foreground">
+                            {isToday ? 'Today' : isTomorrow ? 'Tomorrow' : format(displayDate, 'EEEE, MMM d')}
+                          </h3>
+                          <div className="space-y-4">
+                            {mealsForDay.map(meal => (
+                              <MealItem
+                                key={meal.id}
+                                meal={meal}
+                                onUpdate={handleUpdateMeal}
+                                isDemo={isDemo}
+                                isPlaceholder={meal.id.startsWith('placeholder-')}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="staples" className="mt-4 p-6">
+                <StaplesInventory isDemo={isDemo} demoUserId={demoUserId} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </main>
+      <footer className="p-4">
+        <p>&copy; {new Date().getFullYear()} TaskMaster. All rights reserved.</p>
+      </footer>
     </div>
   );
 };
