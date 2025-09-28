@@ -87,9 +87,9 @@ export const addTaskMutation = async (newTaskData: NewTaskData, context: Mutatio
 };
 
 export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context; // Destructure processedTasks
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
 
-  const previousTask = processedTasks.find((t: Task) => t.id === taskId); // Use processedTasks here
+  const previousTask = processedTasks.find((t: Task) => t.id === taskId);
 
   if (!previousTask) {
     showError('Task not found for update.');
@@ -99,8 +99,6 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   const isVirtual = isVirtualId(taskId);
 
   // Optimistic update (applies to both real and virtual tasks for immediate UI feedback)
-  // For virtual tasks, we optimistically update the virtual task in the cache.
-  // If successful, this virtual task will be replaced by a new concrete task.
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).map(task => (task.id === taskId ? { ...task, ...updates, category_color: context.categoriesMap.get(updates.category || task.category || '') || 'gray' } : task))
   );
@@ -131,7 +129,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert(prepareTaskForDb(newTaskData))
+        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId }) // Added user_id here
         .select()
         .single();
 
@@ -379,9 +377,9 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
 };
 
 export const markAllTasksInSectionCompletedMutation = async (sectionId: string | null, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context; // Destructure processedTasks
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
 
-  const tasksInSection: Task[] = processedTasks.filter((t: Task) => // Use processedTasks here
+  const tasksInSection: Task[] = processedTasks.filter((t: Task) =>
     t.status === 'to-do' && t.parent_task_id === null && (sectionId === null ? t.section_id === null : t.section_id === sectionId)
   );
   const taskIdsToComplete: string[] = tasksInSection.map((t: Task) => t.id);
@@ -434,9 +432,9 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
 };
 
 export const updateTaskParentAndOrderMutation = async (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context; // Destructure processedTasks
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
 
-  const activeTask = processedTasks.find((t: Task) => t.id === activeId); // Use processedTasks here
+  const activeTask = processedTasks.find((t: Task) => t.id === activeId);
 
   if (!activeTask) return;
 
@@ -467,7 +465,7 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert(prepareTaskForDb(newTaskData))
+        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId }) // Added user_id here
         .select()
         .single();
 
@@ -498,10 +496,10 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
 
   // Determine new order
   let newOrder: number | null = null;
-  const siblings: Task[] = processedTasks.filter((t: Task) => t.parent_task_id === actualNewParentId && t.section_id === actualNewSectionId && t.id !== actualActiveId); // Use processedTasks here
+  const siblings: Task[] = processedTasks.filter((t: Task) => t.parent_task_id === actualNewParentId && t.section_id === actualNewSectionId && t.id !== actualActiveId);
 
   if (overId) {
-    const overTask = processedTasks.find((t: Task) => t.id === overId); // Use processedTasks here
+    const overTask = processedTasks.find((t: Task) => t.id === overId);
     if (overTask) {
       if (isDraggingDown) {
         newOrder = (overTask.order || 0) + 0.5; // Place after
