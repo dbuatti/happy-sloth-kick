@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSession } from '@/components/SessionContextProvider';
+import MainLayout from '@/components/layout/MainLayout';
 import DashboardPage from '@/features/dashboard/pages/DashboardPage';
 import AuthPage from '@/features/auth/pages/AuthPage';
 import TasksPage from '@/features/tasks/pages/TasksPage';
@@ -25,22 +26,23 @@ function App() {
   return (
     <Routes>
       <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" replace />} />
-      <Route
-        path="/"
-        element={user ? <DashboardPage /> : <Navigate to="/auth" replace />}
-      />
-      <Route path="/tasks" element={user ? <TasksPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/habits" element={user ? <HabitsPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/schedule" element={user ? <SchedulePage /> : <Navigate to="/auth" replace />} />
-      <Route path="/goals" element={user ? <GoalsPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/projects" element={user ? <ProjectsPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/quick-links" element={user ? <QuickLinksPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/people-memory" element={user ? <PeopleMemoryPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/weekly-focus" element={user ? <WeeklyFocusPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/dev-ideas" element={user ? <DevIdeasPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/meals" element={user ? <MealsPage /> : <Navigate to="/auth" replace />} />
-      <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" replace />} />
+      
+      {/* Protected routes wrapped by MainLayout */}
+      <Route element={user ? <MainLayout /> : <Navigate to="/auth" replace />}>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/habits" element={<HabitsPage />} />
+        <Route path="/schedule" element={<SchedulePage />} />
+        <Route path="/goals" element={<GoalsPage />} />
+        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/quick-links" element={<QuickLinksPage />} />
+        <Route path="/people-memory" element={<PeopleMemoryPage />} />
+        <Route path="/weekly-focus" element={<WeeklyFocusPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/dev-ideas" element={<DevIdeasPage />} />
+        <Route path="/meals" element={<MealsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Route>
     </Routes>
   );
 }
