@@ -95,7 +95,7 @@ interface SortableSectionHeaderPropsForWrapper { // Define the interface for Sor
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
   transition?: string;
   isDragging?: boolean;
-  isDropTarget?: boolean; // New prop for drop target feedback
+  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null; // Added
 }
 
 interface SortableSectionWrapperProps extends SortableSectionHeaderPropsForWrapper {
@@ -182,7 +182,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
-  const [overId, setOverId] = useState<UniqueIdentifier | null>(null); // Track overId for drop target feedback
+  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null); // New state for insertion indicator
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -258,13 +258,46 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    setOverId(event.over?.id || null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      setInsertionIndicator(null);
+      return;
+    }
+
+    const activeIsTask = !isSectionHeaderId(active.id);
+    const overIsSection = isSectionHeaderId(over.id);
+    const overIsTask = !overIsSection;
+
+    if (activeIsTask) {
+      if (overIsTask) {
+        // Dragging a task over another task
+        const overRect = event.over?.rect; // FIX: Using optional chaining
+        if (overRect) {
+          const mouseY = (event.activatorEvent as PointerEvent).clientY; // FIX: Cast to PointerEvent
+          const middleOfOver = overRect.top + overRect.height / 2;
+          setInsertionIndicator({ id: over.id, position: mouseY > middleOfOver ? 'after' : 'before' });
+        }
+      } else if (overIsSection) {
+        // Dragging a task over a section header
+        const targetSectionTasks = filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === over.id || (t.section_id === null && over.id === 'no-section-header')));
+        if (targetSectionTasks.length === 0) {
+          // If section is empty, indicate dropping *into* the section
+          setInsertionIndicator({ id: over.id, position: 'into' });
+        } else {
+          // If section is not empty, indicate dropping before the first task in that section
+          setInsertionIndicator({ id: targetSectionTasks[0].id, position: 'before' });
+        }
+      }
+    } else {
+      // Dragging a section (no insertion indicator for sections, just reorder)
+      setInsertionIndicator(null);
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
     setActiveItemData(null);
-    setOverId(null); // Reset overId on drag end
+    setInsertionIndicator(null); // Reset insertion indicator
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
@@ -290,6 +323,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
     let overTaskId: string | null = null;
+    let isDraggingDown = false; // Default value
 
     if (isSectionHeaderId(over.id)) {
       // Dropped onto a section header
@@ -308,7 +342,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     
     const activeIndex = allVisibleItemIds.indexOf(active.id);
     const overIndex = allVisibleItemIds.indexOf(over.id);
-    const isDraggingDown = activeIndex < overIndex;
+    isDraggingDown = activeIndex < overIndex; // Determine if dragging down
 
     await updateTaskParentAndOrder(
       String(active.id), 
@@ -465,7 +499,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     isOverlay={false}
                     isNoSection={isNoSection} // Pass isNoSection prop
                     isDemo={isDemo}
-                    isDropTarget={activeId !== null && !isSectionHeaderId(activeId) && overId === currentSection.id} // Highlight if a task is dragged over this section
+                    insertionIndicator={insertionIndicator} // Pass insertion indicator
                   />
 
                   <div className={cn(
@@ -497,6 +531,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             scheduledTasksMap={scheduledTasksMap}
                             isDemo={isDemo}
                             showDragHandle={false} // Drag handle not shown in main list
+                            insertionIndicator={insertionIndicator} // Pass insertion indicator
                           />
                         ))}
                       </ul>
@@ -548,6 +583,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
                     isOverlay={true}
                     isNoSection={activeItemData.id === 'no-section-header'}
+                    insertionIndicator={null} // Overlay doesn't need insertion indicator
                   />
                 ) : (
                   <div className="rotate-2">

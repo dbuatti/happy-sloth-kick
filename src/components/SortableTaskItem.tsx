@@ -5,6 +5,7 @@ import { Task } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
 import { Appointment } from '@/hooks/useAppointments';
+import { UniqueIdentifier } from '@dnd-kit/core';
 
 interface SortableTaskItemProps {
   task: Task;
@@ -27,6 +28,7 @@ interface SortableTaskItemProps {
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
   showDragHandle?: boolean; // Prop to control drag handle visibility
+  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null; // Added
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -50,6 +52,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   currentDate,
   onMoveUp,
   onMoveDown,
+  insertionIndicator, // Destructured
 }) => {
   const {
     attributes,
@@ -72,6 +75,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
 
   const isExpanded = expandedTasks[task.id] !== false;
 
+  const showInsertionBefore = insertionIndicator?.id === task.id && insertionIndicator.position === 'before';
+  const showInsertionAfter = insertionIndicator?.id === task.id && insertionIndicator.position === 'after';
+
   if (isDragging && !isOverlay) {
     return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
   }
@@ -88,6 +94,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       {...attributes} // Apply attributes to the whole li for dragging
       {...listeners} // Apply listeners to the whole li for dragging
     >
+      {showInsertionBefore && (
+        <div className="absolute -top-1 left-0 right-0 h-1 w-full bg-primary rounded-full z-10 animate-pulse" />
+      )}
       <div className={cn(
         "flex-1",
         level > 0 && "relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30", // Vertical line adjusted to left-4
@@ -140,11 +149,15 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
                 showDragHandle={showDragHandle} // Pass the prop to subtasks as well
+                insertionIndicator={insertionIndicator} // Pass insertion indicator
               />
             ))}
           </ul>
         )}
       </div>
+      {showInsertionAfter && (
+        <div className="absolute -bottom-1 left-0 right-0 h-1 w-full bg-primary rounded-full z-10 animate-pulse" />
+      )}
     </li>
   );
 };

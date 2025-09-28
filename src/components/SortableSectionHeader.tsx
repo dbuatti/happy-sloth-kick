@@ -17,8 +17,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { showSuccess } from '@/utils/toast';
-import type { DraggableAttributes } from '@dnd-kit/core'; // FIX: Corrected import syntax
-import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Added 'type' keyword for clarity
+import type { DraggableAttributes } from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { UniqueIdentifier } from '@dnd-kit/core'; // Import UniqueIdentifier
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -42,7 +43,7 @@ interface SortableSectionHeaderProps {
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
   transition?: string;
   isDragging?: boolean;
-  isDropTarget?: boolean; // New prop for drop target feedback
+  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null; // Added
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -66,7 +67,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   transform,
   transition,
   isDragging,
-  isDropTarget = false, // Default to false
+  insertionIndicator, // Destructured
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(section.name);
@@ -116,6 +117,8 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     visibility: isDragging && !isOverlay ? 'hidden' : undefined, // Omit visibility when not hidden
   };
 
+  const showDropIntoSection = insertionIndicator?.id === section.id && insertionIndicator.position === 'into';
+
   return (
     <div
       ref={setNodeRef}
@@ -125,7 +128,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/40", // Enhanced hover effect
         isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
         isDemo && "opacity-70 cursor-not-allowed",
-        isDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background", // Drop target styling
+        showDropIntoSection && "ring-2 ring-primary ring-offset-2 ring-offset-background", // Drop target styling for 'into'
         "group"
       )}
     >
