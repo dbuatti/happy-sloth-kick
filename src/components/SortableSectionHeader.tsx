@@ -56,7 +56,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   onOpenReorderTasks,
   isOverlay = false,
   isNoSection = false,
-  isDemo, // Removed default value, it's passed as a prop
+  isDemo,
   attributes,
   listeners,
   setNodeRef,
@@ -109,7 +109,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : undefined, // Fixed: visibility type
+    visibility: isDragging && !isOverlay ? 'hidden' : 'visible', // Changed from undefined to 'visible'
   };
 
   return (
@@ -120,7 +120,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         "flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200",
         isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/30",
         isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
-        isDemo && "opacity-70 cursor-not-allowed", // Added conditional class for isDemo
+        isDemo && "opacity-70 cursor-not-allowed",
         "group"
       )}
     >

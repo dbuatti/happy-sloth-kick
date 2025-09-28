@@ -112,7 +112,7 @@ const SortableSectionWrapper: React.FC<SortableSectionWrapperProps> = ({ section
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0 : 1,
-    visibility: isDragging ? 'hidden' : undefined, // Fixed: visibility type
+    visibility: isDragging ? 'hidden' : 'visible', // Changed from undefined to 'visible'
   };
 
   if (isDragging && !rest.isOverlay) {
