@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Task, TaskSection } from '@/hooks/useTasks';
@@ -20,12 +20,11 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
   arrayMove,
-  useSortable, // Added useSortable
+  useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities'; // Added CSS
+import { CSS } from '@dnd-kit/utilities';
 import { createPortal } from 'react-dom';
 import TaskItem from './TaskItem';
-import { GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
@@ -86,22 +85,15 @@ const SortableTaskReorderItem: React.FC<{
         "relative group flex items-center",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : ""
       )}
+      {...listeners}
+      {...attributes}
     >
-      {!rest.isDemo && (
-        <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 p-1 cursor-grab touch-none opacity-0 group-hover:opacity-100 transition-opacity"
-          {...listeners}
-          {...attributes}
-        >
-          <GripVertical className="h-4 w-4 text-muted-foreground" />
-        </div>
-      )}
-      <div className={cn("flex-1", !rest.isDemo && "pl-6")}>
+      <div className="flex-1">
         <TaskItem
           task={task}
           allTasks={rest.allTasks}
           onDelete={rest.onDeleteTask}
-          onUpdate={rest.onUpdateTask} // Pass onUpdate directly
+          onUpdate={rest.onUpdateTask}
           sections={rest.sections}
           onOpenOverview={rest.onOpenOverview}
           currentDate={rest.currentDate}
@@ -146,8 +138,10 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
 
   // Update local tasks when the prop changes, but only if the dialog is opened
   // or if the underlying tasks array reference changes (e.g., due to external updates)
-  useMemo(() => {
-    setLocalTasks(tasks);
+  useEffect(() => {
+    if (isOpen) {
+      setLocalTasks(tasks);
+    }
   }, [tasks, isOpen]);
 
   const sensors = useSensors(
