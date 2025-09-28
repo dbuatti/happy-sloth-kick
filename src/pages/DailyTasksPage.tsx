@@ -8,6 +8,7 @@ import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
+import { cn } from '@/lib/utils'; // Import cn utility
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
