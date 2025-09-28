@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Meal, MealType } from '@/hooks/useMeals';
+import { Meal, MealType } from '@/types/meals'; // Updated import path
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-// import { parseISO } from 'date-fns'; // Removed as it was unused
 import { cn } from '@/lib/utils';
 import { ShoppingCart, CheckCircle2, UtensilsCrossed, Coffee, Soup } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -18,12 +17,6 @@ interface MealItemProps {
   isDemo?: boolean;
   isPlaceholder: boolean;
 }
-
-// const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = { // Removed as it was unused
-//   breakfast: { hour: 7, minute: 0 },
-//   lunch: { hour: 12, minute: 0 },
-//   dinner: { hour: 18, minute: 0 },
-// };
 
 const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isPlaceholder }) => {
   const { playSound } = useSound();
@@ -139,7 +132,7 @@ const MealItem: React.FC<MealItemProps> = ({ meal, onUpdate, isDemo = false, isP
         <div className="flex items-center gap-1">
           {getMealIcon(meal.meal_type)}
           <span className={cn(
-            "text-xs font-semibold", // Adjusted font size and weight
+            "text-xs font-semibold",
             isPlaceholder ? "text-muted-foreground/70" : "text-foreground"
           )}>
             {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}

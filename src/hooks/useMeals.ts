@@ -4,24 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { addDays, format, isPast, setHours, setMinutes, parseISO, addHours } from 'date-fns';
-
-export type MealType = 'breakfast' | 'lunch' | 'dinner';
-
-export interface Meal {
-  id: string;
-  user_id: string;
-  meal_date: string; // YYYY-MM-DD
-  meal_type: MealType;
-  name: string;
-  notes: string | null;
-  has_ingredients: boolean;
-  is_completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export type NewMealData = Omit<Meal, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
-export type UpdateMealData = Partial<NewMealData>;
+import { Meal, MealType, NewMealData, UpdateMealData } from '@/types/meals'; // Updated import path
 
 const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
   breakfast: { hour: 7, minute: 0 },
@@ -29,14 +12,14 @@ const MEAL_TIMES: Record<MealType, { hour: number; minute: number }> = {
   dinner: { hour: 18, minute: 0 },
 };
 
-const NUM_DAYS_TO_PLAN = 3; // Plan 3 days into the future
+const MAX_DAYS_TO_FETCH = 7; // Fetch meals for up to 7 days into the future (21 meals total)
 
 // Helper to generate a list of upcoming meal slots
-const generateUpcomingMealSlots = (currentDate: Date, existingMeals: Meal[]): Meal[] => {
+const generateUpcomingMealSlots = (currentDate: Date, existingMeals: Meal[], daysToGenerate: number): Meal[] => {
   const slots: Meal[] = [];
   const today = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()); // Normalize to start of day
 
-  for (let i = 0; i < NUM_DAYS_TO_PLAN; i++) {
+  for (let i = 0; i < daysToGenerate; i++) {
     const date = addDays(today, i);
     const formattedDate = format(date, 'yyyy-MM-dd');
 
@@ -67,14 +50,20 @@ const generateUpcomingMealSlots = (currentDate: Date, existingMeals: Meal[]): Me
   return slots;
 };
 
-export const useMeals = (props?: { userId?: string }) => {
+interface UseMealsProps {
+  userId?: string;
+  visibleMealCount?: number; // New prop for controlling visible meals
+}
+
+export const useMeals = (props?: UseMealsProps) => {
   const { user } = useAuth();
   const userId = props?.userId || user?.id;
+  const visibleMealCount = props?.visibleMealCount ?? (3 * 3); // Default to 9 meals (3 days)
   const queryClient = useQueryClient();
 
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  // Fetch all meals for the user (we'll filter and manage the 9-meal window client-side)
+  // Fetch all meals for the user (we'll filter and manage the window client-side)
   const { data: allMeals = [], isLoading: loading, error } = useQuery<Meal[], Error>({
     queryKey: ['meals', userId],
     queryFn: async () => {
@@ -100,9 +89,9 @@ export const useMeals = (props?: { userId?: string }) => {
     }
   }, [error]);
 
-  // Memoize the 9 upcoming meals based on current date and all fetched meals
+  // Memoize the upcoming meals based on current date, all fetched meals, and visibleMealCount
   const upcomingMeals = useMemo(() => {
-    const generatedSlots = generateUpcomingMealSlots(currentDate, allMeals);
+    let generatedSlots = generateUpcomingMealSlots(currentDate, allMeals, MAX_DAYS_TO_FETCH);
 
     // Filter out meals that are completed AND 2 hours past their time
     const filteredSlots = generatedSlots.filter(meal => {
@@ -115,21 +104,8 @@ export const useMeals = (props?: { userId?: string }) => {
       return !isPast(twoHoursPastMealTime);
     });
 
-    // If we have less than 9 meals after filtering, generate more future slots
-    if (filteredSlots.length < NUM_DAYS_TO_PLAN * 3) {
-      const lastMealDate = filteredSlots.length > 0 
-        ? parseISO(filteredSlots[filteredSlots.length - 1].meal_date) 
-        : currentDate;
-      
-      const additionalSlotsNeeded = (NUM_DAYS_TO_PLAN * 3) - filteredSlots.length;
-      const newFutureSlots = generateUpcomingMealSlots(addDays(lastMealDate, 1), allMeals)
-        .slice(0, additionalSlotsNeeded);
-      
-      return [...filteredSlots, ...newFutureSlots].slice(0, NUM_DAYS_TO_PLAN * 3);
-    }
-
-    return filteredSlots.slice(0, NUM_DAYS_TO_PLAN * 3);
-  }, [currentDate, allMeals]);
+    return filteredSlots.slice(0, visibleMealCount);
+  }, [currentDate, allMeals, visibleMealCount]);
 
   // Periodically update currentDate to trigger re-evaluation of upcomingMeals
   useEffect(() => {

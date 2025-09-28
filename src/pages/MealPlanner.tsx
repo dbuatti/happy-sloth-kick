@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UtensilsCrossed, ShoppingCart } from 'lucide-react';
-import { useMeals, Meal } from '@/hooks/useMeals';
+import { UtensilsCrossed, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { useMeals } from '@/hooks/useMeals';
+import { Meal } from '@/types/meals'; // Updated import path
 import MealItem from '@/components/MealItem';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StaplesInventory from '@/components/StaplesInventory';
-import { format, isSameDay, addDays, parseISO } from 'date-fns'; // Added parseISO
+import { format, isSameDay, addDays, parseISO } from 'date-fns';
+import { Button } from '@/components/ui/button';
 
 interface MealPlannerProps {
   isDemo?: boolean;
@@ -14,7 +16,8 @@ interface MealPlannerProps {
 }
 
 const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId }) => {
-  const { upcomingMeals, loading, addMeal, updateMeal, currentDate } = useMeals({ userId: demoUserId });
+  const [visibleMealCount, setVisibleMealCount] = useState(9); // Default to 9 meals (3 days)
+  const { upcomingMeals, loading, addMeal, updateMeal, currentDate } = useMeals({ userId: demoUserId, visibleMealCount });
 
   const handleUpdateMeal = async (id: string, updates: Partial<Meal>) => {
     if (id.startsWith('placeholder-')) {
@@ -34,6 +37,14 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
     } else {
       await updateMeal({ id, updates });
     }
+  };
+
+  const handleIncreaseVisibleMeals = () => {
+    setVisibleMealCount(prev => Math.min(prev + 3, 21)); // Increase by 3 meals (1 day), max 21
+  };
+
+  const handleDecreaseVisibleMeals = () => {
+    setVisibleMealCount(prev => Math.max(prev - 3, 3)); // Decrease by 3 meals, min 3 (1 day)
   };
 
   // Group meals by date
@@ -56,7 +67,9 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
             <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden text-ellipsis">
               <UtensilsCrossed className="h-7 w-7 text-primary" /> Meal Planner
             </CardTitle>
-            <p className="text-sm text-muted-foreground text-center line-clamp-2">Plan your next 9 meals (3 days) and track ingredients.</p>
+            <p className="text-sm text-muted-foreground text-center line-clamp-2">
+              Plan your next {visibleMealCount} meals.
+            </p>
           </CardHeader>
           <CardContent className="p-6">
             <Tabs defaultValue="meals" className="w-full">
@@ -70,9 +83,31 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
               </TabsList>
 
               <TabsContent value="meals" className="mt-4 p-6">
+                <div className="flex justify-center items-center gap-2 mb-4">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleDecreaseVisibleMeals}
+                    disabled={visibleMealCount <= 3} // Minimum 1 day (3 meals)
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">
+                    Showing {visibleMealCount} meals ({Math.ceil(visibleMealCount / 3)} days)
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleIncreaseVisibleMeals}
+                    disabled={visibleMealCount >= 21} // Maximum 7 days (21 meals)
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
                 {loading ? (
                   <div className="space-y-4">
-                    {[...Array(9)].map((_, i) => (
+                    {[...Array(visibleMealCount)].map((_, i) => (
                       <Skeleton key={i} className="h-32 w-full rounded-xl" />
                     ))}
                   </div>
@@ -83,6 +118,9 @@ const MealPlanner: React.FC<MealPlannerProps> = ({ isDemo = false, demoUserId })
                       const displayDate = parseISO(dateKey);
                       const isToday = isSameDay(displayDate, currentDate);
                       const isTomorrow = isSameDay(displayDate, addDays(currentDate, 1));
+
+                      // Only render days that have meals within the visibleMealCount limit
+                      if (mealsForDay.length === 0) return null;
 
                       return (
                         <div key={dateKey}>
