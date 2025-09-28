@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Index from './pages/Index';
 import Login from './pages/Login';
 // SessionContextProvider is not exported by @supabase/auth-ui-react, removed.
-import { supabase } from './integrations/supabase/client';
+// import { supabase } from './integrations/supabase/client'; // Removed as it's not directly used here
 import ProtectedRoute from './components/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
