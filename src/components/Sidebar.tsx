@@ -1,188 +1,224 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   ListTodo,
   CalendarDays,
-  BarChart3,
-  UtensilsCrossed,
-  Moon,
-  Code,
   Settings,
+  BarChart3,
   Archive,
   HelpCircle,
-  Sparkles,
+  Moon,
+  Code,
   Menu,
-  X,
+  Palette,
+  Sun,
+  Monitor,
+  UtensilsCrossed,
+  Sparkles, // Import Sparkles icon for Resonance Goals
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useTheme } from "next-themes";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useSettings } from "@/context/SettingsContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SidebarProps {
-  isDemo?: boolean;
   children: React.ReactNode;
+  isDemo?: boolean;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isDemo = false, children }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ children, isDemo = false }) => {
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { settings } = useSettings();
-  const [isOpen, setIsOpen] = useState(false);
-
-  const baseRoute = isDemo ? "/demo" : "";
 
   const navItems = [
     {
       name: "Dashboard",
-      path: `${baseRoute}/dashboard`,
+      href: isDemo ? "/demo/dashboard" : "/dashboard",
       icon: LayoutDashboard,
       visible: settings?.visible_pages?.dashboard !== false,
     },
     {
       name: "Daily Tasks",
-      path: `${baseRoute}/daily-tasks`,
+      href: isDemo ? "/demo/daily-tasks" : "/daily-tasks",
       icon: ListTodo,
       visible: settings?.visible_pages?.dailyTasks !== false,
     },
     {
       name: "Schedule",
-      path: `${baseRoute}/schedule`,
+      href: isDemo ? "/demo/schedule" : "/schedule",
       icon: CalendarDays,
       visible: settings?.visible_pages?.schedule !== false,
     },
     {
       name: "Projects",
-      path: `${baseRoute}/projects`,
+      href: isDemo ? "/demo/projects" : "/projects",
       icon: BarChart3,
       visible: settings?.visible_pages?.projects !== false,
     },
     {
       name: "Meal Planner",
-      path: `${baseRoute}/meal-planner`,
+      href: isDemo ? "/demo/meal-planner" : "/meal-planner",
       icon: UtensilsCrossed,
       visible: settings?.visible_pages?.mealPlanner !== false,
     },
     {
-      name: "Resonance Goals",
-      path: `${baseRoute}/resonance-goals`,
+      name: "Resonance Goals", // New Nav Item
+      href: isDemo ? "/demo/resonance-goals" : "/resonance-goals",
       icon: Sparkles, // Using Sparkles for Resonance Goals
       visible: settings?.visible_pages?.resonanceGoals !== false, // New setting for visibility
     },
     {
       name: "Sleep",
-      path: `${baseRoute}/sleep`,
+      href: isDemo ? "/demo/sleep" : "/sleep",
       icon: Moon,
       visible: settings?.visible_pages?.sleep !== false,
     },
     {
       name: "Dev Space",
-      path: `${baseRoute}/dev-space`,
+      href: isDemo ? "/demo/dev-space" : "/dev-space",
       icon: Code,
       visible: settings?.visible_pages?.devSpace !== false,
     },
-  ];
+  ].filter(item => item.visible);
 
   const bottomNavItems = [
     {
       name: "Settings",
-      path: `${baseRoute}/settings`,
+      href: isDemo ? "/demo/settings" : "/settings",
       icon: Settings,
       visible: settings?.visible_pages?.settings !== false,
     },
     {
       name: "Analytics",
-      path: `${baseRoute}/analytics`,
+      href: isDemo ? "/demo/analytics" : "/analytics",
       icon: BarChart3,
       visible: settings?.visible_pages?.analytics !== false,
     },
     {
       name: "Archive",
-      path: `${baseRoute}/archive`,
+      href: isDemo ? "/demo/archive" : "/archive",
       icon: Archive,
       visible: settings?.visible_pages?.archive !== false,
     },
     {
       name: "Help",
-      path: `${baseRoute}/help`,
+      href: isDemo ? "/demo/help" : "/help",
       icon: HelpCircle,
       visible: settings?.visible_pages?.help !== false,
     },
-  ];
+  ].filter(item => item.visible);
+
+  const renderNavItems = (items: typeof navItems) => (
+    <nav className="grid items-start gap-2">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const isActive = location.pathname === item.href;
+        return (
+          <Link
+            key={item.name}
+            to={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+              isActive && "bg-muted text-primary",
+            )}
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <Icon className="h-4 w-4" />
+            {item.name}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
+  const sidebarContent = (
+    <div className="flex h-full max-h-screen flex-col gap-2">
+      <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+        <Link to={isDemo ? "/demo/dashboard" : "/dashboard"} className="flex items-center gap-2 font-semibold">
+          <ListTodo className="h-6 w-6" />
+          <span className="">TaskMaster</span>
+        </Link>
+      </div>
+      <div className="flex-1 overflow-auto py-2">
+        <div className="grid items-start px-4 text-sm font-medium">
+          {renderNavItems(navItems)}
+          <Separator className="my-4" />
+          {renderNavItems(bottomNavItems)}
+        </div>
+      </div>
+      <div className="mt-auto p-4 border-t flex flex-col gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="w-full justify-start h-9">
+              <Palette className="mr-2 h-4 w-4" />
+              <span>Theme: {theme === 'system' ? 'System' : theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : 'Unknown'}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setTheme('system')} className={theme === 'system' ? 'font-bold' : ''}>
+              <Monitor className="h-3.5 w-3.5 mr-2" />
+              System
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('light')} className={theme === 'light' ? 'font-bold' : ''}>
+              <Sun className="h-3.5 w-3.5 mr-2" />
+              Light
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme('dark')} className={theme === 'dark' ? 'font-bold' : ''}>
+              <Moon className="h-3.5 w-3.5 mr-2" />
+              Dark
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="flex h-full">
-      {/* Mobile Sidebar Toggle */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </Button>
-
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-40 w-64 bg-background border-r transition-transform duration-200 ease-in-out md:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        <div className="flex h-full flex-col py-4 px-3">
-          <div className="flex items-center justify-between mb-6 px-3">
-            <h2 className="text-2xl font-bold text-primary">Task Master</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-          <nav className="flex-1 space-y-1">
-            {navItems.map(
-              (item) =>
-                item.visible && (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                      location.pathname === item.path && "bg-muted text-primary"
-                    )}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                  </Link>
-                )
-            )}
-          </nav>
-          <div className="mt-auto space-y-1 border-t pt-4">
-            {bottomNavItems.map(
-              (item) =>
-                item.visible && (
-                  <Link
-                    key={item.name}
-                    to={item.path}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                      location.pathname === item.path && "bg-muted text-primary"
-                    )}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {item.name}
-                  </Link>
-                )
-            )}
-          </div>
-        </div>
-      </aside>
-      <main className={cn("flex-1 md:ml-64", isOpen && "ml-64 md:ml-64")}>{children}</main>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-muted/40 md:block">
+        {sidebarContent}
+      </div>
+      <div className="flex flex-col h-full">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6 md:hidden">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col w-[280px] sm:w-[320px] p-0">
+              {sidebarContent}
+            </SheetContent>
+          </Sheet>
+          <Link to={isDemo ? "/demo/dashboard" : "/dashboard"} className="flex items-center gap-2 font-semibold">
+            <ListTodo className="h-6 w-6" />
+            <span className="">TaskMaster</span>
+          </Link>
+        </header>
+        {children}
+      </div>
     </div>
   );
 };
