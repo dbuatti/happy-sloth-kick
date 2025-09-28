@@ -14,6 +14,8 @@ import {
   DragOverlay,
   PointerSensor,
   closestCorners,
+  UniqueIdentifier,
+  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -63,7 +65,8 @@ const SortableTaskReorderItem: React.FC<{
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
   isOverlay?: boolean;
-}> = ({ task, isOverlay, ...rest }) => {
+  isDropTarget?: boolean; // New prop for drop target highlight
+}> = ({ task, isOverlay, isDropTarget, ...rest }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -86,7 +89,8 @@ const SortableTaskReorderItem: React.FC<{
       style={style}
       className={cn(
         "relative group flex items-center cursor-grab", // Added cursor-grab
-        isOverlay ? "bg-card rounded-lg" : "" // Base styling for the li wrapper
+        isOverlay ? "bg-card rounded-lg" : "", // Base styling for the li wrapper
+        isDropTarget && "border-2 border-primary-foreground" // Highlight drop target
       )}
       {...listeners}
       {...attributes}
@@ -138,6 +142,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [overId, setOverId] = useState<UniqueIdentifier | null>(null); // New state for drop target
 
   useEffect(() => {
     if (isOpen) {
@@ -160,10 +165,16 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     const active = tasks.find(t => t.id === event.active.id);
     setActiveTask(active || null);
+    setOverId(null); // Reset overId on drag start
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId(event.over?.id || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveTask(null);
+    setOverId(null); // Reset overId on drag end
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
@@ -196,6 +207,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver} // Added onDragOver handler
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={localTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
@@ -215,6 +227,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
+                  isDropTarget={task.id === overId} // Pass isDropTarget prop
                 />
               ))}
             </ul>
@@ -236,6 +249,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
                   isOverlay={true}
+                  isDropTarget={false} // Overlay itself is not a drop target
                 />
               ) : null}
             </DragOverlay>,
