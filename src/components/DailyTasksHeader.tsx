@@ -1,13 +1,14 @@
 import React, { useRef } from 'react';
 import DateNavigator from './DateNavigator';
-import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
+import { Button } from '@/components/ui/button';
+import { Filter as FilterIcon } from 'lucide-react'; // Import Filter icon
 
 interface DailyTasksHeaderProps {
-  currentDate: Date;
+  currentDate: React.SetStateAction<Date>;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   tasks: Task[]; // Added
   filteredTasks: Task[]; // Added
@@ -15,16 +16,17 @@ interface DailyTasksHeaderProps {
   allCategories: Category[];
   userId: string | null;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  searchFilter: string;
-  setSearchFilter: (value: string) => void;
-  statusFilter: string;
-  setStatusFilter: (value: string) => void;
-  categoryFilter: string;
-  setCategoryFilter: (value: string) => void;
-  priorityFilter: string;
-  setPriorityFilter: (value: string) => void;
-  sectionFilter: string;
-  setSectionFilter: (value: string) => void;
+  // Removed filter-related props as they are now handled by FilterPanel
+  // searchFilter: string;
+  // setSearchFilter: (value: string) => void;
+  // statusFilter: string;
+  // setStatusFilter: (value: string) => void;
+  // categoryFilter: string;
+  // setCategoryFilter: (value: string) => void;
+  // priorityFilter: string;
+  // setPriorityFilter: (value: string) => void;
+  // sectionFilter: string;
+  // setSectionFilter: (value: string) => void;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -49,6 +51,8 @@ interface DailyTasksHeaderProps {
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
   isManageSectionsOpen: boolean; // Added
   setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
+  isFilterPanelOpen: boolean; // New prop
+  toggleFilterPanel: () => void; // New prop
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -57,16 +61,17 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   sections,
   allCategories,
   setIsFocusPanelOpen,
-  searchFilter,
-  setSearchFilter,
-  statusFilter,
-  setStatusFilter,
-  categoryFilter,
-  setCategoryFilter,
-  priorityFilter,
-  setPriorityFilter,
-  sectionFilter,
-  setSectionFilter,
+  // Removed filter-related props from destructuring
+  // searchFilter,
+  // setSearchFilter,
+  // statusFilter,
+  // setStatusFilter,
+  // categoryFilter,
+  // setCategoryFilter,
+  // priorityFilter,
+  // setPriorityFilter,
+  // sectionFilter,
+  // setSectionFilter,
   createSection,
   updateSection,
   deleteSection,
@@ -83,15 +88,18 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   toggleDoToday,
   onToggleAllSections,
-  isManageCategoriesOpen, // Destructured
-  setIsManageCategoriesOpen, // Destructured
-  isManageSectionsOpen, // Destructured
-  setIsManageSectionsOpen, // Destructured
+  isManageCategoriesOpen,
+  setIsManageCategoriesOpen,
+  isManageSectionsOpen,
+  setIsManageSectionsOpen,
+  isFilterPanelOpen,
+  toggleFilterPanel,
 }) => {
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Removed searchInputRef as it's no longer used in this component
+  // const searchInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4"> {/* Added sticky, top-0, z-10, and bg-background */}
+    <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4">
       <div className="flex items-center justify-between px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}
@@ -100,6 +108,17 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
           onGoToToday={() => setCurrentDate(new Date())}
           setCurrentDate={setCurrentDate}
         />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={toggleFilterPanel}
+          className="flex items-center gap-2"
+          aria-expanded={isFilterPanelOpen}
+          aria-controls="filter-panel"
+        >
+          <FilterIcon className="h-4 w-4" />
+          Filters
+        </Button>
       </div>
 
       <DailyOverviewCard
@@ -120,23 +139,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         onToggleAllSections={onToggleAllSections}
       />
 
-      <TaskFilter
-        currentDate={currentDate}
-        setCurrentDate={setCurrentDate}
-        searchFilter={searchFilter}
-        setSearchFilter={setSearchFilter}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        priorityFilter={priorityFilter}
-        setPriorityFilter={setPriorityFilter}
-        sectionFilter={sectionFilter}
-        setSectionFilter={setSectionFilter}
-        sections={sections}
-        allCategories={allCategories}
-        searchRef={searchInputRef}
-      />
+      {/* TaskFilter component is removed from here */}
 
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}
