@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useRef } from 'react'; // Removed useEffect
+import React, { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useTasks, Task } from '@/hooks/useTasks'; // Removed NewTaskData
+import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskFilter from '@/components/TaskFilter';
 import { Button } from '@/components/ui/button';
-import { Archive as ArchiveIcon, Trash2 } from 'lucide-react'; // Removed Undo2, ListRestart
+import { Archive as ArchiveIcon, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,19 +16,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// Removed import { toast } from 'sonner';
 import { showSuccess } from '@/utils/toast';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAppointments } from '@/hooks/useAppointments';
 
 interface ArchivePageProps {
   isDemo?: boolean;
-  demoUserId?: string;
+  demoUserId?: string | null; // Updated to accept null
 }
 
 const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth(); // Removed isLoading: authLoading
-  const userId = demoUserId || user?.id || null; // Explicitly convert undefined to null
+  const { user } = useAuth();
+  const userId = demoUserId || user?.id || null;
 
   const [currentDate] = useState(new Date());
   const [searchFilter, setSearchFilter] = useState('');
@@ -93,8 +92,6 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
     setIsTaskDetailOpen(true);
   }, []);
 
-  // Removed handleRestoreTask as it was declared but never read.
-
   const handleClearArchive = async () => {
     setIsClearingArchive(true);
     const archivedTaskIds = tasks.filter(t => t.status === 'archived').map(t => t.id);
@@ -105,8 +102,6 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
     setIsClearingArchive(false);
     setShowConfirmClearArchiveDialog(false);
   };
-
-  // Removed handleToggleTaskSelection as it was declared but never read.
 
   const handleClearSelection = () => {
     setSelectedTaskIds(new Set());
@@ -130,7 +125,6 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
     }
   };
 
-  // Removed authLoading from condition as it's no longer destructured.
   if (tasksLoading) {
     return <div className="flex justify-center items-center h-screen">Loading archive...</div>;
   }

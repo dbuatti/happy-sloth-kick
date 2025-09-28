@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';

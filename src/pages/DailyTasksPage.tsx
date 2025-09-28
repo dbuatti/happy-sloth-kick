@@ -1,6 +1,6 @@
-import React, { useState, useRef, useCallback } from 'react'; // Removed useEffect
+import React, { useState, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useTasks, Task } from '@/hooks/useTasks'; // Removed NewTaskData
+import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -15,13 +15,13 @@ import { showSuccess } from '@/utils/toast';
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
-  demoUserId?: string;
+  demoUserId?: string | null; // Updated to accept null
 }
 
 const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
-  const { user } = useAuth(); // Removed isLoading: authLoading
-  const userId = demoUserId || user?.id || null; // Explicitly convert undefined to null
-  const { settings, loading: settingsLoading } = useSettings(); // Removed updateSettings
+  const { user } = useAuth();
+  const userId = demoUserId || user?.id || null;
+  const { settings, loading: settingsLoading } = useSettings();
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [searchFilter, setSearchFilter] = useState('');
@@ -59,8 +59,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     toggleDoToday,
     dailyProgress,
     nextAvailableTask,
-    archiveAllCompletedTasks, // Added
-    toggleAllDoToday, // Added
+    archiveAllCompletedTasks,
+    toggleAllDoToday,
   } = useTasks({
     currentDate,
     userId,
@@ -108,8 +108,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     }
   };
 
-  // Removed handleToggleTaskSelection as it was declared but never read.
-
   const handleClearSelection = () => {
     setSelectedTaskIds(new Set());
   };
@@ -148,7 +146,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     }
   };
 
-  // Removed authLoading from condition as it's no longer destructured.
   if (settingsLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Sidebar } from '@/components/Sidebar';
@@ -31,7 +30,7 @@ import CommandPalette from '@/components/CommandPalette';
 const queryClient = new QueryClient();
 
 const AppRoutes: React.FC = () => {
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth(); // Removed isLoading
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Demo user logic
@@ -66,9 +65,7 @@ const AppRoutes: React.FC = () => {
     };
   }, []);
 
-  if (isLoading) {
-    return <div>Loading authentication...</div>;
-  }
+  // Removed isLoading check as it's no longer destructured from useAuth
 
   return (
     <Sidebar isDemo={isDemoMode}>
@@ -136,7 +133,7 @@ const App: React.FC = () => {
           </SettingsProvider>
         </AuthProvider>
       </ThemeProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {/* Removed ReactQueryDevtools as it's causing module not found error */}
     </QueryClientProvider>
   );
 };

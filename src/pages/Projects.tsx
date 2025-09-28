@@ -1,18 +1,18 @@
 import React from 'react';
 
-interface SettingsProps {
+interface ProjectsProps {
   isDemo?: boolean;
   demoUserId?: string | null;
 }
 
-const Settings: React.FC<SettingsProps> = ({ isDemo = false, demoUserId }) => {
+const Projects: React.FC<ProjectsProps> = ({ isDemo = false, demoUserId }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full p-4">
-      <h1 className="text-3xl font-bold mb-4">Settings Page</h1>
-      <p className="text-muted-foreground">This is a placeholder for the Settings page.</p>
+      <h1 className="text-3xl font-bold mb-4">Projects Page</h1>
+      <p className="text-muted-foreground">This is a placeholder for the Projects page.</p>
       {isDemo && <p className="text-sm text-muted-foreground mt-2">Demo Mode: User ID - {demoUserId}</p>}
     </div>
   );
 };
 
-export default Settings;
+export default Projects;
