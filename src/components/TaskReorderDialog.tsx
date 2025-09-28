@@ -76,12 +76,23 @@ const SortableTaskReorderItem: React.FC<{
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    // When the original item is dragging, make it transparent
-    opacity: isDragging && !isOverlay ? 0 : 1,
     // When it's the overlay, ensure it's fully opaque and has a strong shadow
     boxShadow: isOverlay ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' : 'none',
     zIndex: isOverlay ? 999 : 'auto', // Ensure overlay is on top
   };
+
+  // Render a placeholder when the item is being dragged but is not the overlay
+  if (isDragging && !isOverlay) {
+    return (
+      <li
+        ref={setNodeRef}
+        style={style}
+        className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg flex items-center justify-center text-muted-foreground"
+      >
+        Dragging...
+      </li>
+    );
+  }
 
   return (
     <li
