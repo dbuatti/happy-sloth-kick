@@ -147,8 +147,8 @@ export const useTaskProcessing = ({
               completed_at: isCompletedTodayInLog ? todayStart.toISOString() : null, // Set completed_at if completed
               isDoTodayOff: false, // Recurring tasks are never "off" via doTodayOffIds
             };
-            // console.log(`[useTaskProcessing] Template Task ID: ${templateTask.id}, Template Recurring Type: ${templateTask.recurring_type}`);
-            // console.log(`[useTaskProcessing] Created virtual task ID: ${virtualTask.id}, Virtual Recurring Type: ${virtualTask.recurring_type}`);
+            console.log(`[useTaskProcessing] Template Task ID: ${templateTask.id}, Template Recurring Type: ${templateTask.recurring_type}`);
+            console.log(`[useTaskProcessing] Created virtual task ID: ${virtualTask.id}, Virtual Recurring Type: ${virtualTask.recurring_type}`);
             allProcessedTasks.push(virtualTask);
           }
         } else {

@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -46,7 +46,8 @@ interface TaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  // expandedTasks?: Record<string, boolean>; // Removed this prop as it's not used in TaskItem
+  attributes?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
+  listeners?: React.HTMLAttributes<HTMLDivElement>; // Added for drag handle
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -66,7 +67,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  // expandedTasks, // Removed from destructuring
+  attributes, // Destructure
+  listeners, // Destructure
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -192,7 +194,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
         getPriorityDotColor(task.priority)
       )} />
 
-      {/* Drag Handle - REMOVED */}
+      {/* Drag Handle */}
+      {!isOverlay && !task.parent_task_id && ( // Only show drag handle for top-level tasks
+        <div className="flex-shrink-0 pr-2 -ml-3" {...listeners} {...attributes} onPointerDown={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="icon" className="h-8 w-8 cursor-grab touch-none text-muted-foreground hover:bg-transparent">
+            <GripVertical className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       <div className="flex-shrink-0 pr-3 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
