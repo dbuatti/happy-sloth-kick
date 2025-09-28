@@ -61,7 +61,7 @@ const SortableTaskReorderItem: React.FC<{
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setFocusTask: (taskId: string | null) => Promise<void>;
-  isDoToday: boolean; // This prop already exists
+  isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
@@ -122,7 +122,7 @@ const SortableTaskReorderItem: React.FC<{
           level={0}
           isOverlay={isOverlay}
           setFocusTask={rest.setFocusTask}
-          isDoToday={rest.isDoToday} // FIX: Use the prop directly
+          isDoToday={rest.isDoToday}
           toggleDoToday={rest.toggleDoToday}
           scheduledTasksMap={rest.scheduledTasksMap}
           isDemo={rest.isDemo}
@@ -242,7 +242,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setFocusTask={setFocusTask}
-                  isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)} // This is the correct calculation
+                  isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
@@ -263,7 +263,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setFocusTask={setFocusTask}
-                  isDoToday={!doTodayOffIds.has(activeTask.original_task_id || activeTask.id)} // This is the correct calculation
+                  isDoToday={!doTodayOffIds.has(activeTask.original_task_id || activeTask.id)}
                   toggleDoToday={toggleDoToday}
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}

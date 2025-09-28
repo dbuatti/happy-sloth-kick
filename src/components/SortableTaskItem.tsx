@@ -90,8 +90,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     >
       <div className={cn(
         "flex-1",
-        level > 0 && "relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30", // Vertical line
-        `pl-${level * 6}` // Tailwind's `pl-6`, `pl-12`, etc. for indentation
+        level > 0 && "relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30", // Vertical line adjusted to left-4
+        `pl-${level * 8}` // Tailwind's `pl-8`, `pl-16`, etc. for deeper indentation
       )}>
         <TaskItem
           task={task}

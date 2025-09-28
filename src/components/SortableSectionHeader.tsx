@@ -118,7 +118,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
       style={style}
       className={cn(
         "flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200",
-        isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/30",
+        isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/40", // Enhanced hover effect
         isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
         isDemo && "opacity-70 cursor-not-allowed",
         "group"
@@ -153,14 +153,14 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-grab"
+                className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground cursor-grab" // Slightly larger drag handle
                 {...listeners} // Apply listeners directly to the Button
                 {...attributes} // Apply attributes directly to the Button
                 onClick={(e) => e.stopPropagation()} // Prevent click from triggering other actions
                 onPointerDown={(e) => e.stopPropagation()} // Prevent drag from starting on click
                 aria-label="Reorder section"
               >
-                <GripVertical className="h-4 w-4" />
+                <GripVertical className="h-5 w-5" /> {/* Slightly larger icon */}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Drag to reorder section</TooltipContent>
@@ -175,17 +175,17 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
               onChange={(e) => setEditedName(e.target.value)}
               onBlur={handleSaveName}
               onKeyDown={handleInputKeyDown}
-              className="h-8 text-lg font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
-              onPointerDown={(e) => e.stopPropagation()} // FIX: Changed e.PointerEvent.stopPropagation() to e.stopPropagation()
+              className="h-8 text-xl font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full" // Increased font size
+              onPointerDown={(e) => e.stopPropagation()}
             />
           ) : (
             <h2 className={cn(
-              "text-lg font-semibold flex items-center gap-2 cursor-pointer",
+              "text-xl font-semibold flex items-center gap-2 cursor-pointer", // Increased font size
               isNoSection && "text-muted-foreground"
             )} onClick={() => !isOverlay && !isNoSection && toggleSection(section.id)}>
               {section.name}
               {!isNoSection && sectionTasksCount > 0 && (
-                <span className="text-sm font-normal text-muted-foreground ml-1">({sectionTasksCount})</span>
+                <span className="text-base font-medium text-muted-foreground ml-1">({sectionTasksCount})</span> // Adjusted font size and weight
               )}
             </h2>
           )}
