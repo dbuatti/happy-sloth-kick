@@ -16,6 +16,7 @@ interface UseTaskProcessingProps {
   userSettings: UserSettings | null;
   sections: TaskSection[];
   doTodayOffIds: Set<string>;
+  recurringTaskCompletions: Set<string>; // Added this prop
 }
 
 // Regex to validate UUID format
@@ -34,6 +35,7 @@ export const useTaskProcessing = ({
   userSettings,
   sections,
   doTodayOffIds,
+  recurringTaskCompletions, // Destructure the new prop
 }: UseTaskProcessingProps) => {
   const todayStart = startOfDay(effectiveCurrentDate);
 
@@ -78,6 +80,8 @@ export const useTaskProcessing = ({
         return;
       }
 
+      const isRecurringTemplate = templateTask.recurring_type !== 'none'; // Define isRecurringTemplate here
+
       if (templateTask.recurring_type === 'none') {
         allProcessedTasks.push({ 
           ...templateTask, 
@@ -89,7 +93,10 @@ export const useTaskProcessing = ({
         
         let relevantInstance: Omit<Task, 'category_color' | 'isDoTodayOff'> | null = null;
 
-        // 1. Prioritize an instance completed today
+        // Check if the recurring task is marked as completed for today in the log
+        const isCompletedTodayInLog = recurringTaskCompletions.has(templateTask.id);
+
+        // 1. Prioritize an instance completed today (if it's a real instance)
         relevantInstance = sortedInstances.find(t => 
           t.status === 'completed' && 
           t.completed_at && 
@@ -97,7 +104,7 @@ export const useTaskProcessing = ({
           isSameDay(startOfDay(parseISO(t.completed_at)), todayStart)
         ) ?? null;
 
-        // 2. If no instance was completed today, look for an instance created today (to-do)
+        // 2. If no real instance was completed today, look for an instance created today (to-do)
         if (!relevantInstance) {
           relevantInstance = sortedInstances.find(t => 
             t.status === 'to-do' && 
@@ -126,25 +133,30 @@ export const useTaskProcessing = ({
 
           // For daily recurring, isDailyMatch is always true.
           // For weekly/monthly, it depends on the day/date match.
-          // Removed the check for templateTask.status !== 'archived' to allow virtual tasks for archived templates
           if ((isDailyRecurring || isWeeklyMatch || isMonthlyMatch)) {
             const virtualTask: Task = {
               ...baseTaskForVirtual,
               id: `virtual-${templateTask.id}-${format(todayStart, 'yyyy-MM-dd')}`,
               created_at: todayStart.toISOString(),
-              status: 'to-do',
+              status: isCompletedTodayInLog ? 'completed' : 'to-do', // Set status based on completion log
               original_task_id: templateTask.id,
               remind_at: baseTaskForVirtual.remind_at ? format(parseISO(baseTaskForVirtual.remind_at), 'yyyy-MM-ddTHH:mm:ssZ') : null,
               due_date: baseTaskForVirtual.due_date ? todayStart.toISOString() : null,
               category_color: categoriesMapLocal.get(baseTaskForVirtual.category || '') || 'gray',
-              completed_at: null,
+              completed_at: isCompletedTodayInLog ? todayStart.toISOString() : null, // Set completed_at if completed
               isDoTodayOff: false, // Recurring tasks are never "off" via doTodayOffIds
             };
             allProcessedTasks.push(virtualTask);
           }
         } else {
+          // If a real instance was found, update its status based on the log if it's a recurring task
+          const finalStatus = isRecurringTemplate && isCompletedTodayInLog ? 'completed' : relevantInstance.status;
+          const finalCompletedAt = isRecurringTemplate && isCompletedTodayInLog ? todayStart.toISOString() : relevantInstance.completed_at;
+
           allProcessedTasks.push({ 
             ...relevantInstance, 
+            status: finalStatus,
+            completed_at: finalCompletedAt,
             category_color: categoriesMapLocal.get(relevantInstance.category || '') || 'gray',
             isDoTodayOff: false, // Recurring tasks are never "off" via doTodayOffIds
           });
@@ -152,7 +164,7 @@ export const useTaskProcessing = ({
       }
     });
     return allProcessedTasks;
-  }, [rawTasks, todayStart, categoriesMap, doTodayOffIds]);
+  }, [rawTasks, todayStart, categoriesMap, doTodayOffIds, recurringTaskCompletions]); // Add recurringTaskCompletions to dependencies
 
   const filtered = useMemo(() => {
     let filteredTasks = processedTasks;
