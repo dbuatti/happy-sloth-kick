@@ -8,7 +8,7 @@ import { supabase } from './integrations/supabase/client';
 import ProtectedRoute from './components/ProtectedRoute';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import MealPlanner from './pages/MealPlanner'; // Import the new MealPlanner page
+import MealPlanner from './pages/MealPlanner';
 
 const queryClient = new QueryClient();
 
@@ -24,7 +24,7 @@ function App() {
                 <Link to="/" className="hover:underline">Home</Link>
               </li>
               <li>
-                <Link to="/meal-planner" className="hover:underline">Meal Planner</Link> {/* Add link to Meal Planner */}
+                <Link to="/meal-planner" className="hover:underline">Meal Planner</Link>
               </li>
               {/* Add other navigation links here */}
             </ul>

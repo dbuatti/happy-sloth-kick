@@ -14,7 +14,7 @@ interface MealSlotProps {
 }
 
 const MealSlot: React.FC<MealSlotProps> = ({ meal, mealType, date, onAddMeal }) => {
-  const formattedDate = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  // formattedDate was unused, so it's removed.
 
   return (
     <Card className="h-full flex flex-col">
