@@ -1,58 +1,74 @@
-import React from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from 'lucide-react';
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from '@/lib/utils';
+import { getCategoryColorProps } from '@/lib/categoryColors';
 import { Category } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 
 interface CategorySelectorProps {
-  selectedCategory: string | null;
-  onCategoryChange: (categoryId: string | null) => void;
+  value: string;
+  onChange: (categoryId: string) => void;
   categories: Category[];
-  onOpenManageCategories: () => void;
-  isManageCategoriesOpen: boolean;
-  setIsManageCategoriesOpen: (isOpen: boolean) => void;
 }
 
-const CategorySelector: React.FC<CategorySelectorProps> = ({
-  selectedCategory,
-  onCategoryChange,
-  categories,
-  onOpenManageCategories,
-  isManageCategoriesOpen,
-  setIsManageCategoriesOpen,
-}) => {
+const CategorySelector: React.FC<CategorySelectorProps> = ({ value, onChange, categories }) => {
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+
+  const selectedCategory = categories.find(cat => cat.id === value);
+  const selectedCategoryColorProps = selectedCategory ? getCategoryColorProps(selectedCategory.color) : getCategoryColorProps('gray');
+
   const handleCategoryCreated = () => {
-    // No specific action needed here, as categories are refetched by useTasks
+    // The useTasks hook will automatically refetch categories due to real-time subscription
   };
 
-  const handleCategoryDeleted = (deletedId?: string) => { // Adjusted signature
-    if (deletedId && selectedCategory === deletedId) {
-      onCategoryChange(null); // Clear selected category if it was deleted
+  const handleCategoryDeleted = (deletedId: string) => {
+    if (value === deletedId) {
+      const generalCategory = categories.find(cat => cat.name.toLowerCase() === 'general');
+      if (generalCategory) {
+        onChange(generalCategory.id);
+      } else if (categories.length > 0) {
+        onChange(categories[0].id);
+      } else {
+        onChange('');
+      }
     }
   };
 
   return (
-    <>
-      <div className="flex items-center space-x-2">
-        <Select value={selectedCategory || "all"} onValueChange={(value) => onCategoryChange(value === "all" ? null : value)}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: category.color }} />
-                  {category.name}
+    <div className="space-y-2">
+      <Label>Category</Label>
+      <div className="flex space-x-2">
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger className="flex-1 min-w-0 h-9 text-base">
+            <SelectValue placeholder="Select category">
+              <div className="flex items-center gap-2 w-full">
+                <div className={cn("w-3.5 h-3.5 rounded-full flex items-center justify-center border", selectedCategoryColorProps.backgroundClass, selectedCategoryColorProps.dotBorder)}>
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: selectedCategoryColorProps.dotColor }}></div>
                 </div>
-              </SelectItem>
-            ))}
+                <span className="flex-1 min-w-0 truncate">
+                  {selectedCategory ? selectedCategory.name : 'Select category'}
+                </span>
+              </div>
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="z-[9999]">
+            {categories.map(category => {
+              const colorProps = getCategoryColorProps(category.color);
+              return (
+                <SelectItem key={category.id} value={category.id}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center border" style={{ backgroundColor: colorProps.dotColor }}></div>
+                    {category.name}
+                  </div >
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="icon" onClick={onOpenManageCategories}>
-          <PlusCircle className="h-4 w-4" />
+        <Button type="button" size="icon" variant="outline" className="h-9 w-9" onClick={() => setIsManageCategoriesOpen(true)}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-plus"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
         </Button>
       </div>
 
@@ -63,7 +79,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         onCategoryCreated={handleCategoryCreated}
         onCategoryDeleted={handleCategoryDeleted}
       />
-    </>
+    </div>
   );
 };
 

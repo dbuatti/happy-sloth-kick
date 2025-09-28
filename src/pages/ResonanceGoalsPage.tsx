@@ -1,319 +1,224 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { useGoals, Goal, NewGoalData } from '@/hooks/useGoals';
-import { useTasks, Task, Category } from '@/hooks/useTasks';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Target, ChevronRight, ChevronDown, Edit, Trash2, CheckCircle2, XCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import GoalFormDialog from '@/components/GoalFormDialog';
-import GoalDetailDialog from '@/components/GoalDetailDialog';
+import { Plus, Tag } from 'lucide-react'; 
+import { useResonanceGoals, Goal, GoalType } from '@/hooks/useResonanceGoals'; 
 import { useAuth } from '@/context/AuthContext';
-import { useSettings } from '@/context/SettingsContext';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { HexColorPicker } from 'react-colorful';
-import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
+import ResonanceGoalTimelineSection from '@/components/ResonanceGoalTimelineSection';
+import GoalForm from '@/components/GoalForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { showError, showSuccess } from '@/utils/toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import ManageCategoriesDialog from '@/components/ManageCategoriesDialog'; 
 
-interface ResonanceGoalsPageProps {
-  isDemo?: boolean;
-  demoUserId?: string;
-}
-
-const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
+const ResonanceGoalsPage: React.FC<{ isDemo?: boolean; demoUserId?: string }> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
   const userId = demoUserId || user?.id;
-  const { settings } = useSettings();
-
   const {
     goals,
-    loading: goalsLoading,
-    createGoal,
+    categories,
+    loading,
+    addGoal,
     updateGoal,
     deleteGoal,
-    updateGoalOrder,
-  } = useGoals({ userId: userId || '' });
-
-  const {
-    allCategories,
-    loading: categoriesLoading,
-    createCategory,
-    updateCategory,
-    deleteCategory,
-  } = useTasks({ currentDate: new Date(), userId: userId || '' }); // Using useTasks to get category functions
+    addCategory,
+  } = useResonanceGoals({ userId });
 
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
-  const [isGoalDetailOpen, setIsGoalDetailOpen] = useState(false);
-  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
-  const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
+  const [parentGoalForSubGoal, setParentGoalForSubGoal] = useState<string | null>(null);
+  const [preselectedGoalType, setPreselectedGoalType] = useState<GoalType>('monthly');
+
+  const [showConfirmDeleteDialog, setShowConfirmDeleteDialog] = useState(false);
+  const [goalToDeleteId, setGoalToDeleteId] = useState<string | null>(null);
+  const [goalToDeleteTitle, setGoalToDeleteTitle] = useState<string | null>(null);
+
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
 
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
-  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-  const [editingCategoryName, setEditingCategoryName] = useState('');
-  const [editingCategoryColor, setEditingCategoryColor] = useState('');
+  const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
 
-  const defaultColors = [
-    '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E', '#10B981', '#06B6D4',
-    '#0EA5E9', '##3B82F6', '#6366F1', '#A855F7', '#D946EF', '#EC4899', '#F43F5E', '#78716C',
-  ];
+  const toggleExpandGoal = (goalId: string) => {
+    setExpandedGoals(prev => ({ ...prev, [goalId]: !prev[goalId] }));
+  };
 
-  const handleOpenGoalForm = (goal?: Goal) => {
-    setEditingGoal(goal || null);
+  const handleOpenGoalForm = (goal: Goal | null, type: GoalType = 'monthly', parentId: string | null = null) => {
+    if (isDemo) {
+      showError('Goal management is not available in demo mode.');
+      return;
+    }
+    setEditingGoal(goal);
+    setPreselectedGoalType(type);
+    setParentGoalForSubGoal(parentId);
     setIsGoalFormOpen(true);
   };
 
-  const handleCloseGoalForm = () => {
-    setIsGoalFormOpen(false);
-    setEditingGoal(null);
+  const handleSaveGoal = async (goalData: Parameters<typeof GoalForm>['0']['onSave'] extends (data: infer T) => any ? T : never) => {
+    try {
+      if (editingGoal) {
+        await updateGoal({ id: editingGoal.id, updates: goalData });
+      } else {
+        await addGoal(goalData);
+      }
+      setIsGoalFormOpen(false);
+      showSuccess('Goal saved successfully!');
+    } catch (error: any) {
+      console.error('Error saving goal:', error);
+      showError('Failed to save goal.');
+    }
   };
 
-  const handleSaveGoal = async (goalData: NewGoalData) => {
-    if (!userId) {
-      showError('User not authenticated.');
+  const handleDeleteGoalClick = (goalId: string, goalTitle: string) => {
+    if (isDemo) {
+      showError('Goal management is not available in demo mode.');
       return;
     }
-    if (editingGoal) {
-      await updateGoal(editingGoal.id, goalData);
-    } else {
-      await createGoal(goalData);
+    setGoalToDeleteId(goalId);
+    setGoalToDeleteTitle(goalTitle);
+    setShowConfirmDeleteDialog(true);
+  };
+
+  const confirmDeleteGoal = async () => {
+    if (goalToDeleteId) {
+      await deleteGoal(goalToDeleteId);
+      setShowConfirmDeleteDialog(false);
+      setGoalToDeleteId(null);
+      setGoalToDeleteTitle(null);
     }
-    handleCloseGoalForm();
   };
 
-  const handleOpenGoalDetail = (goal: Goal) => {
-    setSelectedGoal(goal);
-    setIsGoalDetailOpen(true);
+  const handleAddCategory = async (name: string, color: string) => {
+    if (isDemo) {
+      showError('Category management is not available in demo mode.');
+      return null;
+    }
+    try {
+      const newCategory = await addCategory({ name, color });
+      showSuccess('Category added!');
+      return newCategory;
+    } catch (error) {
+      console.error('Error adding category:', error);
+      showError('Failed to add category.');
+      return null;
+    }
   };
-
-  const handleCloseGoalDetail = () => {
-    setIsGoalDetailOpen(false);
-    setSelectedGoal(null);
-  };
-
-  const toggleGoalExpansion = useCallback((goalId: string) => {
-    setExpandedGoals(prev => ({
-      ...prev,
-      [goalId]: !prev[goalId],
-    }));
-  }, []);
-
-  const getSubGoals = useCallback((parentId: string) => {
-    return goals.filter(goal => goal.parent_goal_id === parentId)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [goals]);
-
-  const getCategoryName = useCallback((categoryId: string | null) => {
-    return allCategories.find(cat => cat.id === categoryId)?.name || 'Uncategorized';
-  }, [allCategories]);
-
-  const getCategoryColor = useCallback((categoryId: string | null) => {
-    return allCategories.find(cat => cat.id === categoryId)?.color || '#9ca3af'; // Default gray
-  }, [allCategories]);
 
   const handleCategoryCreated = () => {
-    // No specific action needed here, as categories are refetched by useTasks
+    // Categories are automatically refetched by react-query due to real-time subscription
+    // No explicit action needed here other than potentially closing a form if it existed
   };
 
-  const handleCategoryDeleted = (_deletedId?: string) => { // Adjusted signature
-    // No specific action needed here, as categories are refetched by useTasks
+  const handleCategoryDeleted = (_deletedId: string) => { // Mark as unused with _
+    // Categories are automatically refetched by react-query due to real-time subscription
+    // If any goals were using this category, their category_id will be set to null by the RLS policy.
   };
 
-  const handleCreateCategory = async () => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-    if (!newCategoryName.trim()) {
-      showError('Category name cannot be empty.');
-      return;
-    }
-    try {
-      await createCategory({ name: newCategoryName.trim(), color: newCategoryColor });
-      showSuccess('Category created!');
-      setNewCategoryName('');
-      setNewCategoryColor(defaultColors[0]);
-      handleCategoryCreated();
-    } catch (error) {
-      console.error('Error creating category:', error);
-      showError('Failed to create category.');
-    }
-  };
+  const goalTypes: GoalType[] = useMemo(() => [
+    'daily', 'weekly', 'monthly', '3-month', '6-month', '9-month', 'yearly', '3-year', '5-year', '7-year', '10-year'
+  ], []);
 
-  const handleEditCategory = (category: Category) => {
-    setEditingCategoryId(category.id);
-    setEditingCategoryName(category.name);
-    setEditingCategoryColor(category.color);
-  };
-
-  const handleSaveCategoryEdit = async (categoryId: string) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-    if (!editingCategoryName.trim()) {
-      showError('Category name cannot be empty.');
-      return;
-    }
-    try {
-      await updateCategory({ id: categoryId, updates: { name: editingCategoryName.trim(), color: editingCategoryColor } });
-      showSuccess('Category updated!');
-      setEditingCategoryId(null);
-      setEditingCategoryName('');
-      setEditingCategoryColor('');
-    } catch (error) {
-      console.error('Error updating category:', error);
-      showError('Failed to update category.');
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId: string) => {
-    if (!userId) {
-      showError('User not authenticated.');
-      return;
-    }
-    if (window.confirm('Are you sure you want to delete this category? All goals associated with it will lose their category.')) {
-      try {
-        await deleteCategory(categoryId);
-        showSuccess('Category deleted!');
-        handleCategoryDeleted(categoryId);
-      } catch (error) {
-        console.error('Error deleting category:', error);
-        showError('Failed to delete category.');
-      }
-    }
-  };
-
-  const renderGoal = (goal: Goal, level: number) => {
-    const subGoals = getSubGoals(goal.id);
-    const isExpanded = expandedGoals[goal.id];
-    const hasSubGoals = subGoals.length > 0;
-
-    return (
-      <li key={goal.id} className="mb-2">
-        <div
-          className={cn(
-            "flex items-center justify-between p-3 rounded-lg shadow-sm border bg-card hover:bg-accent/50 transition-colors cursor-pointer",
-            level > 0 && "ml-6"
-          )}
-          style={{ borderColor: getCategoryColor(goal.category_id) }}
-          onClick={() => handleOpenGoalDetail(goal)}
-        >
-          <div className="flex items-center flex-grow min-w-0">
-            {hasSubGoals && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 mr-2 flex-shrink-0"
-                onClick={(e) => { e.stopPropagation(); toggleGoalExpansion(goal.id); }}
-              >
-                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </Button>
-            )}
-            <div className="flex-grow min-w-0">
-              <h4 className="font-medium text-lg truncate">{goal.title}</h4>
-              <p className="text-sm text-muted-foreground truncate">{goal.description}</p>
-              <div className="flex items-center text-xs text-muted-foreground mt-1">
-                <span className="mr-2 px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: getCategoryColor(goal.category_id) }}>
-                  {getCategoryName(goal.category_id)}
-                </span>
-                {goal.due_date && (
-                  <span>Due: {new Date(goal.due_date).toLocaleDateString()}</span>
-                )}
-              </div>
-            </div>
+  return (
+    <div className="flex-1 overflow-auto p-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Resonance Goals</h1>
+            <p className="text-lg text-muted-foreground">Align your actions with your long-term vision.</p>
           </div>
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleOpenGoalForm(goal); }}>
-              <Edit className="h-4 w-4" />
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <Button onClick={() => handleOpenGoalForm(null)} disabled={isDemo}>
+              <Plus className="mr-2 h-4 w-4" /> Add Goal
             </Button>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteGoal(goal.id); }} className="text-destructive">
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => { e.stopPropagation(); updateGoal(goal.id, { completed: !goal.completed }); }}
-              className={cn(goal.completed ? "text-green-500" : "text-muted-foreground")}
-            >
-              {goal.completed ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+            <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo}>
+              <Tag className="mr-2 h-4 w-4" /> Manage Categories
             </Button>
           </div>
         </div>
-        {hasSubGoals && isExpanded && (
-          <ul className="mt-2 space-y-2">
-            {subGoals.map(subGoal => renderGoal(subGoal, level + 1))}
-          </ul>
+
+        {loading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-2 border-b pb-4 mb-4">
+                <div className="h-6 w-48 bg-muted rounded-md" />
+                <div className="h-20 w-full bg-muted rounded-lg" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {goalTypes.map(type => (
+              <ResonanceGoalTimelineSection
+                key={type}
+                goalType={type}
+                allGoals={goals}
+                allCategories={categories}
+                onAddGoal={addGoal}
+                onEditGoal={(goal) => handleOpenGoalForm(goal, goal.type)}
+                onDeleteGoal={(goalId) => handleDeleteGoalClick(goalId, goals.find(g => g.id === goalId)?.title || 'Unknown Goal')}
+                onToggleCompleteGoal={async (goalId, completed) => {
+                  if (isDemo) {
+                    showError('Goal management is not available in demo mode.');
+                    return;
+                  }
+                  await updateGoal({ id: goalId, updates: { completed } });
+                }}
+                onAddSubGoal={(parentGoalId) => handleOpenGoalForm(null, 'daily', parentGoalId)}
+                isDemo={isDemo}
+                loading={loading}
+                expandedGoals={expandedGoals}
+                toggleExpandGoal={toggleExpandGoal}
+                onAddCategory={handleAddCategory}
+              />
+            ))}
+          </div>
         )}
-      </li>
-    );
-  };
-
-  const topLevelGoals = useMemo(() => {
-    return goals.filter(goal => goal.parent_goal_id === null)
-      .sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [goals]);
-
-  if (goalsLoading || categoriesLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto p-4 lg:p-6">
-      <h1 className="text-3xl font-bold mb-6">Resonance Goals</h1>
-
-      <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => handleOpenGoalForm()} disabled={isDemo}>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
-        </Button>
-        <Button variant="outline" onClick={() => setIsManageCategoriesOpen(true)} disabled={isDemo}>
-          <Palette className="mr-2 h-4 w-4" /> Manage Categories
-        </Button>
       </div>
 
-      {topLevelGoals.length === 0 && (
-        <p className="text-muted-foreground text-center py-8">No goals defined yet. Start by adding a new goal!</p>
-      )}
+      <Dialog open={isGoalFormOpen} onOpenChange={setIsGoalFormOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingGoal ? 'Edit Goal' : 'Add New Goal'}</DialogTitle>
+          </DialogHeader>
+          <GoalForm
+            initialData={editingGoal}
+            onSave={handleSaveGoal}
+            onCancel={() => setIsGoalFormOpen(false)}
+            allCategories={categories}
+            autoFocus
+            preselectedType={preselectedGoalType}
+            parentGoalId={parentGoalForSubGoal}
+          />
+        </DialogContent>
+      </Dialog>
 
-      <ul className="space-y-4">
-        {topLevelGoals.map(goal => renderGoal(goal, 0))}
-      </ul>
-
-      <GoalFormDialog
-        isOpen={isGoalFormOpen}
-        onClose={handleCloseGoalForm}
-        onSave={handleSaveGoal}
-        editingGoal={editingGoal}
-        allGoals={goals}
-        allCategories={allCategories}
-        isDemo={isDemo}
-      />
-
-      {selectedGoal && (
-        <GoalDetailDialog
-          isOpen={isGoalDetailOpen}
-          onClose={handleCloseGoalDetail}
-          goal={selectedGoal}
-          allGoals={goals}
-          allCategories={allCategories}
-          onUpdateGoal={updateGoal}
-          onDeleteGoal={deleteGoal}
-          onOpenGoalForm={handleOpenGoalForm}
-          getCategoryName={getCategoryName}
-          getCategoryColor={getCategoryColor}
-          isDemo={isDemo}
-        />
-      )}
+      <AlertDialog open={showConfirmDeleteDialog} onOpenChange={setShowConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the goal "{goalToDeleteTitle}" and all its sub-goals.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteGoal}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
-        categories={allCategories}
+        categories={categories}
         onCategoryCreated={handleCategoryCreated}
         onCategoryDeleted={handleCategoryDeleted}
       />
