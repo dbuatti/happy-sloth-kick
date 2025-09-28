@@ -30,6 +30,7 @@ import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerDescription } from "@/components/ui/drawer";
+import { GripVertical } from 'lucide-react'; // Imported GripVertical
 
 interface TaskReorderDialogProps {
   isOpen: boolean;
@@ -212,6 +213,9 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
 
   const Content = () => (
     <div className="space-y-4 py-4">
+      <p className="text-sm text-muted-foreground">
+        Drag the <GripVertical className="inline-block h-3 w-3 align-baseline" /> handle next to each task to reorder it within this section.
+      </p>
       {localTasks.length === 0 ? (
         <div className="text-center text-muted-foreground p-6 border border-dashed rounded-lg">
           <p className="text-lg font-medium mb-2">No tasks to reorder here!</p>

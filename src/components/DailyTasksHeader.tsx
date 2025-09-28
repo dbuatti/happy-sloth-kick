@@ -91,7 +91,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4"> {/* Refined gradient and added pb-4 */}
+    <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4"> {/* Added sticky, top-0, z-10, and bg-background */}
       <div className="flex items-center justify-between px-4 pt-4">
         <DateNavigator
           currentDate={currentDate}

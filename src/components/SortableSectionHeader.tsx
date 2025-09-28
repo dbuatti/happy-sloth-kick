@@ -1,14 +1,22 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Plus, CheckCircle2, ChevronDown, MoreHorizontal, Trash2, Eye, EyeOff, ListOrdered } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings } from 'lucide-react';
+import { cn } from "@/lib/utils";
 import { TaskSection } from '@/hooks/useTasks';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { showSuccess } from '@/utils/toast';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -17,14 +25,15 @@ interface SortableSectionHeaderProps {
   toggleSection: (sectionId: string) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
-  handleDeleteSectionClick: (sectionId: string) => void;
+  handleDeleteSectionClick: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>;
-  onOpenReorderTasks: (sectionId: string | null) => void; // New prop
+  onOpenReorderTasks: (sectionId: string | null) => void;
   isOverlay?: boolean;
+  isNoSection?: boolean;
 }
 
-const SortableSectionHeader = ({
+const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   section,
   sectionTasksCount,
   isExpanded,
@@ -34,177 +43,163 @@ const SortableSectionHeader = ({
   handleDeleteSectionClick,
   updateSectionIncludeInFocusMode,
   onUpdateSectionName,
-  onOpenReorderTasks, // Destructure new prop
+  onOpenReorderTasks,
   isOverlay = false,
-}: SortableSectionHeaderProps) => {
-  const sortable = !isOverlay ? useSortable({ id: section.id, data: { type: 'section', section } }) : null;
-
-  const attributes = sortable?.attributes;
-  const listeners = sortable?.listeners;
-  const setNodeRef = sortable?.setNodeRef || null;
-  const transform = sortable?.transform;
-  const transition = sortable?.transition;
-  const isDragging = sortable?.isDragging || false;
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform || null),
-    transition,
-    zIndex: isDragging ? 10 : 'auto',
-    opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-  };
-
-  const [isEditingLocal, setIsEditingLocal] = useState(false);
-  const [localSectionName, setLocalSectionName] = useState(section.name);
+  isNoSection = false,
+}) => {
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(section.name);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isEditingLocal) {
-      setLocalSectionName(section.name);
-    }
-  }, [section.name, isEditingLocal]);
-
-  const handleStartEdit = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isOverlay) return;
-    setIsEditingLocal(true);
-    setLocalSectionName(section.name);
-  }, [isOverlay, section.name]);
-
-  const handleSaveEdit = useCallback(async () => {
-    if (localSectionName.trim() && localSectionName.trim() !== section.name) {
-      await onUpdateSectionName(section.id, localSectionName.trim());
-    }
-    setIsEditingLocal(false);
-  }, [localSectionName, section.name, onUpdateSectionName, section.id]);
-
-  const handleCancelEdit = useCallback(() => {
-    setLocalSectionName(section.name);
-    setIsEditingLocal(false);
+    setEditedName(section.name);
   }, [section.name]);
 
-  const handleInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (isEditingName && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  const handleSaveName = async () => {
+    if (editedName.trim() && editedName.trim() !== section.name) {
+      await onUpdateSectionName(section.id, editedName.trim());
+      showSuccess('Section name updated!');
+    }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedName(section.name);
+    setIsEditingName(false);
+  };
+
+  const handleInputKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      e.currentTarget.blur();
+      await handleSaveName();
     } else if (e.key === 'Escape') {
       handleCancelEdit();
     }
-  }, [handleCancelEdit]);
+  };
 
-  const getTaskCountCircleClasses = () => {
-    return "bg-primary/10 text-primary";
+  const handleToggleFocusMode = async (checked: boolean) => {
+    await updateSectionIncludeInFocusMode(section.id, checked);
+    showSuccess(`Section ${checked ? 'included in' : 'excluded from'} Focus Mode.`);
   };
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
       className={cn(
-        "group select-none",
-        isDragging && !isOverlay ? "" : "rounded-xl",
-        isOverlay ? "shadow-xl ring-2 ring-primary bg-card" : "",
+        "flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200",
+        isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg" : "bg-secondary/20 hover:bg-secondary/30",
+        isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
+        "group"
       )}
-      {...(attributes || {})}
-      {...(listeners || {})}
     >
-      <div
-        className="relative flex items-center p-3 cursor-grab bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors duration-200"
-        onClick={!isOverlay && !isEditingLocal ? () => toggleSection(section.id) : undefined}
-      >
-        <div
-          className="flex items-center flex-1 min-w-0"
-        >
-          {isEditingLocal ? (
-            <div data-no-dnd="true" className="flex-1">
-              <Input
-                value={localSectionName}
-                onChange={(e) => setLocalSectionName(e.target.value)}
-                onBlur={handleSaveEdit}
-                onKeyDown={handleInputKeyDown}
-                onMouseDown={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                className={cn(
-                  "!text-xl !font-bold",
-                  "border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0",
-                  "p-0",
-                  "text-foreground",
-                  "appearance-none",
-                  "flex-1 truncate",
-                  "!h-auto !min-h-0 !py-0"
-                )}
-                style={{ lineHeight: '1.5rem' }}
-                autoFocus={true}
-              />
-            </div>
-          ) : (
-            <>
-              <h3
-                className="text-xl font-bold truncate cursor-text"
-                onClick={handleStartEdit}
-                data-no-dnd="true"
-              >
-                {section.name}
-              </h3>
-              <div className={cn(
-                "ml-3 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-colors duration-200",
-                getTaskCountCircleClasses()
-              )} data-no-dnd="true">
-                {sectionTasksCount}
-              </div>
-            </>
-          )}
-        </div>
-        <div className="flex items-center space-x-1" data-no-dnd="true">
-          {!isOverlay && (
-            <>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 p-0 hover:bg-primary/10 text-primary"
-                    tabIndex={isOverlay ? -1 : 0}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span>
-                      <span className="sr-only">Open section menu</span>
-                      <MoreHorizontal className="h-5 w-5" />
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(section.id)}>
-                    <Plus className="mr-2 h-4 w-4" /> Add Task to Section
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>
-                    <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => onOpenReorderTasks(section.id)}>
-                    <ListOrdered className="mr-2 h-4 w-4" /> Reorder Tasks
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
-                    {section.include_in_focus_mode ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                    {section.include_in_focus_mode ? 'Exclude from Focus Mode' : 'Include in Focus Mode'}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Section
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <div className="flex items-center gap-2 flex-grow min-w-0">
+        {!isOverlay && (
+          <Tooltip>
+            <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
                 onClick={(e) => { e.stopPropagation(); toggleSection(section.id); }}
-                className="h-8 w-8 p-0 hover:bg-primary/10 text-primary"
-                tabIndex={isOverlay ? -1 : 0}
+                aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
               >
-                <ChevronDown className={cn("h-5 w-5 transition-transform", isExpanded ? "rotate-0" : "-rotate-90")} />
+                <ChevronDown className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  isExpanded ? "rotate-0" : "-rotate-90"
+                )} />
               </Button>
-            </>
+            </TooltipTrigger>
+            <TooltipContent>
+              {isExpanded ? 'Collapse Section' : 'Expand Section'}
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        <div className="flex-grow min-w-0" onDoubleClick={() => !isOverlay && !isNoSection && setIsEditingName(true)}>
+          {isEditingName ? (
+            <Input
+              ref={inputRef}
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              onBlur={handleSaveName}
+              onKeyDown={handleInputKeyDown}
+              className="h-8 text-lg font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full"
+              onPointerDown={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <h2 className={cn(
+              "text-lg font-semibold flex items-center gap-2 cursor-pointer",
+              isNoSection && "text-muted-foreground"
+            )} onClick={() => !isOverlay && !isNoSection && toggleSection(section.id)}>
+              {section.name}
+              {!isNoSection && sectionTasksCount > 0 && (
+                <span className="text-sm font-normal text-muted-foreground ml-1">({sectionTasksCount})</span>
+              )}
+            </h2>
           )}
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {!isOverlay && !isNoSection && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center">
+                <Label htmlFor={`focus-mode-switch-${section.id}`} className="sr-only">Include in Focus Mode</Label>
+                <Switch
+                  id={`focus-mode-switch-${section.id}`}
+                  checked={section.include_in_focus_mode}
+                  onCheckedChange={handleToggleFocusMode}
+                  onClick={(e) => e.stopPropagation()}
+                  aria-label="Toggle include in Focus Mode"
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {section.include_in_focus_mode ? 'Included in Focus Mode' : 'Excluded from Focus Mode'}
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {!isOverlay && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Section actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(isNoSection ? null : section.id)}>
+                <Plus className="mr-2 h-4 w-4" /> Add Task
+              </DropdownMenuItem>
+              {sectionTasksCount > 0 && (
+                <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(isNoSection ? null : section.id)}>
+                  <CheckCircle className="mr-2 h-4 w-4" /> Mark All Completed
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onSelect={() => onOpenReorderTasks(isNoSection ? 'no-section-header' : section.id)}>
+                <ListOrdered className="mr-2 h-4 w-4" /> Reorder Tasks
+              </DropdownMenuItem>
+              {!isNoSection && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={() => setIsEditingName(true)}>
+                    <Settings className="mr-2 h-4 w-4" /> Rename Section
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </div>
   );

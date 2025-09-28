@@ -31,7 +31,7 @@ import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
 import TaskReorderDialog from './TaskReorderDialog'; // Import the new dialog
-
+import EmptyState from './EmptyState'; // Import EmptyState
 
 interface TaskListProps {
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
@@ -330,14 +330,16 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                 .sort((a, b) => (a.order || 0) - (b.order || 0));
               const remainingTasksCount = topLevelTasksInSection.filter(t => t.status === 'to-do').length;
 
-              if (currentSection.id === 'no-section-header' && topLevelTasksInSection.length === 0) {
-                return null;
+              const isNoSection = currentSection.id === 'no-section-header';
+
+              if (isNoSection && topLevelTasksInSection.length === 0 && !isDemo) {
+                return null; // Hide "No Section" header if empty and not in demo mode
               }
 
               return (
                 <div
                   key={currentSection.id}
-                  className={cn("mb-2", index < allSortableSections.length - 1 && "border-b border-border pb-2")}
+                  className={cn("mb-4", index < allSortableSections.length - 1 && "border-b border-border pb-4")}
                 >
                   <SortableSectionHeader
                     section={currentSection}
@@ -346,18 +348,19 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     toggleSection={toggleSection}
                     handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                    handleDeleteSectionClick={deleteSection}
+                    handleDeleteSectionClick={async (sectionId) => { await deleteSection(sectionId); }}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                     onUpdateSectionName={updateSection}
                     onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
                     isOverlay={false}
+                    isNoSection={isNoSection} // Pass isNoSection prop
                   />
 
                   <div className={cn(
                     "mt-3 overflow-hidden transition-all duration-300 ease-in-out",
                     isExpanded ? "max-h-[9999px] opacity-100" : "max-h-0 opacity-0"
                   )}>
-                    {topLevelTasksInSection.length > 0 && (
+                    {topLevelTasksInSection.length > 0 ? (
                       <ul className="list-none space-y-1.5">
                         {topLevelTasksInSection.map(task => (
                           <SortableTaskItem
@@ -385,6 +388,14 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                           />
                         ))}
                       </ul>
+                    ) : (
+                      <EmptyState
+                        title={isNoSection ? "No tasks without a section" : `No tasks in "${currentSection.name}"`}
+                        description={isNoSection ? "Add a new task or move an existing one here." : "Add a new task to this section to get started."}
+                        buttonText="Add Task"
+                        onButtonClick={() => openAddTaskForSection(currentSection.id === 'no-section-header' ? null : currentSection.id)}
+                        className="mt-4"
+                      />
                     )}
                     <div className="mt-2 pt-2" data-no-dnd="true">
                       <QuickAddTask
@@ -416,11 +427,12 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     toggleSection={() => {}}
                     handleAddTaskToSpecificSection={() => {}}
                     markAllTasksInSectionCompleted={async () => {}}
-                    handleDeleteSectionClick={() => {}}
+                    handleDeleteSectionClick={async (sectionId) => { await deleteSection(sectionId); }}
                     updateSectionIncludeInFocusMode={async () => {}}
                     onUpdateSectionName={async () => {}}
                     onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
                     isOverlay={true}
+                    isNoSection={activeItemData.id === 'no-section-header'}
                   />
                 ) : (
                   <div className="rotate-2">

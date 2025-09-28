@@ -110,6 +110,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setIsTaskOverviewOpen(true);
   }, []);
 
+  const handleOpenFocusView = useCallback(() => {
+    setIsFocusPanelOpen(true);
+  }, []);
+
   const handleClearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
   }, []);
@@ -135,7 +139,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 flex flex-col h-full"> {/* Added flex-col and h-full for sticky header */}
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
@@ -166,7 +170,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         nextAvailableTask={nextAvailableTask}
         updateTask={updateTask}
         onOpenOverview={handleOpenOverview}
-        onOpenFocusView={() => setFocusTask(nextAvailableTask?.id || null)}
+        onOpenFocusView={handleOpenFocusView}
         tasksLoading={tasksLoading}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
@@ -177,39 +181,41 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setIsManageSectionsOpen={setIsManageSectionsOpen}
       />
 
-      <div className="p-4 lg:p-6">
-        <TaskList
-          processedTasks={processedTasks}
-          filteredTasks={filteredTasks}
-          loading={tasksLoading}
-          handleAddTask={handleAddTask}
-          updateTask={updateTask}
-          deleteTask={deleteTask}
-          bulkUpdateTasks={bulkUpdateTasks}
-          bulkDeleteTasks={bulkDeleteTasks}
-          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-          sections={sections}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          updateTaskParentAndOrder={updateTaskParentAndOrder}
-          reorderSections={reorderSections}
-          allCategories={allCategories}
-          setIsAddTaskOpen={() => {}} // This is handled by QuickAddTask now
-          onOpenOverview={handleOpenOverview}
-          currentDate={currentDate}
-          expandedSections={expandedSections}
-          expandedTasks={expandedTasks}
-          toggleTask={toggleTask}
-          toggleSection={toggleSection}
-          toggleAllSections={toggleAllSections}
-          setFocusTask={setFocusTask}
-          doTodayOffIds={doTodayOffIds}
-          toggleDoToday={toggleDoToday}
-          scheduledTasksMap={scheduledTasksMap}
-          isDemo={isDemo}
-        />
+      <div className="flex-1 overflow-y-auto"> {/* This div will scroll */}
+        <div className="p-4 lg:p-6">
+          <TaskList
+            processedTasks={processedTasks}
+            filteredTasks={filteredTasks}
+            loading={tasksLoading}
+            handleAddTask={handleAddTask}
+            updateTask={updateTask}
+            deleteTask={deleteTask}
+            bulkUpdateTasks={bulkUpdateTasks}
+            bulkDeleteTasks={bulkDeleteTasks}
+            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+            sections={sections}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            updateTaskParentAndOrder={updateTaskParentAndOrder}
+            reorderSections={reorderSections}
+            allCategories={allCategories}
+            setIsAddTaskOpen={() => {}} // This is handled by QuickAddTask now
+            onOpenOverview={handleOpenOverview}
+            currentDate={currentDate}
+            expandedSections={expandedSections}
+            expandedTasks={expandedTasks}
+            toggleTask={toggleTask}
+            toggleSection={toggleSection}
+            toggleAllSections={toggleAllSections}
+            setFocusTask={setFocusTask}
+            doTodayOffIds={doTodayOffIds}
+            toggleDoToday={toggleDoToday}
+            scheduledTasksMap={scheduledTasksMap}
+            isDemo={isDemo}
+          />
+        </div>
       </div>
 
       <FloatingAddTaskButton onClick={() => handleAddTask({ description: '', category: allCategories[0]?.id || '', priority: 'medium' })} isDemo={isDemo} />
