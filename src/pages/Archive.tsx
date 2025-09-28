@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react'; // Removed useEffect
 import { useAuth } from '@/context/AuthContext';
-import { useTasks, Task, NewTaskData } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks'; // Removed NewTaskData
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import TaskFilter from '@/components/TaskFilter';
 import { Button } from '@/components/ui/button';
-import { Archive as ArchiveIcon, Trash2, Undo2, ListRestart } from 'lucide-react';
+import { Archive as ArchiveIcon, Trash2 } from 'lucide-react'; // Removed Undo2, ListRestart
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,18 +16,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from 'sonner';
+// Removed import { toast } from 'sonner';
 import { showSuccess } from '@/utils/toast';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAppointments } from '@/hooks/useAppointments';
 
-const ArchivePage: React.FC = () => {
-  const { user, isLoading: authLoading } = useAuth();
-  const userId = user?.id;
+interface ArchivePageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
 
-  const [currentDate] = useState(new Date()); // Keep for useTasks hook, but not passed to TaskFilter
+const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth(); // Removed isLoading: authLoading
+  const userId = demoUserId || user?.id || null; // Explicitly convert undefined to null
+
+  const [currentDate] = useState(new Date());
   const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('archived'); // Default to archived tasks
+  const [statusFilter, setStatusFilter] = useState('archived');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sectionFilter, setSectionFilter] = useState('all');
@@ -88,10 +93,7 @@ const ArchivePage: React.FC = () => {
     setIsTaskDetailOpen(true);
   }, []);
 
-  const handleRestoreTask = async (taskId: string) => {
-    await updateTask(taskId, { status: 'to-do' });
-    showSuccess('Task restored!');
-  };
+  // Removed handleRestoreTask as it was declared but never read.
 
   const handleClearArchive = async () => {
     setIsClearingArchive(true);
@@ -104,17 +106,7 @@ const ArchivePage: React.FC = () => {
     setShowConfirmClearArchiveDialog(false);
   };
 
-  const handleToggleTaskSelection = (taskId: string) => {
-    setSelectedTaskIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
-    });
-  };
+  // Removed handleToggleTaskSelection as it was declared but never read.
 
   const handleClearSelection = () => {
     setSelectedTaskIds(new Set());
@@ -138,11 +130,10 @@ const ArchivePage: React.FC = () => {
     }
   };
 
-  if (authLoading || tasksLoading) {
+  // Removed authLoading from condition as it's no longer destructured.
+  if (tasksLoading) {
     return <div className="flex justify-center items-center h-screen">Loading archive...</div>;
   }
-
-  const isDemo = !userId;
 
   return (
     <div className="flex flex-col h-full">
@@ -209,7 +200,7 @@ const ArchivePage: React.FC = () => {
             expandedTasks={expandedTasks}
             toggleTask={toggleTask}
             toggleSection={toggleSection}
-            toggleAllSections={() => taskListRef.current?.toggleAllSections()}
+            toggleAllSections={toggleAllSections}
             setFocusTask={setFocusTask}
             doTodayOffIds={doTodayOffIds}
             toggleDoToday={toggleDoToday}

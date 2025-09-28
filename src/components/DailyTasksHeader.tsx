@@ -9,8 +9,8 @@ import DailyOverviewCard from './DailyOverviewCard';
 interface DailyTasksHeaderProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  tasks: Task[]; // Added
-  filteredTasks: Task[]; // Added
+  tasks: Omit<Task, "category_color">[]; // Updated type
+  filteredTasks: Omit<Task, "category_color">[]; // Updated type
   sections: TaskSection[];
   allCategories: Category[];
   userId: string | null;
@@ -45,10 +45,10 @@ interface DailyTasksHeaderProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   onToggleAllSections: () => void;
-  isManageCategoriesOpen: boolean; // Added
-  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
-  isManageSectionsOpen: boolean; // Added
-  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
+  isManageCategoriesOpen: boolean;
+  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isManageSectionsOpen: boolean;
+  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -83,12 +83,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   toggleDoToday,
   onToggleAllSections,
-  isManageCategoriesOpen, // Destructured
-  setIsManageCategoriesOpen, // Destructured
-  isManageSectionsOpen, // Destructured
-  setIsManageSectionsOpen, // Destructured
+  isManageCategoriesOpen,
+  setIsManageCategoriesOpen,
+  isManageSectionsOpen,
+  setIsManageSectionsOpen,
 }) => {
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Removed searchInputRef as it was declared but never read.
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react'; // Removed useEffect
 import { useAuth } from '@/context/AuthContext';
-import { useTasks, Task, NewTaskData } from '@/hooks/useTasks';
+import { useTasks, Task } from '@/hooks/useTasks'; // Removed NewTaskData
 import TaskList from '@/components/TaskList';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -13,10 +13,15 @@ import BulkActionBar from '@/components/BulkActionBar';
 import { toast } from 'sonner';
 import { showSuccess } from '@/utils/toast';
 
-const DailyTasksPage: React.FC = () => {
-  const { user, isLoading: authLoading } = useAuth();
-  const userId = user?.id;
-  const { settings, loading: settingsLoading, updateSettings } = useSettings();
+interface DailyTasksPageProps {
+  isDemo?: boolean;
+  demoUserId?: string;
+}
+
+const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth(); // Removed isLoading: authLoading
+  const userId = demoUserId || user?.id || null; // Explicitly convert undefined to null
+  const { settings, loading: settingsLoading } = useSettings(); // Removed updateSettings
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [searchFilter, setSearchFilter] = useState('');
@@ -54,6 +59,8 @@ const DailyTasksPage: React.FC = () => {
     toggleDoToday,
     dailyProgress,
     nextAvailableTask,
+    archiveAllCompletedTasks, // Added
+    toggleAllDoToday, // Added
   } = useTasks({
     currentDate,
     userId,
@@ -101,17 +108,7 @@ const DailyTasksPage: React.FC = () => {
     }
   };
 
-  const handleToggleTaskSelection = (taskId: string) => {
-    setSelectedTaskIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(taskId)) {
-        newSet.delete(taskId);
-      } else {
-        newSet.add(taskId);
-      }
-      return newSet;
-    });
-  };
+  // Removed handleToggleTaskSelection as it was declared but never read.
 
   const handleClearSelection = () => {
     setSelectedTaskIds(new Set());
@@ -151,11 +148,10 @@ const DailyTasksPage: React.FC = () => {
     }
   };
 
-  if (authLoading || settingsLoading) {
+  // Removed authLoading from condition as it's no longer destructured.
+  if (settingsLoading) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
-
-  const isDemo = !userId;
 
   return (
     <div className="flex flex-col h-full">
@@ -226,7 +222,7 @@ const DailyTasksPage: React.FC = () => {
           expandedTasks={expandedTasks}
           toggleTask={toggleTask}
           toggleSection={toggleSection}
-          toggleAllSections={() => taskListRef.current?.toggleAllSections()}
+          toggleAllSections={toggleAllSections}
           setFocusTask={setFocusTask}
           doTodayOffIds={doTodayOffIds}
           toggleDoToday={toggleDoToday}
