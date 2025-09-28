@@ -7,7 +7,6 @@ export default {
     "./components/**/*.{ts,tsx}",
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
-    "./src/features/**/*.{ts,tsx}", // Added to scan new feature directories
   ],
   prefix: "",
   theme: {
@@ -80,11 +79,11 @@ export default {
       borderRadius: {
         lg: "var(--radius-lg)",
         md: "var(--radius-md)",
-        sm: "calc(var(--radius-md) - 2px)", // Adjusted for consistency
+        sm: "var(--radius-sm)",
         xl: "var(--radius-xl)",
         '2xl': 'var(--radius-2xl)',
-        '3xl': 'var(--radius-3xl)',
-        '4xl': 'var(--radius-4xl)',
+        '3xl': 'var(--radius-3xl)', // Added for more roundness
+        '4xl': 'var(--radius-4xl)', // Added for even more roundness
       },
       keyframes: {
         "accordion-down": {
