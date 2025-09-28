@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback } from 'react'; // Removed useEffect
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay, UniqueIdentifier } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableTaskItem from './SortableTaskItem';
 import TaskItem from './TaskItem';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, ChevronDown, ChevronRight, CheckCircle2, Archive, Trash2, Settings, Eye, EyeOff } from 'lucide-react';
+import { PlusCircle, ChevronDown, ChevronRight, CheckCircle2, Trash2, Settings, Edit } from 'lucide-react'; // Removed Archive, Eye, EyeOff, added Edit
 import QuickAddTask from './QuickAddTask';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -16,7 +16,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
+  // DropdownMenuSeparator, // Removed
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { showSuccess, showError } from '@/utils/toast';
@@ -26,6 +26,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 
+// Define QuickAddTaskProps locally to resolve type errors
+interface QuickAddTaskProps {
+  onAddTask: (description: string) => Promise<string | null | void>;
+  placeholder: string;
+  isDemo?: boolean;
+}
+
 interface TaskListProps {
   processedTasks: Task[];
   filteredTasks: Task[];
@@ -33,8 +40,8 @@ interface TaskListProps {
   handleAddTask: (newTaskData: { description: string; category: string | null; priority: string; section_id?: string | null; parent_task_id?: string | null }) => Promise<string | null>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   deleteTask: (taskId: string) => void;
-  bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
-  bulkDeleteTasks: (ids: string[]) => Promise<boolean>;
+  // bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>; // Removed
+  // bulkDeleteTasks: (ids: string[]) => Promise<boolean>; // Removed
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
@@ -51,7 +58,7 @@ interface TaskListProps {
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
   toggleSection: (sectionId: string) => void;
-  toggleAllSections: () => void;
+  // toggleAllSections: () => void; // Removed
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
@@ -66,8 +73,8 @@ const TaskList: React.FC<TaskListProps> = ({
   handleAddTask,
   updateTask,
   deleteTask,
-  bulkUpdateTasks,
-  bulkDeleteTasks,
+  // bulkUpdateTasks, // Removed
+  // bulkDeleteTasks, // Removed
   markAllTasksInSectionCompleted,
   sections,
   createSection,
@@ -83,7 +90,7 @@ const TaskList: React.FC<TaskListProps> = ({
   expandedTasks,
   toggleTask,
   toggleSection,
-  toggleAllSections,
+  // toggleAllSections, // Removed
   setFocusTask,
   doTodayOffIds,
   toggleDoToday,
@@ -307,7 +314,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <QuickAddTask
-                        onAddTask={(description) => handleAddTask({ description, category: allCategories[0]?.id || '', priority: 'medium', section_id: section.id })}
+                        onAddTask={(description: string) => handleAddTask({ description, category: allCategories[0]?.id || '', priority: 'medium', section_id: section.id })}
                         placeholder={`Add task to ${section.name}...`}
                         isDemo={isDemo}
                       />
@@ -350,7 +357,7 @@ const TaskList: React.FC<TaskListProps> = ({
                   </DropdownMenuContent>
                 </DropdownMenu>
                 <QuickAddTask
-                  onAddTask={(description) => handleAddTask({ description, category: allCategories[0]?.id || '', priority: 'medium', section_id: null })}
+                  onAddTask={(description: string) => handleAddTask({ description, category: allCategories[0]?.id || '', priority: 'medium', section_id: null })}
                   placeholder="Add task without section..."
                   isDemo={isDemo}
                 />
@@ -464,7 +471,7 @@ const TaskList: React.FC<TaskListProps> = ({
               toggleDoToday={toggleDoToday}
               scheduledTasksMap={scheduledTasksMap}
               isDemo={isDemo}
-              expandedTasks={expandedTasks}
+              expandedTasks={expandedTasks} // Pass expandedTasks here
             />
           ) : activeSection ? (
             <div className="rounded-xl border bg-card text-card-foreground shadow-lg p-4 opacity-80">

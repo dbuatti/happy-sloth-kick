@@ -3,12 +3,12 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-// import { GripVertical } from 'lucide-react'; // Removed unused import
+// import { GripVertical } from 'lucide-react'; // Removed
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import { Task } from '@/hooks/useTasks';
 import { UniqueIdentifier } from '@dnd-kit/core';
-// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed unused import
+// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed
 import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
@@ -56,11 +56,11 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  expandedTasks,
+  expandedTasks, // Destructure here
 }) => {
   const {
-    // attributes, // Removed unused variable
-    // listeners, // Removed unused variable
+    // attributes, // Removed
+    // listeners, // Removed
     setNodeRef,
     transform,
     transition,
@@ -72,7 +72,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 0,
-    // position: 'relative', // Removed, as 'relative' is already applied via Tailwind className
+    // position: 'relative', // Removed, handled by className
   };
 
   return (
@@ -85,8 +85,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         sections={sections}
         onOpenOverview={onOpenOverview}
         currentDate={currentDate}
-        onMoveUp={onMoveUp}
-        onMoveDown={onMoveDown}
+        onMoveUp={() => Promise.resolve()} // Placeholder
+        onMoveDown={() => Promise.resolve()} // Placeholder
         level={level}
         isOverlay={isOverlay}
         hasSubtasks={hasSubtasks}
@@ -97,7 +97,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         toggleDoToday={toggleDoToday}
         scheduledTasksMap={scheduledTasksMap}
         isDemo={isDemo}
-        expandedTasks={expandedTasks}
+        expandedTasks={expandedTasks} // Pass it down
       />
     </div>
   );

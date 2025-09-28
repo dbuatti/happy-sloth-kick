@@ -46,6 +46,7 @@ interface TaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  expandedTasks?: Record<string, boolean>; // Added this prop
   // attributes?: React.HTMLAttributes<HTMLDivElement>; // Removed
   // listeners?: React.HTMLAttributes<HTMLDivElement>; // Removed
 }
@@ -67,6 +68,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
+  expandedTasks, // Destructure here
   // attributes, // Removed
   // listeners, // Removed
 }) => {
