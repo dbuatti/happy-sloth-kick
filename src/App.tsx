@@ -1,139 +1,154 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Toaster } from 'sonner';
-import { ThemeProvider } from '@/components/theme-provider';
-import { Sidebar } from '@/components/Sidebar';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { SettingsProvider } from '@/context/SettingsContext';
-import { SoundProvider } from '@/context/SoundContext';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import Dashboard from '@/pages/Dashboard';
-import DailyTasksPage from '@/pages/DailyTasksPage';
-import Schedule from '@/pages/Schedule';
-import Projects from '@/pages/Projects';
-import Analytics from '@/pages/Analytics';
-import Archive from '@/pages/Archive';
-import Settings from '@/pages/Settings';
-import Help from '@/pages/Help';
-import Login from '@/pages/Login';
-import FocusMode from '@/pages/FocusMode';
-import Sleep from '@/pages/Sleep';
-import DevSpace from '@/pages/DevSpace';
-import MealPlanner from '@/pages/MealPlanner';
-import ResonanceGoals from '@/pages/ResonanceGoals';
-import { supabase } from '@/integrations/supabase/client';
-import FloatingTimer from '@/components/FloatingTimer';
-import { TimerProvider } from '@/context/TimerContext';
-import CommandPalette from '@/components/CommandPalette';
+"use client";
+
+import { useState } from "react";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import NotFound from "./pages/NotFound";
+import Help from "./pages/Help";
+import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
+import TimeBlockSchedule from "./pages/TimeBlockSchedule";
+import FocusMode from "./pages/FocusMode";
+import LandingPage from "./pages/LandingPage";
+import DailyTasksPage from "./pages/DailyTasksPage";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ReminderProvider } from "@/context/ReminderContext.tsx";
+import { SoundProvider } from "@/context/SoundContext";
+import { Sidebar } from "./components/Sidebar";
+import AuthPage from "./pages/AuthPage";
+import FloatingTimer from "./components/FloatingTimer";
+import DevSpace from "./pages/DevSpace";
+import { TimerProvider } from "./context/TimerContext";
+import { SettingsProvider } from "./context/SettingsContext";
+import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
+import Analytics from "./pages/Analytics";
+import Archive from "./pages/Archive";
+import SleepPage from "./pages/SleepPage";
+import CommandPalette from "./components/CommandPalette";
+import MealPlanner from "./pages/MealPlanner";
+import ResonanceGoalsPage from "./pages/ResonanceGoalsPage"; // Import the new ResonanceGoalsPage
 
 const queryClient = new QueryClient();
 
-const AppRoutes: React.FC = () => {
-  const { user } = useAuth(); // Removed isLoading
+const AppContent = () => {
+  const { user, loading: authLoading } = useAuth();
+  const location = useLocation();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
-  // Demo user logic
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [demoUserId, setDemoUserId] = useState<string | null>(null);
+  if (authLoading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    const checkDemoMode = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setIsDemoMode(true);
-        setDemoUserId('demo-user-id'); // A consistent ID for demo mode
-      } else {
-        setIsDemoMode(false);
-        setDemoUserId(null);
-      }
-    };
-    checkDemoMode();
+  const isDemoRoute = location.pathname.startsWith('/demo');
+  const demoUserId = import.meta.env.VITE_DEMO_USER_ID;
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        setIsDemoMode(true);
-        setDemoUserId('demo-user-id');
-      } else {
-        setIsDemoMode(false);
-        setDemoUserId(null);
-      }
-    });
+  if (isDemoRoute && !demoUserId) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 text-center">
+        <p className="text-destructive">Demo mode is not configured. Please set VITE_DEMO_USER_ID.</p>
+      </div>
+    );
+  }
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  if (isDemoRoute) {
+    return (
+      <SettingsProvider userId={demoUserId}>
+        <ReminderProvider>
+          <div className="relative h-screen w-screen">
+            <Sidebar isDemo={true}>
+              <Routes>
+                <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/help" element={<Help />} />
+                <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/focus" element={<FocusMode isDemo={true} demoUserId={demoUserId} />} /> {/* Added isDemo and demoUserId */}
+                <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
+                <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
+                <Route path="*" element={<Navigate to="/demo" replace />} />
+              </Routes>
+            </Sidebar>
+          </div>
+        </ReminderProvider>
+      </SettingsProvider>
+    );
+  }
 
-  // Removed isLoading check as it's no longer destructured from useAuth
+  if (!user && location.pathname !== '/' && location.pathname !== '/auth') {
+    return <Navigate to="/" replace />;
+  }
 
   return (
-    <Sidebar isDemo={isDemoMode}>
-      <Routes>
-        {isDemoMode ? (
-          <>
-            <Route path="/login" element={<Login />} />
-            <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/schedule" element={<Schedule isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/projects" element={<Projects isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/help" element={<Help />} />
-            <Route path="/demo/focus" element={<FocusMode isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/sleep" element={<Sleep isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="/demo/resonance-goals" element={<ResonanceGoals isDemo={true} demoUserId={demoUserId} />} />
-            <Route path="*" element={<Navigate to="/demo/dashboard" replace />} />
-          </>
-        ) : (
-          <>
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/daily-tasks" element={<DailyTasksPage />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/archive" element={<Archive />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/focus" element={<FocusMode />} />
-            <Route path="/sleep" element={<Sleep />} />
-            <Route path="/dev-space" element={<DevSpace />} />
-            <Route path="/meal-planner" element={<MealPlanner />} />
-            <Route path="/resonance-goals" element={<ResonanceGoals />} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </>
-        )}
-      </Routes>
-      <FloatingTimer />
-      <CommandPalette isCommandPaletteOpen={isCommandPaletteOpen} setIsCommandPaletteOpen={setIsCommandPaletteOpen} />
-    </Sidebar>
+    <SettingsProvider>
+      <ReminderProvider>
+        <div className="flex-1 flex flex-col">
+          {user ? (
+            <div className="relative h-screen w-screen">
+              <Sidebar>
+                <Routes>
+                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/daily-tasks" element={<DailyTasksPage />} />
+                  <Route path="/help" element={<Help />} />
+                  <Route path="/projects" element={<ProjectBalanceTracker />} />
+                  <Route path="/schedule" element={<TimeBlockSchedule />} />
+                  <Route path="/sleep" element={<SleepPage />} />
+                  <Route path="/focus" element={<FocusMode />} />
+                  <Route path="/dev-space" element={<DevSpace />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/analytics" element={<Analytics />} />
+                  <Route path="/archive" element={<Archive />} />
+                  <Route path="/meal-planner" element={<MealPlanner />} />
+                  <Route path="/resonance-goals" element={<ResonanceGoalsPage />} /> {/* New User Route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Sidebar>
+              <FloatingTimer />
+              <CommandPalette
+                isCommandPaletteOpen={isCommandPaletteOpen}
+                setIsCommandPaletteOpen={setIsCommandPaletteOpen}
+              />
+            </div>
+          ) : (
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          )}
+        </div>
+      </ReminderProvider>
+    </SettingsProvider>
   );
 };
 
-const App: React.FC = () => {
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
+      <TooltipProvider>
+        <Sonner position="top-center" />
         <AuthProvider>
-          <SettingsProvider>
-            <SoundProvider>
-              <TimerProvider>
-                <TooltipProvider>
-                  <Router>
-                    <AppRoutes />
-                    <Toaster richColors />
-                  </Router>
-                </TooltipProvider>
-              </TimerProvider>
-            </SoundProvider>
-          </SettingsProvider>
+          <SoundProvider>
+            <TimerProvider>
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </TimerProvider>
+          </SoundProvider>
         </AuthProvider>
-      </ThemeProvider>
-      {/* Removed ReactQueryDevtools as it's causing module not found error */}
+      </TooltipProvider>
     </QueryClientProvider>
   );
 };

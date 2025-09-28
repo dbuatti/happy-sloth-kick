@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import DateNavigator from './DateNavigator';
 import TaskFilter from './TaskFilter';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
@@ -9,8 +9,8 @@ import DailyOverviewCard from './DailyOverviewCard';
 interface DailyTasksHeaderProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  tasks: Omit<Task, "category_color">[]; // Updated type
-  filteredTasks: Omit<Task, "category_color">[]; // Updated type
+  tasks: Task[]; // Added
+  filteredTasks: Task[]; // Added
   sections: TaskSection[];
   allCategories: Category[];
   userId: string | null;
@@ -45,10 +45,10 @@ interface DailyTasksHeaderProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   onToggleAllSections: () => void;
-  isManageCategoriesOpen: boolean;
-  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  isManageSectionsOpen: boolean;
-  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isManageCategoriesOpen: boolean; // Added
+  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
+  isManageSectionsOpen: boolean; // Added
+  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Added
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -83,12 +83,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   doTodayOffIds,
   toggleDoToday,
   onToggleAllSections,
-  isManageCategoriesOpen,
-  setIsManageCategoriesOpen,
-  isManageSectionsOpen,
-  setIsManageSectionsOpen,
+  isManageCategoriesOpen, // Destructured
+  setIsManageCategoriesOpen, // Destructured
+  isManageSectionsOpen, // Destructured
+  setIsManageSectionsOpen, // Destructured
 }) => {
-  // Removed searchInputRef as it was declared but never read.
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="flex flex-col bg-gradient-to-br from-[hsl(var(--gradient-start-light))] to-[hsl(var(--gradient-end-light))] dark:from-[hsl(var(--gradient-start-dark))] dark:to-[hsl(var(--gradient-end-dark))] rounded-b-2xl shadow-lg">
@@ -121,6 +121,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       />
 
       <TaskFilter
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
         searchFilter={searchFilter}
         setSearchFilter={setSearchFilter}
         statusFilter={statusFilter}
@@ -133,6 +135,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
+        searchRef={searchInputRef}
       />
 
       <ManageCategoriesDialog

@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { TaskSection, Category } from '@/hooks/useTasks';
 
 interface TaskFilterProps {
+  currentDate: Date;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   searchFilter: string;
   setSearchFilter: (value: string) => void;
   statusFilter: string;
@@ -20,6 +22,7 @@ interface TaskFilterProps {
   setSectionFilter: (value: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
+  searchRef: React.RefObject<HTMLInputElement>;
 }
 
 const TaskFilter: React.FC<TaskFilterProps> = ({
@@ -35,11 +38,32 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   setSectionFilter,
   sections,
   allCategories,
+  searchRef,
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchFilter(e.target.value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchFilter('');
+  };
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value);
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryFilter(value);
+  };
+
+  const handlePriorityChange = (value: string) => {
+    setPriorityFilter(value);
+  };
+
+  const handleSectionChange = (value: string) => {
+    setSectionFilter(value);
   };
 
   const clearAllFilters = () => {
@@ -54,10 +78,11 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 px-4 py-3">
+    <div className="flex flex-col sm:flex-row gap-3 px-4 py-3"> {/* Removed mb-4, adjusted padding */}
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
         <Input
+          ref={searchRef}
           placeholder="Search tasks..."
           value={searchFilter}
           onChange={handleSearchChange}
@@ -68,7 +93,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
             variant="ghost"
             size="sm"
             className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-            onClick={() => setSearchFilter('')}
+            onClick={handleClearSearch}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
@@ -87,7 +112,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value)}>
+                <Select value={statusFilter} onValueChange={handleStatusChange}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -103,7 +128,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
 
               <div className="space-y-2">
                 <Label>Category</Label>
-                <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value)}>
+                <Select value={categoryFilter} onValueChange={handleCategoryChange}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -120,7 +145,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
 
               <div className="space-y-2">
                 <Label>Priority</Label>
-                <Select value={priorityFilter} onValueChange={(value) => setPriorityFilter(value)}>
+                <Select value={priorityFilter} onValueChange={handlePriorityChange}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -136,7 +161,7 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
 
               <div className="space-y-2">
                 <Label>Section</Label>
-                <Select value={sectionFilter} onValueChange={(value) => setSectionFilter(value)}>
+                <Select value={sectionFilter} onValueChange={handleSectionChange}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="Select section" />
                   </SelectTrigger>
