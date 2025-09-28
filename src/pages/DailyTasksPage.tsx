@@ -8,7 +8,6 @@ import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
-import FullScreenTaskDisplay from '@/components/FullScreenTaskDisplay'; // Import the new component
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -28,10 +27,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [isFullScreenTaskOpen, setIsFullScreenTaskOpen] = useState(false); // New state for full screen
-  const [fullScreenTask, setFullScreenTask] = useState<Task | null>(null); // New state for full screen task
-
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Explicitly type as Set<string>
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -114,11 +110,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleOpenFullScreenTask = useCallback((task: Task) => { // New handler
-    setFullScreenTask(task);
-    setIsFullScreenTaskOpen(true);
-  }, []);
-
   const handleClearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
   }, []);
@@ -176,8 +167,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         updateTask={updateTask}
         onOpenOverview={handleOpenOverview}
         onOpenFocusView={() => setFocusTask(nextAvailableTask?.id || null)}
-        onOpenFullScreenTask={handleOpenFullScreenTask}
-        // Pass the new handler
         tasksLoading={tasksLoading}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
@@ -250,17 +239,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
-        />
-      )}
-
-      {fullScreenTask && (
-        <FullScreenTaskDisplay
-          task={fullScreenTask}
-          isOpen={isFullScreenTaskOpen}
-          onClose={() => setIsFullScreenTaskOpen(false)}
-          sections={sections}
-          allCategories={allCategories}
-          scheduledTasksMap={scheduledTasksMap}
         />
       )}
 
