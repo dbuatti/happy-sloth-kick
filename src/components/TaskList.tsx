@@ -16,6 +16,7 @@ import {
   UniqueIdentifier,
   PointerSensor,
   closestCorners,
+  DragOverEvent, // Import DragOverEvent
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -36,7 +37,7 @@ import TaskReorderDialog from './TaskReorderDialog'; // Import the new dialog
 import EmptyState from './EmptyState'; // Import EmptyState
 import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
-import { isPast, parseISO, isSameDay } from 'date-fns'; // Removed startOfDay
+import { isPast, parseISO, isSameDay } from 'date-fns';
 
 interface TaskListProps {
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
@@ -94,6 +95,7 @@ interface SortableSectionHeaderPropsForWrapper { // Define the interface for Sor
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
   transition?: string;
   isDragging?: boolean;
+  isDropTarget?: boolean; // New prop for drop target feedback
 }
 
 interface SortableSectionWrapperProps extends SortableSectionHeaderPropsForWrapper {
@@ -180,6 +182,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
+  const [overId, setOverId] = useState<UniqueIdentifier | null>(null); // Track overId for drop target feedback
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -254,41 +257,52 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     }
   };
 
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverId(event.over?.id || null);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
     setActiveItemData(null);
+    setOverId(null); // Reset overId on drag end
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
       return;
     }
 
+    // Handle section reordering
     if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
       const a = String(active.id);
       const b = String(over.id);
-      if (a !== 'no-section-header' && b !== 'no-section-header') {
+      if (a !== 'no-section-header' && b !== 'no-section-header') { // Prevent reordering 'No Section'
         await reorderSections(a, b);
       }
       return;
     }
 
+    // Handle task reordering or moving between sections
     const draggedTask = getTaskById(active.id);
-    if (!draggedTask && !active.id.toString().startsWith('virtual-')) {
+    if (!draggedTask) {
       return;
     }
 
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
-    let overId: string | null = null;
+    let overTaskId: string | null = null;
 
     if (isSectionHeaderId(over.id)) {
+      // Dropped onto a section header
       newSectionId = over.id === 'no-section-header' ? null : String(over.id);
+      newParentId = null; // Top-level task in the new section
+      overTaskId = null; // No specific task to drop over
     } else {
-      const overTask = getTaskById(over.id) || processedTasks.find(t => t.id === over.id);
+      // Dropped onto another task
+      const overTask = getTaskById(over.id);
       if (overTask) {
         newParentId = overTask.parent_task_id;
         newSectionId = overTask.section_id;
-        overId = overTask.id;
+        overTaskId = overTask.id;
       }
     }
     
@@ -300,7 +314,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
       String(active.id), 
       newParentId, 
       newSectionId, 
-      overId,
+      overTaskId, // Pass overTaskId
       isDraggingDown
     );
   };
@@ -399,6 +413,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
+          onDragOver={handleDragOver} // Add onDragOver to update overId
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
@@ -450,6 +465,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     isOverlay={false}
                     isNoSection={isNoSection} // Pass isNoSection prop
                     isDemo={isDemo}
+                    isDropTarget={activeId !== null && !isSectionHeaderId(activeId) && overId === currentSection.id} // Highlight if a task is dragged over this section
                   />
 
                   <div className={cn(

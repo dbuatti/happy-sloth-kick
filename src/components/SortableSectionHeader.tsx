@@ -10,15 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings, GripVertical, AlertCircle } from 'lucide-react'; // Added AlertCircle icon
+import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings, GripVertical, AlertCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { TaskSection } from '@/hooks/useTasks';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { showSuccess } from '@/utils/toast';
-import { DraggableAttributes } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import type { DraggableAttributes } from '@dnd-kit/core'; // FIX: Corrected import syntax
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Added 'type' keyword for clarity
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -42,6 +42,7 @@ interface SortableSectionHeaderProps {
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
   transition?: string;
   isDragging?: boolean;
+  isDropTarget?: boolean; // New prop for drop target feedback
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -65,6 +66,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   transform,
   transition,
   isDragging,
+  isDropTarget = false, // Default to false
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(section.name);
@@ -123,6 +125,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/40", // Enhanced hover effect
         isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
         isDemo && "opacity-70 cursor-not-allowed",
+        isDropTarget && "ring-2 ring-primary ring-offset-2 ring-offset-background", // Drop target styling
         "group"
       )}
     >
@@ -275,11 +278,11 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
                     <DropdownMenuItem onSelect={() => setIsEditingName(true)}>
                       <Settings className="mr-2 h-4 w-4" /> Rename Section
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete Section
-                    </DropdownMenuItem>
                   </>
                 )}
+                <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>
