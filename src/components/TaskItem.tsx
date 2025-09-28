@@ -176,12 +176,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border", // Adjusted vertical padding and left padding
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border",
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
-          : "bg-card text-foreground border-border hover:shadow-md hover:scale-[1.005]", // Added hover scale and shadow
+          : "bg-card text-foreground border-border", // Removed hover:scale here
         !isDoToday && "opacity-60",
-        "group"
+        "group",
+        !isOverlay && "hover:shadow-md hover:scale-[1.005]" // Conditionally apply hover effects
       )}
     >
       {/* Priority Pill */}
