@@ -1,156 +1,49 @@
-"use client";
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useSession } from '@/components/SessionContextProvider';
+import DashboardPage from '@/features/dashboard/pages/DashboardPage';
+import AuthPage from '@/features/auth/pages/AuthPage';
+import TasksPage from '@/features/tasks/pages/TasksPage';
+import HabitsPage from '@/features/habits/pages/HabitsPage';
+import SchedulePage from '@/features/schedule/pages/SchedulePage';
+import GoalsPage from '@/features/goals/pages/GoalsPage';
+import ProjectsPage from '@/features/projects/pages/ProjectsPage';
+import QuickLinksPage from '@/features/quick-links/pages/QuickLinksPage';
+import PeopleMemoryPage from '@/features/people-memory/pages/PeopleMemoryPage';
+import WeeklyFocusPage from '@/features/weekly-focus/pages/WeeklyFocusPage';
+import NotificationsPage from '@/features/notifications/pages/NotificationsPage';
+import DevIdeasPage from '@/features/dev-ideas/pages/DevIdeasPage';
+import MealsPage from '@/features/meals/pages/MealsPage';
+import SettingsPage from '@/features/settings/pages/SettingsPage';
 
-import { useState } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
-import NotFound from "./pages/NotFound";
-import Help from "./pages/Help";
-import ProjectBalanceTracker from "./pages/ProjectBalanceTracker";
-import TimeBlockSchedule from "./pages/TimeBlockSchedule";
-import FocusMode from "./pages/FocusMode";
-import LandingPage from "./pages/LandingPage";
-import DailyTasksPage from "./pages/DailyTasksPage";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import { ReminderProvider } from "@/context/ReminderContext.tsx";
-import { SoundProvider } from "@/context/SoundContext";
-import { Sidebar } from "./components/Sidebar";
-import AuthPage from "./pages/AuthPage";
-import FloatingTimer from "./components/FloatingTimer";
-import DevSpace from "./pages/DevSpace";
-import { TimerProvider } from "./context/TimerContext";
-import { SettingsProvider } from "./context/SettingsContext";
-import Dashboard from "./pages/Dashboard";
-import Settings from "./pages/Settings";
-import Analytics from "./pages/Analytics";
-import Archive from "./pages/Archive";
-import SleepPage from "./pages/SleepPage";
-import CommandPalette from "./components/CommandPalette";
-import MealPlanner from "./pages/MealPlanner";
-import ResonanceGoalsPage from "./pages/ResonanceGoalsPage"; // Import the new ResonanceGoalsPage
+function App() {
+  const { user, isLoading } = useSession();
 
-const queryClient = new QueryClient();
-
-const AppContent = () => {
-  const { user, loading: authLoading } = useAuth();
-  const location = useLocation();
-  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-
-  if (authLoading) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  const isDemoRoute = location.pathname.startsWith('/demo');
-  const demoUserId = import.meta.env.VITE_DEMO_USER_ID;
-
-  if (isDemoRoute && !demoUserId) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-4 text-center">
-        <p className="text-destructive">Demo mode is not configured. Please set VITE_DEMO_USER_ID.</p>
-      </div>
-    );
-  }
-
-  if (isDemoRoute) {
-    return (
-      <SettingsProvider userId={demoUserId}>
-        <ReminderProvider>
-          <div className="relative h-screen w-screen">
-            <Sidebar isDemo={true}>
-              <Routes>
-                <Route path="/demo" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/dashboard" element={<Dashboard isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/daily-tasks" element={<DailyTasksPage isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/help" element={<Help />} />
-                <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/focus" element={<FocusMode isDemo={true} demoUserId={demoUserId} />} /> {/* Added isDemo and demoUserId */}
-                <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/archive" element={<Archive isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/meal-planner" element={<MealPlanner isDemo={true} demoUserId={demoUserId} />} />
-                <Route path="/demo/resonance-goals" element={<ResonanceGoalsPage isDemo={true} demoUserId={demoUserId} />} /> {/* New Demo Route */}
-                <Route path="*" element={<Navigate to="/demo" replace />} />
-              </Routes>
-            </Sidebar>
-          </div>
-        </ReminderProvider>
-      </SettingsProvider>
-    );
-  }
-
-  if (!user && location.pathname !== '/' && location.pathname !== '/auth') {
-    return <Navigate to="/" replace />;
+  if (isLoading) {
+    return <div className="flex justify-center items-center h-screen">Loading application...</div>;
   }
 
   return (
-    <SettingsProvider>
-      <ReminderProvider>
-        <div className="flex-1 flex flex-col">
-          {user ? (
-            <div className="relative h-screen w-screen">
-              <Sidebar>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/daily-tasks" element={<DailyTasksPage />} />
-                  <Route path="/help" element={<Help />} />
-                  <Route path="/projects" element={<ProjectBalanceTracker />} />
-                  <Route path="/schedule" element={<TimeBlockSchedule />} />
-                  <Route path="/sleep" element={<SleepPage />} />
-                  <Route path="/focus" element={<FocusMode />} />
-                  <Route path="/dev-space" element={<DevSpace />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/archive" element={<Archive />} />
-                  <Route path="/meal-planner" element={<MealPlanner />} />
-                  <Route path="/resonance-goals" element={<ResonanceGoalsPage />} /> {/* New User Route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Sidebar>
-              <FloatingTimer />
-              <CommandPalette
-                isCommandPaletteOpen={isCommandPaletteOpen}
-                setIsCommandPaletteOpen={setIsCommandPaletteOpen}
-              />
-            </div>
-          ) : (
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          )}
-        </div>
-      </ReminderProvider>
-    </SettingsProvider>
+    <Routes>
+      <Route path="/auth" element={!user ? <AuthPage /> : <Navigate to="/" replace />} />
+      <Route
+        path="/"
+        element={user ? <DashboardPage /> : <Navigate to="/auth" replace />}
+      />
+      <Route path="/tasks" element={user ? <TasksPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/habits" element={user ? <HabitsPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/schedule" element={user ? <SchedulePage /> : <Navigate to="/auth" replace />} />
+      <Route path="/goals" element={user ? <GoalsPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/projects" element={user ? <ProjectsPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/quick-links" element={user ? <QuickLinksPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/people-memory" element={user ? <PeopleMemoryPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/weekly-focus" element={user ? <WeeklyFocusPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/dev-ideas" element={user ? <DevIdeasPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/meals" element={user ? <MealsPage /> : <Navigate to="/auth" replace />} />
+      <Route path="/settings" element={user ? <SettingsPage /> : <Navigate to="/auth" replace />} />
+    </Routes>
   );
-};
-
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Sonner position="top-center" />
-        <AuthProvider>
-          <SoundProvider>
-            <TimerProvider>
-              <BrowserRouter>
-                <AppContent />
-              </BrowserRouter>
-            </TimerProvider>
-          </SoundProvider>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-};
+}
 
 export default App;
