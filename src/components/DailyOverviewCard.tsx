@@ -1,12 +1,11 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, ChevronDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Target, Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
-import { Progress } from '@/components/Progress';
-import NextTaskCard from './dashboard/NextTaskCard';
-import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from '@/lib/utils';
+import { showSuccess } from '@/utils/toast';
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -37,7 +36,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   onOpenOverview,
   onOpenFocusView,
   tasksLoading,
-  isDemo,
+  isDemo = false,
   doTodayOffIds,
   toggleDoToday,
   archiveAllCompletedTasks,
@@ -48,95 +47,124 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   onToggleAllSections,
 }) => {
   const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
-  const totalTasksForProgress = totalPendingCount + completedCount;
-  const isNextTaskDoToday = nextAvailableTask ? !doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id) : false;
+  const totalTasks = totalPendingCount + completedCount;
+  const progressPercentage = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
 
-  const showNextTask = nextAvailableTask && totalPendingCount > 0;
+  const handleStartFocus = () => {
+    if (nextAvailableTask) {
+      onOpenFocusView(); // This will open the focus panel/drawer
+      // The actual focus task setting and UI transition will be handled there.
+    } else {
+      // Optionally, show a message or open the focus panel anyway to allow manual selection
+      setIsFocusPanelOpen(true);
+    }
+  };
 
   return (
-    <Card className="mx-4 mt-4 p-0 shadow-sm rounded-xl bg-background">
+    <Card className="w-full bg-gradient-to-br from-primary/5 to-secondary/5 border border-primary/10 shadow-sm">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" /> Daily Overview
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0 p-4">
-        {showNextTask ? (
-          <NextTaskCard
-            nextAvailableTask={nextAvailableTask}
-            updateTask={updateTask}
-            onOpenOverview={onOpenOverview}
-            loading={tasksLoading}
-            onOpenFocusView={onOpenFocusView}
-            isDoToday={isNextTaskDoToday}
-            toggleDoToday={toggleDoToday}
-            isDemo={isDemo}
-          />
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              {totalPendingCount === 0 && completedCount > 0
-                ? "All tasks completed for today! 🎉"
-                : totalPendingCount === 0 && completedCount === 0
-                ? "No tasks for today. Enjoy your free time! 🧘‍♀️"
-                : "No next task available, but here's your progress:"}
-            </p>
-          </div>
-        )}
-
-        <div className={cn("mt-4 pt-4 border-t", !showNextTask && "border-t-0 pt-0")}>
-          <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-            <div className="flex items-center gap-1">
-              <ListTodo className="h-4 w-4 text-foreground" />
-              <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-primary text-lg">{completedCount} completed</span>
-            </div>
-          </div>
-          <Progress
-            value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0}
-            className="h-4 rounded-full"
-            indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
-          />
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 gap-2">
-            {overdueCount > 0 ? (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <Clock className="h-4 w-4" /> {overdueCount} overdue
-              </p>
-            ) : <div />}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs" disabled={isDemo}>
-                  Bulk Actions <ChevronDown className="ml-2 h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={archiveAllCompletedTasks}>
-                  <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={toggleAllDoToday}>
-                  <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={onToggleAllSections}>
-                  <ChevronDown className="mr-2 h-3.5 w-3.5" /> Toggle All Sections
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsManageCategoriesOpen(true)}>
-                  <Tag className="mr-2 h-4 w-4" /> Manage Categories
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsManageSectionsOpen(true)}>
-                  <FolderOpen className="mr-2 h-4 w-4" /> Manage Sections
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsFocusPanelOpen(true)}>
-                  <Brain className="mr-2 h-4 w-4" /> Open Focus Tools
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <CardTitle className="text-xl font-bold flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            Today's Focus
+          </CardTitle>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsManageCategoriesOpen(true)}
+              className="h-8 text-xs"
+            >
+              Categories
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsManageSectionsOpen(true)}
+              className="h-8 text-xs"
+            >
+              Sections
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onToggleAllSections}
+              className="h-8 text-xs"
+            >
+              Toggle Sections
+            </Button>
           </div>
         </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Progress Summary */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center text-sm">
+            <span className="font-medium">Progress</span>
+            <span className="text-muted-foreground">
+              {completedCount} of {totalTasks} tasks completed
+            </span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>{progressPercentage}%</span>
+            <div className="flex items-center gap-2">
+              {overdueCount > 0 && (
+                <span className="flex items-center text-status-overdue">
+                  <AlertCircle className="h-3 w-3 mr-1" /> {overdueCount} overdue
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex flex-wrap gap-2">
+          <Button
+            onClick={handleStartFocus}
+            className="flex-1 min-w-[120px]"
+            disabled={tasksLoading || (!nextAvailableTask && totalTasks === 0)}
+          >
+            <Target className="mr-2 h-4 w-4" />
+            {nextAvailableTask ? "Start Focusing" : "Focus Mode"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={archiveAllCompletedTasks}
+            disabled={tasksLoading || completedCount === 0}
+            className="flex-1 min-w-[120px]"
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Archive Completed
+          </Button>
+          <Button
+            variant="outline"
+            onClick={toggleAllDoToday}
+            disabled={tasksLoading}
+            className="flex-1 min-w-[120px]"
+          >
+            Toggle All "Do Today"
+          </Button>
+        </div>
+
+        {/* Next Task Preview */}
+        {nextAvailableTask && (
+          <div 
+            className="p-3 rounded-lg bg-card border cursor-pointer hover:bg-accent transition-colors"
+            onClick={() => onOpenOverview(nextAvailableTask)}
+          >
+            <h3 className="font-medium text-sm mb-1 flex items-center">
+              <span className="inline-block w-2 h-2 rounded-full bg-primary mr-2"></span>
+              Up Next
+            </h3>
+            <p className="text-sm truncate">{nextAvailableTask.description}</p>
+            {nextAvailableTask.due_date && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Due: {new Date(nextAvailableTask.due_date).toLocaleDateString()}
+              </p>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
