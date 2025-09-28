@@ -47,6 +47,8 @@ interface TaskItemProps {
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
   showDragHandle?: boolean; // New prop for drag handle visibility
+  attributes?: React.HTMLAttributes<HTMLButtonElement>; // Added for Dnd-kit
+  listeners?: React.HTMLAttributes<HTMLButtonElement>; // Added for Dnd-kit
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -67,6 +69,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   scheduledTasksMap,
   isDemo = false,
   showDragHandle = false, // Default to false
+  attributes, // Destructured
+  listeners, // Destructured
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -182,7 +186,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border",
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-3 shadow-sm border", // Adjusted pl-4 to pl-3
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
           : "bg-card text-foreground border-border",
@@ -193,14 +197,22 @@ const TaskItem: React.FC<TaskItemProps> = ({
     >
       {/* Priority Pill */}
       <div className={cn(
-        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", // Adjusted width to w-1.5
+        "absolute left-0 top-0 h-full w-1 rounded-l-xl", // Adjusted width to w-1
         getPriorityDotColor(task.priority)
       )} />
 
       {showDragHandle && (
-        <div className="flex-shrink-0 pr-2 pl-1 text-muted-foreground cursor-grab" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab"
+          onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+          {...listeners}
+          {...attributes}
+          aria-label="Drag to reorder task"
+        >
           <GripVertical className="h-4 w-4" />
-        </div>
+        </Button>
       )}
 
       <div className="flex-shrink-0 pr-3 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>

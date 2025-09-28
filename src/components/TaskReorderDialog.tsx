@@ -104,7 +104,7 @@ const SortableTaskReorderItem: React.FC<{
       className={cn(
         "relative group flex items-center",
         isOverlay ? "bg-card rounded-lg" : "", // Base styling for the li wrapper
-        isDropTarget && "border-2 border-primary-foreground", // Highlight drop target
+        isDropTarget && "border-2 border-primary-foreground bg-primary/5", // Enhanced drop target highlight
         !isOverlay && "hover:shadow-md hover:scale-[1.005] transition-all duration-200" // Add hover effects for non-overlay items
       )}
     >
