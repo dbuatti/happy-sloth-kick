@@ -3,12 +3,12 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-// import { GripVertical } from 'lucide-react'; // Removed
+// import { GripVertical } from 'lucide-react'; // Removed unused import
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import { Task } from '@/hooks/useTasks';
 import { UniqueIdentifier } from '@dnd-kit/core';
-// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed
+// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed unused import
 import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
@@ -56,11 +56,11 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
-  expandedTasks, // Destructure here
+  expandedTasks,
 }) => {
   const {
-    // attributes, // Removed
-    // listeners, // Removed
+    // attributes, // Removed unused variable
+    // listeners, // Removed unused variable
     setNodeRef,
     transform,
     transition,
@@ -72,7 +72,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 0,
-    // position: 'relative', // Removed, handled by className
+    // position: 'relative', // Removed, as 'relative' is already applied via Tailwind className
   };
 
   return (
@@ -97,7 +97,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         toggleDoToday={toggleDoToday}
         scheduledTasksMap={scheduledTasksMap}
         isDemo={isDemo}
-        expandedTasks={expandedTasks} // Pass it down
+        expandedTasks={expandedTasks}
       />
     </div>
   );
