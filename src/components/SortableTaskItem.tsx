@@ -3,12 +3,12 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+// import { GripVertical } from 'lucide-react'; // Removed
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import { Task } from '@/hooks/useTasks';
 import { UniqueIdentifier } from '@dnd-kit/core';
-import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+// import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities'; // Removed
 import { Appointment } from '@/hooks/useAppointments';
 
 interface SortableTaskItemProps {
@@ -32,6 +32,7 @@ interface SortableTaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  expandedTasks?: Record<string, boolean>; // Added for TaskList error
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -55,10 +56,11 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
+  expandedTasks, // Destructure here
 }) => {
   const {
-    attributes,
-    listeners,
+    // attributes, // Removed
+    // listeners, // Removed
     setNodeRef,
     transform,
     transition,
@@ -70,12 +72,11 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 10 : 0,
-    position: 'relative',
+    // position: 'relative', // Removed, handled by className
   };
 
   return (
     <div ref={setNodeRef} style={style} className={cn("relative", isDragging && "shadow-lg rounded-xl")}>
-      {/* Drag handle is removed from here */}
       <TaskItem
         task={task}
         allTasks={allTasks}
@@ -96,8 +97,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         toggleDoToday={toggleDoToday}
         scheduledTasksMap={scheduledTasksMap}
         isDemo={isDemo}
-        // attributes={attributes} // Removed
-        // listeners={listeners}   // Removed
+        expandedTasks={expandedTasks} // Pass it down
       />
     </div>
   );
