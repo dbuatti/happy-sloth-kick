@@ -26,6 +26,7 @@ interface SortableTaskItemProps {
   doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  showDragHandle?: boolean; // Prop to control drag handle visibility
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -41,6 +42,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
+  showDragHandle = false, // Default to false
   onDelete,
   onUpdate,
   sections,
@@ -63,7 +65,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    marginLeft: `${level * 16}px`, // Use marginLeft for indentation
+    paddingLeft: `${level * 16}px`, // Use paddingLeft for indentation
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -100,15 +102,16 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           sections={sections}
           onOpenOverview={onOpenOverview}
           currentDate={currentDate}
-          onMoveUp={onMoveUp}
-          onMoveDown={onMoveDown}
+          onMoveUp={async () => {}}
+          onMoveDown={async () => {}}
+          level={level}
           isOverlay={isOverlay}
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
-          level={level}
+          showDragHandle={showDragHandle} // Pass the prop
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -134,6 +137,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 doTodayOffIds={doTodayOffIds}
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
+                showDragHandle={showDragHandle} // Pass the prop to subtasks as well
               />
             ))}
           </ul>

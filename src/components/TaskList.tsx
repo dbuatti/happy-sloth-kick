@@ -381,6 +381,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             doTodayOffIds={doTodayOffIds}
                             scheduledTasksMap={scheduledTasksMap}
                             isDemo={isDemo}
+                            showDragHandle={false} // Drag handle not shown in main list
                           />
                         ))}
                       </ul>
@@ -439,6 +440,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
+                      showDragHandle={false} // Drag handle not shown in main list overlay
                     />
                   </div>
                 )

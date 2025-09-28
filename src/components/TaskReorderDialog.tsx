@@ -79,6 +79,8 @@ const SortableTaskReorderItem: React.FC<{
     // When it's the overlay, ensure it's fully opaque and has a strong shadow
     boxShadow: isOverlay ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' : 'none',
     zIndex: isOverlay ? 999 : 'auto', // Ensure overlay is on top
+    // Add a slight rotation for the dragging overlay
+    rotate: isOverlay ? '2deg' : '0deg',
   };
 
   // Render a placeholder when the item is being dragged but is not the overlay
@@ -99,12 +101,11 @@ const SortableTaskReorderItem: React.FC<{
       ref={setNodeRef}
       style={style}
       className={cn(
-        "relative group flex items-center cursor-grab", // Added cursor-grab
+        "relative group flex items-center",
         isOverlay ? "bg-card rounded-lg" : "", // Base styling for the li wrapper
-        isDropTarget && "border-2 border-primary-foreground" // Highlight drop target
+        isDropTarget && "border-2 border-primary-foreground", // Highlight drop target
+        !isOverlay && "hover:shadow-md hover:scale-[1.005] transition-all duration-200" // Add hover effects for non-overlay items
       )}
-      {...listeners}
-      {...attributes}
     >
       <div className="flex-1">
         <TaskItem
@@ -124,6 +125,9 @@ const SortableTaskReorderItem: React.FC<{
           toggleDoToday={rest.toggleDoToday}
           scheduledTasksMap={rest.scheduledTasksMap}
           isDemo={rest.isDemo}
+          showDragHandle={true} // Always show drag handle in reorder dialog
+          {...listeners} // Apply listeners to the drag handle within TaskItem
+          {...attributes} // Apply attributes to the drag handle within TaskItem
         />
       </div>
     </li>

@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -34,8 +34,8 @@ interface TaskItemProps {
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
-  onMoveUp: (taskId: string) => Promise<void>;
-  onMoveDown: (taskId: string) => Promise<void>;
+  onMoveUp?: (taskId: string) => Promise<void>; // Made optional as it's not always used
+  onMoveDown?: (taskId: string) => Promise<void>; // Made optional as it's not always used
   level: number;
   isOverlay?: boolean;
   hasSubtasks?: boolean;
@@ -46,6 +46,7 @@ interface TaskItemProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  showDragHandle?: boolean; // New prop for drag handle visibility
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -65,6 +66,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   toggleDoToday,
   scheduledTasksMap,
   isDemo = false,
+  showDragHandle = false, // Default to false
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -179,17 +181,23 @@ const TaskItem: React.FC<TaskItemProps> = ({
         "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 shadow-sm border",
         task.status === 'completed' 
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
-          : "bg-card text-foreground border-border", // Removed hover:scale here
+          : "bg-card text-foreground border-border",
         !isDoToday && "opacity-60",
         "group",
-        !isOverlay && "hover:shadow-md hover:scale-[1.005]" // Conditionally apply hover effects
+        !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer" // Added cursor-pointer
       )}
     >
       {/* Priority Pill */}
       <div className={cn(
-        "absolute left-0 top-0 h-full w-2 rounded-l-xl", // Increased width from w-1.5 to w-2
+        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl", // Adjusted width to w-1.5
         getPriorityDotColor(task.priority)
       )} />
+
+      {showDragHandle && (
+        <div className="flex-shrink-0 pr-2 pl-1 text-muted-foreground cursor-grab" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+          <GripVertical className="h-4 w-4" />
+        </div>
+      )}
 
       <div className="flex-shrink-0 pr-3 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
         {hasSubtasks && (
@@ -238,14 +246,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-base leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium" // Adjusted text size
+              className="h-auto text-lg leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium" // Adjusted text size to text-lg
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
               <span
                 className={cn(
-                  "block text-base leading-tight font-medium", // Changed to block, adjusted text size
+                  "block text-lg leading-tight font-medium", // Changed to block, adjusted text size to text-lg
                   task.status === 'completed' ? 'line-through opacity-75' : '',
                   "cursor-text"
                 )}
@@ -254,7 +262,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 {task.description}
               </span>
               {scheduledAppointment && (
-                <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1"> {/* Adjusted text size */}
+                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1"> {/* Adjusted text size to text-xs */}
                   <CalendarClock className="h-3 w-3" />
                   <span>
                     Scheduled: {format(parseISO(scheduledAppointment.date), 'dd/MM')} {format(parseISO(`1970-01-01T${scheduledAppointment.start_time}`), 'h:mm a')}
