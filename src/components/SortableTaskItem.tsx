@@ -85,6 +85,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center"
       )}
+      {...attributes} // Apply attributes to the whole li for dragging
+      {...listeners} // Apply listeners to the whole li for dragging
     >
       <div className="flex-1">
         <TaskItem
@@ -107,8 +109,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
           level={level}
-          attributes={attributes}
-          listeners={listeners}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
