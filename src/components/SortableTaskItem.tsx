@@ -65,7 +65,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
     visibility: isDragging && !isOverlay ? 'hidden' : 'visible',
-    // Removed paddingLeft from here as it's handled by the wrapper div below
+    paddingLeft: `${level * 16}px`, // Use paddingLeft for indentation
   };
 
   const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
@@ -84,16 +84,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       className={cn(
         "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
+        level > 0 ? "border-l border-l-primary/50" : "",
         "flex items-center"
       )}
       {...attributes} // Apply attributes to the whole li for dragging
       {...listeners} // Apply listeners to the whole li for dragging
     >
-      <div className={cn(
-        "flex-1",
-        level > 0 && "relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-border before:ml-4", // Vertical line
-        `pl-${level * 4}` // Tailwind's `pl-4`, `pl-8`, etc. for indentation
-      )}>
+      <div className="flex-1">
         <TaskItem
           task={task}
           hasSubtasks={directSubtasks.length > 0}

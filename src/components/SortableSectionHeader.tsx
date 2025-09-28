@@ -167,38 +167,52 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         )}
 
         {!isOverlay && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Section actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(isNoSection ? null : section.id)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Task
-              </DropdownMenuItem>
-              {sectionTasksCount > 0 && (
-                <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(isNoSection ? null : section.id)}>
-                  <CheckCircle className="mr-2 h-4 w-4" /> Mark All Completed
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-primary hover:bg-primary/10"
+                  onClick={(e) => { e.stopPropagation(); handleAddTaskToSpecificSection(isNoSection ? null : section.id); }}
+                  aria-label="Add task to this section"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Add Task</TooltipContent>
+            </Tooltip>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="sr-only">Section actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {sectionTasksCount > 0 && (
+                  <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(isNoSection ? null : section.id)}>
+                    <CheckCircle className="mr-2 h-4 w-4" /> Mark All Completed
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={() => onOpenReorderTasks(isNoSection ? 'no-section-header' : section.id)}>
+                  <ListOrdered className="mr-2 h-4 w-4" /> Reorder Tasks
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onSelect={() => onOpenReorderTasks(isNoSection ? 'no-section-header' : section.id)}>
-                <ListOrdered className="mr-2 h-4 w-4" /> Reorder Tasks
-              </DropdownMenuItem>
-              {!isNoSection && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => setIsEditingName(true)}>
-                    <Settings className="mr-2 h-4 w-4" /> Rename Section
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Section
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                {!isNoSection && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setIsEditingName(true)}>
+                      <Settings className="mr-2 h-4 w-4" /> Rename Section
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleDeleteSectionClick(section.id)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         )}
       </div>
     </div>

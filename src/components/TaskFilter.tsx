@@ -1,11 +1,12 @@
-import { useState } from 'react';
+"use client";
+
+import React, { useMemo } from 'react';
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Search, Filter, X, ListRestart } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
 import { TaskSection, Category } from '@/hooks/useTasks';
+import { Search, XCircle, Filter, Tag, ListTodo, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge'; // Assuming you have a Badge component
 
 interface TaskFilterProps {
   currentDate: Date;
@@ -40,31 +41,13 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
   allCategories,
   searchRef,
 }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchFilter(e.target.value);
-  };
-
-  const handleClearSearch = () => {
-    setSearchFilter('');
-  };
-
-  const handleStatusChange = (value: string) => {
-    setStatusFilter(value);
-  };
-
-  const handleCategoryChange = (value: string) => {
-    setCategoryFilter(value);
-  };
-
-  const handlePriorityChange = (value: string) => {
-    setPriorityFilter(value);
-  };
-
-  const handleSectionChange = (value: string) => {
-    setSectionFilter(value);
-  };
+  const hasActiveFilters = useMemo(() => {
+    return searchFilter !== '' ||
+           statusFilter !== 'all' ||
+           categoryFilter !== 'all' ||
+           priorityFilter !== 'all' ||
+           sectionFilter !== 'all';
+  }, [searchFilter, statusFilter, categoryFilter, priorityFilter, sectionFilter]);
 
   const clearAllFilters = () => {
     setSearchFilter('');
@@ -72,120 +55,129 @@ const TaskFilter: React.FC<TaskFilterProps> = ({
     setCategoryFilter('all');
     setPriorityFilter('all');
     setSectionFilter('all');
-    setShowAdvanced(false);
   };
 
-  const isAnyFilterActive = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
+  const getCategoryName = (id: string) => allCategories.find(c => c.id === id)?.name || id;
+  const getSectionName = (id: string) => sections.find(s => s.id === id)?.name || (id === 'no-section' ? 'No Section' : id);
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3 px-4 py-3"> {/* Removed mb-4, adjusted padding */}
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-        <Input
-          ref={searchRef}
-          placeholder="Search tasks..."
-          value={searchFilter}
-          onChange={handleSearchChange}
-          className="pl-10 h-9"
-        />
-        {searchFilter && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
-            onClick={handleClearSearch}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        )}
-      </div>
-
-      <div className="flex gap-2">
-        <Popover open={showAdvanced} onOpenChange={setShowAdvanced}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2 h-9">
-              <Filter className="h-4 w-4" />
-              Filter
+    <div className="px-4 pt-4 border-t border-border/50">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            ref={searchRef}
+            placeholder="Search tasks..."
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+            className="pl-9"
+          />
+          {searchFilter && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:bg-transparent"
+              onClick={() => setSearchFilter('')}
+              aria-label="Clear search"
+            >
+              <XCircle className="h-4 w-4" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-4">
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <Select value={statusFilter} onValueChange={handleStatusChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="to-do">To Do</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="skipped">Skipped</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          )}
+        </div>
 
-              <div className="space-y-2">
-                <Label>Category</Label>
-                <Select value={categoryFilter} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    {allCategories.map(cat => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full">
+            <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="to-do">To-Do</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+            <SelectItem value="skipped">Skipped</SelectItem>
+          </SelectContent>
+        </Select>
 
-              <div className="space-y-2">
-                <Label>Priority</Label>
-                <Select value={priorityFilter} onValueChange={handlePriorityChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select priority" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-full">
+            <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Filter by Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {allCategories.map(category => (
+              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-              <div className="space-y-2">
-                <Label>Section</Label>
-                <Select value={sectionFilter} onValueChange={handleSectionChange}>
-                  <SelectTrigger className="h-9">
-                    <SelectValue placeholder="Select section" />
-                  </SelectTrigger>
-                  <SelectContent className="z-[9999]">
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="no-section">No Section</SelectItem>
-                    {sections.map(section => (
-                      <SelectItem key={section.id} value={section.id}>
-                        {section.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-        {isAnyFilterActive && (
-          <Button variant="outline" onClick={clearAllFilters} className="gap-2 h-9">
-            <ListRestart className="h-4 w-4" />
-            Clear Filters
-          </Button>
-        )}
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="w-full">
+            <AlertTriangle className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Filter by Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            <SelectItem value="urgent">Urgent</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sectionFilter} onValueChange={setSectionFilter}>
+          <SelectTrigger className="w-full">
+            <ListTodo className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectValue placeholder="Filter by Section" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Sections</SelectItem>
+            <SelectItem value="no-section">No Section</SelectItem>
+            {sections.map(section => (
+              <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
+
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-sm text-muted-foreground">Active Filters:</span>
+          {searchFilter && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Search className="h-3 w-3" /> {searchFilter}
+              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => setSearchFilter('')} />
+            </Badge>
+          )}
+          {statusFilter !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Filter className="h-3 w-3" /> {statusFilter}
+              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => setStatusFilter('all')} />
+            </Badge>
+          )}
+          {categoryFilter !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Tag className="h-3 w-3" /> {getCategoryName(categoryFilter)}
+              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => setCategoryFilter('all')} />
+            </Badge>
+          )}
+          {priorityFilter !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" /> {priorityFilter}
+              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => setPriorityFilter('all')} />
+            </Badge>
+          )}
+          {sectionFilter !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <ListTodo className="h-3 w-3" /> {getSectionName(sectionFilter)}
+              <XCircle className="h-3 w-3 cursor-pointer" onClick={() => setSectionFilter('all')} />
+            </Badge>
+          )}
+          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="h-7 px-2 text-xs">
+            Clear All
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

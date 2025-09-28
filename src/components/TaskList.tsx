@@ -427,7 +427,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     toggleSection={() => {}}
                     handleAddTaskToSpecificSection={() => {}}
                     markAllTasksInSectionCompleted={async () => {}}
-                    handleDeleteSectionClick={async (sectionId) => { await deleteSection(sectionId); }}
+                    handleDeleteSectionClick={async () => {}}
                     updateSectionIncludeInFocusMode={async () => {}}
                     onUpdateSectionName={async () => {}}
                     onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
