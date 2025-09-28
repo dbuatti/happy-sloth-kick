@@ -21,7 +21,9 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
+  useSortable, // Import useSortable
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities'; // Import CSS
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
 import SortableSectionHeader from './SortableSectionHeader';
@@ -32,6 +34,8 @@ import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
 import TaskReorderDialog from './TaskReorderDialog'; // Import the new dialog
 import EmptyState from './EmptyState'; // Import EmptyState
+import { DraggableAttributes } from '@dnd-kit/core';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 interface TaskListProps {
   processedTasks: Task[]; // This is processedTasks from useTaskProcessing
@@ -66,6 +70,71 @@ interface TaskListProps {
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
 }
+
+// Helper component to wrap SortableSectionHeader with useSortable
+interface SortableSectionHeaderPropsForWrapper { // Define the interface for SortableSectionHeader props
+  section: TaskSection;
+  sectionTasksCount: number;
+  isExpanded: boolean;
+  toggleSection: (sectionId: string) => void;
+  handleAddTaskToSpecificSection: (sectionId: string | null) => void;
+  markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
+  handleDeleteSectionClick: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  onUpdateSectionName: (sectionId: string, newName: string) => Promise<void>;
+  onOpenReorderTasks: (sectionId: string | null) => void;
+  isOverlay?: boolean;
+  isNoSection?: boolean;
+  isDemo?: boolean;
+  attributes?: DraggableAttributes;
+  listeners?: SyntheticListenerMap;
+  setNodeRef?: (element: HTMLElement | null) => void;
+  transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
+  transition?: string;
+  isDragging?: boolean;
+}
+
+interface SortableSectionWrapperProps extends SortableSectionHeaderPropsForWrapper {
+  // No additional props needed here, it just extends the base props
+}
+
+const SortableSectionWrapper: React.FC<SortableSectionWrapperProps> = ({ section, isDemo, ...rest }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: section.id, data: { type: 'section', section }, disabled: isDemo || section.id === 'no-section-header' });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0 : 1,
+    visibility: isDragging ? 'hidden' : undefined, // Fixed: visibility type
+  };
+
+  if (isDragging && !rest.isOverlay) {
+    return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <SortableSectionHeader
+        section={section}
+        isDemo={isDemo} // Pass explicitly
+        {...rest}
+        attributes={attributes}
+        listeners={listeners}
+        transform={transform}
+        transition={transition}
+        isDragging={isDragging}
+      />
+    </div>
+  );
+};
+
 
 const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
   const {
@@ -341,19 +410,20 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                   key={currentSection.id}
                   className={cn("mb-4", index < allSortableSections.length - 1 && "border-b border-border pb-4")}
                 >
-                  <SortableSectionHeader
+                  <SortableSectionWrapper
                     section={currentSection}
                     sectionTasksCount={remainingTasksCount}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
-                    handleAddTaskToSpecificSection={(sectionId) => openAddTaskForSection(sectionId)}
+                    handleAddTaskToSpecificSection={(sectionId: string | null) => openAddTaskForSection(sectionId)}
                     markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                    handleDeleteSectionClick={async (sectionId) => { await deleteSection(sectionId); }}
+                    handleDeleteSectionClick={async (sectionId: string) => { await deleteSection(sectionId); }}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                     onUpdateSectionName={updateSection}
                     onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
                     isOverlay={false}
                     isNoSection={isNoSection} // Pass isNoSection prop
+                    isDemo={isDemo}
                   />
 
                   <div className={cn(

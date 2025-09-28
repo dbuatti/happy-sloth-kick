@@ -10,13 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings } from 'lucide-react';
+import { Plus, CheckCircle, Trash2, MoreHorizontal, ChevronDown, ListOrdered, Settings, GripVertical } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { TaskSection } from '@/hooks/useTasks';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { showSuccess } from '@/utils/toast';
+import { DraggableAttributes } from '@dnd-kit/core';
+import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -31,6 +33,14 @@ interface SortableSectionHeaderProps {
   onOpenReorderTasks: (sectionId: string | null) => void;
   isOverlay?: boolean;
   isNoSection?: boolean;
+  isDemo?: boolean;
+  // DND props are optional as they are only passed by SortableSectionWrapper
+  attributes?: DraggableAttributes;
+  listeners?: SyntheticListenerMap;
+  setNodeRef?: (element: HTMLElement | null) => void;
+  transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
+  transition?: string;
+  isDragging?: boolean;
 }
 
 const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
@@ -46,6 +56,13 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   onOpenReorderTasks,
   isOverlay = false,
   isNoSection = false,
+  isDemo, // Removed default value, it's passed as a prop
+  attributes,
+  listeners,
+  setNodeRef,
+  transform,
+  transition,
+  isDragging,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(section.name);
@@ -88,11 +105,20 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     showSuccess(`Section ${checked ? 'included in' : 'excluded from'} Focus Mode.`);
   };
 
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transition,
+    opacity: isDragging && !isOverlay ? 0 : 1,
+    visibility: isDragging && !isOverlay ? 'hidden' : undefined, // Fixed: visibility type
+  };
+
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200",
-        isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg" : "bg-secondary/20 hover:bg-secondary/30",
+        isOverlay ? "bg-primary/10 ring-2 ring-primary shadow-lg rotate-2" : "bg-secondary/20 hover:bg-secondary/30",
         isNoSection && "bg-muted/30 hover:bg-muted/40 border border-dashed border-muted-foreground/20",
         "group"
       )}
@@ -117,6 +143,26 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
             <TooltipContent>
               {isExpanded ? 'Collapse Section' : 'Expand Section'}
             </TooltipContent>
+          </Tooltip>
+        )}
+
+        {!isOverlay && ( // Only show drag handle in the main list, not in overlay
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground cursor-grab"
+                {...listeners} // Apply listeners directly to the Button
+                {...attributes} // Apply attributes directly to the Button
+                onClick={(e) => e.stopPropagation()} // Prevent click from triggering other actions
+                onPointerDown={(e) => e.stopPropagation()} // Prevent drag from starting on click
+                aria-label="Reorder section"
+              >
+                <GripVertical className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Drag to reorder section</TooltipContent>
           </Tooltip>
         )}
 

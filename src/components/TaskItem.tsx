@@ -83,6 +83,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
   const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
 
+  const directSubtasksCount = useMemo(() => {
+    return allTasks.filter(t => t.parent_task_id === task.id).length;
+  }, [allTasks, task.id]);
+
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
@@ -215,6 +219,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
               "h-5 w-5 transition-transform duration-200", 
               isExpanded ? "rotate-90" : "rotate-0"
             )} />
+            {directSubtasksCount > 0 && (
+              <span className="ml-1 text-xs text-muted-foreground">{directSubtasksCount}</span>
+            )}
           </Button>
         )}
       </div>
