@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSession } from '@/components/SessionContextProvider';
 import DashboardPage from '@/features/dashboard/pages/DashboardPage';

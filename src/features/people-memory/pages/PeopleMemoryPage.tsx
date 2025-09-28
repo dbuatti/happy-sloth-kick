@@ -1,5 +1,3 @@
-import React from 'react';
-
 const PeopleMemoryPage = () => {
   return (
     <div className="container mx-auto p-4">
