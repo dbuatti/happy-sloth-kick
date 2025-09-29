@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,23 +9,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { GripVertical, Settings, Plus, Trash2, Edit, ListOrdered, Target, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { TaskSection } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { GripVertical, Plus, CheckCircle2, Settings, Trash2, ListTodo, ArrowDownUp, Edit } from 'lucide-react'; // Removed Eye, EyeOff, Added Edit
-import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DraggableAttributes, UniqueIdentifier } from '@dnd-kit/core'; // Added UniqueIdentifier
+import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { UniqueIdentifier } from '@dnd-kit/core';
+import { showSuccess } from '@/utils/toast'; // Removed showError
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -63,25 +53,26 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
   updateSectionIncludeInFocusMode,
   onUpdateSectionName,
   onOpenReorderTasks,
+  isOverlay = false,
   isNoSection = false,
   isDemo = false,
   attributes,
   listeners,
-  isDragging,
   insertionIndicator,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
-  const [newName, setNewName] = useState(section.name);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewName(e.target.value);
-  };
+  const [newSectionName, setNewSectionName] = useState(section.name);
 
   const handleSaveName = async () => {
-    if (newName.trim() && newName.trim() !== section.name) {
-      await onUpdateSectionName(section.id, newName.trim());
+    if (newSectionName.trim() && newSectionName.trim() !== section.name) {
+      await onUpdateSectionName(section.id, newSectionName.trim());
+      showSuccess('Section name updated!');
     }
+    setIsEditingName(false);
+  };
+
+  const handleCancelEdit = () => {
+    setNewSectionName(section.name);
     setIsEditingName(false);
   };
 
@@ -89,28 +80,23 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
     if (e.key === 'Enter') {
       handleSaveName();
     } else if (e.key === 'Escape') {
-      setNewName(section.name);
-      setIsEditingName(false);
-    }
-  };
-
-  const handleToggleFocusMode = async (checked: boolean) => {
-    if (!isDemo) {
-      await updateSectionIncludeInFocusMode(section.id, checked);
+      handleCancelEdit();
     }
   };
 
   const showInsertionBefore = insertionIndicator?.id === section.id && insertionIndicator.position === 'before';
   const showInsertionAfter = insertionIndicator?.id === section.id && insertionIndicator.position === 'after';
+  const showInsertionInto = insertionIndicator?.id === section.id && insertionIndicator.position === 'into';
 
   return (
     <div
       className={cn(
-        "relative flex items-center justify-between p-3 rounded-lg bg-secondary/20 text-secondary-foreground font-semibold text-lg transition-all duration-200 ease-in-out",
-        "hover:bg-secondary/30",
-        isDragging && "opacity-50 ring-2 ring-primary",
-        isNoSection && "italic text-muted-foreground",
-        "group"
+        "relative flex items-center justify-between py-2 px-3 rounded-lg transition-all duration-200",
+        isOverlay ? "bg-primary/10 shadow-lg" : "bg-muted/50 hover:bg-muted",
+        isNoSection && "bg-gray-100 dark:bg-gray-800",
+        showInsertionBefore && "border-t-2 border-primary",
+        showInsertionAfter && "border-b-2 border-primary",
+        showInsertionInto && "border-2 border-primary bg-primary/10",
       )}
     >
       {showInsertionBefore && (
@@ -136,118 +122,102 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className={cn(
-            "h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground",
-            isDemo && "cursor-not-allowed opacity-50"
-          )}
+          className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground"
           onClick={() => toggleSection(section.id)}
           aria-label={isExpanded ? 'Collapse section' : 'Expand section'}
-          disabled={isDemo}
         >
-          <ArrowDownUp className={cn(
-            "h-4 w-4 transition-transform duration-200",
-            isExpanded ? "rotate-180" : "rotate-0"
-          )} />
+          {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </Button>
 
         {isEditingName && !isDemo ? (
           <Input
-            value={newName}
-            onChange={handleNameChange}
+            value={newSectionName}
+            onChange={(e) => setNewSectionName(e.target.value)}
             onBlur={handleSaveName}
             onKeyDown={handleKeyDown}
+            className="h-8 text-base font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-grow"
             autoFocus
-            className="h-8 text-lg font-semibold p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-grow min-w-0"
             onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
           />
         ) : (
-          <span
-            className={cn("flex-grow min-w-0 truncate cursor-text", isDemo && "cursor-default")}
+          <h2
+            className={cn(
+              "text-base font-semibold flex-grow truncate cursor-pointer",
+              isDemo && "cursor-default"
+            )}
             onClick={() => !isDemo && setIsEditingName(true)}
           >
             {section.name}
-            {sectionTasksCount > 0 && (
-              <span className="ml-2 text-sm text-muted-foreground">({sectionTasksCount} pending)</span>
-            )}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              ({sectionTasksCount} pending)
+            </span>
             {sectionOverdueCount > 0 && (
-              <span className="ml-2 text-sm text-red-500">({sectionOverdueCount} overdue)</span>
+              <span className="ml-2 text-sm font-normal text-red-500">
+                ({sectionOverdueCount} overdue)
+              </span>
             )}
-          </span>
+          </h2>
         )}
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {!isNoSection && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Switch
-                checked={section.include_in_focus_mode}
-                onCheckedChange={handleToggleFocusMode}
-                disabled={isDemo}
-                className="data-[state=checked]:bg-primary data-[state=unchecked]:bg-muted-foreground"
-                aria-label={`Toggle focus mode inclusion for ${section.name}`}
-              />
-            </TooltipTrigger>
-            <TooltipContent>
-              {section.include_in_focus_mode ? "Included in Focus Mode" : "Not included in Focus Mode"}
-            </TooltipContent>
-          </Tooltip>
-        )}
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          onClick={(e) => { e.stopPropagation(); handleAddTaskToSpecificSection(isNoSection ? null : section.id); }}
+          aria-label="Add task to section"
+          disabled={isDemo}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              aria-label="Section settings"
               disabled={isDemo}
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              aria-label="Section actions"
             >
               <Settings className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onSelect={() => handleAddTaskToSpecificSection(isNoSection ? null : section.id)} disabled={isDemo}>
-              <Plus className="mr-2 h-4 w-4" /> Add Task
+            <DropdownMenuItem onSelect={() => setIsEditingName(true)} disabled={isNoSection}>
+              <Edit className="mr-2 h-4 w-4" /> Rename Section
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(isNoSection ? null : section.id)} disabled={isDemo || sectionTasksCount === 0}>
+            <DropdownMenuItem onSelect={() => onOpenReorderTasks(isNoSection ? null : section.id)}>
+              <ListOrdered className="mr-2 h-4 w-4" /> Reorder Tasks
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(isNoSection ? null : section.id)}>
               <CheckCircle2 className="mr-2 h-4 w-4" /> Mark All Completed
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onOpenReorderTasks(isNoSection ? null : section.id)} disabled={isDemo}>
-              <ListTodo className="mr-2 h-4 w-4" /> Reorder Tasks
             </DropdownMenuItem>
             {!isNoSection && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsEditingName(true)} disabled={isDemo}>
-                  <Edit className="mr-2 h-4 w-4" /> Rename Section
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsDeleteDialogOpen(true)} disabled={isDemo} className="text-destructive focus:text-destructive">
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+                <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
+                  <Target className="mr-2 h-4 w-4" /> {section.include_in_focus_mode ? 'Exclude from Focus Mode' : 'Include in Focus Mode'}
                 </DropdownMenuItem>
               </>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => {
+                if (window.confirm(`Are you sure you want to delete the section "${section.name}"? All tasks in this section will be moved to 'No Section'.`)) {
+                  handleDeleteSectionClick(section.id);
+                }
+              }}
+              className="text-destructive focus:text-destructive"
+              disabled={isNoSection}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Delete Section
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the "{section.name}" section and move all its tasks to "No Section".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDeleteSectionClick(section.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       {showInsertionAfter && (
         <div className="absolute -bottom-1 left-0 right-0 h-1 w-full bg-primary rounded-full z-10 animate-pulse" />
       )}

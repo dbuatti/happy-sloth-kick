@@ -1,21 +1,20 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
-import TaskFilter from '@/components/TaskFilter';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import BulkActionBar from '@/components/BulkActionBar';
-import { Archive as ArchiveIcon, ListTodo } from 'lucide-react';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
+import { Button } from '@/components/ui/button';
+import { Archive as ArchiveIcon, Filter as FilterIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import FilterPanel from '@/components/FilterPanel';
 
-interface ArchiveProps {
+interface ArchivePageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
-  const [currentDate] = useState(new Date()); // Archive view doesn't change date
+const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
+  const [currentDate] = useState(new Date()); // currentDate is not used for filtering in archive, but needed for useTasks hook
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('archived'); // Default to archived
@@ -26,29 +25,24 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
-
   const {
     processedTasks,
     filteredTasks,
     loading: tasksLoading,
-    handleAddTask,
+    userId,
+    handleAddTask, // Not typically used in archive, but required by TaskList
     updateTask,
     deleteTask,
     bulkUpdateTasks,
     bulkDeleteTasks,
     sections,
     allCategories,
-    updateTaskParentAndOrder,
-    reorderSections,
-    markAllTasksInSectionCompleted,
-    createSection,
-    updateSection,
-    deleteSection,
-    updateSectionIncludeInFocusMode,
-    setFocusTask,
-    doTodayOffIds,
-    toggleDoToday,
+    updateTaskParentAndOrder, // Not typically used in archive, but required by TaskList
+    reorderSections, // Not typically used in archive, but required by TaskList
+    markAllTasksInSectionCompleted, // Not typically used in archive, but required by TaskList
+    setFocusTask, // Not typically used in archive, but required by TaskList
+    doTodayOffIds, // Not typically used in archive, but required by TaskList
+    toggleDoToday, // Not typically used in archive, but required by TaskList
   } = useTasks({
     currentDate,
     viewMode: 'archive',
@@ -59,18 +53,6 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     priorityFilter,
     sectionFilter,
   });
-
-  const { appointments: allAppointments } = useAllAppointments();
-
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    allAppointments.forEach(app => {
-      if (app.task_id) {
-        map.set(app.task_id, app);
-      }
-    });
-    return map;
-  }, [allAppointments]);
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
@@ -103,114 +85,84 @@ const Archive: React.FC<ArchiveProps> = ({ isDemo = false, demoUserId }) => {
     setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleClearSelection = useCallback(() => {
-    setSelectedTaskIds(new Set());
+  const toggleFilterPanel = useCallback(() => {
+    setIsFilterPanelOpen(prev => !prev);
   }, []);
 
-  const handleBulkComplete = useCallback(async () => {
-    await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
-    handleClearSelection();
-  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
-
-  const handleBulkArchive = useCallback(async () => {
-    await bulkUpdateTasks({ status: 'archived' }, Array.from(selectedTaskIds));
-    handleClearSelection();
-  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
-
-  const handleBulkDelete = useCallback(async () => {
-    await bulkDeleteTasks(Array.from(selectedTaskIds));
-    handleClearSelection();
-  }, [bulkDeleteTasks, selectedTaskIds, handleClearSelection]);
-
-  const handleBulkChangePriority = useCallback(async (priority: Task['priority']) => {
-    await bulkUpdateTasks({ priority }, Array.from(selectedTaskIds));
-    handleClearSelection();
-  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
-
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
   return (
-    <div className="flex-1 overflow-auto p-4 lg:p-6">
-      <div className="max-w-full mx-auto space-y-6">
-        <Card className="shadow-lg rounded-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-3xl font-bold flex items-center gap-2">
-              <ArchiveIcon className="h-6 w-6 text-primary" /> Archived Tasks
-            </CardTitle>
-            <p className="text-muted-foreground">Review and manage your archived tasks.</p>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <TaskFilter
-              currentDate={currentDate}
-              setCurrentDate={() => {}} // Not applicable for archive view
-              searchFilter={searchFilter}
-              setSearchFilter={setSearchFilter}
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              categoryFilter={categoryFilter}
-              setCategoryFilter={setCategoryFilter}
-              priorityFilter={priorityFilter}
-              setPriorityFilter={setPriorityFilter}
-              sectionFilter={sectionFilter}
-              setSectionFilter={setSectionFilter}
-              sections={sections}
-              allCategories={allCategories}
-              searchRef={searchInputRef}
-            />
-            {filteredTasks.length === 0 && !tasksLoading ? (
-              <div className="text-center text-gray-500 p-8 flex flex-col items-center gap-2">
-                <ListTodo className="h-12 w-12 text-muted-foreground" />
-                <p className="text-lg font-medium mb-2">No archived tasks found.</p>
-                <p className="text-sm">Your archived tasks will appear here.</p>
-              </div>
-            ) : (
-              <TaskList
-                processedTasks={processedTasks}
-                filteredTasks={filteredTasks}
-                loading={tasksLoading}
-                handleAddTask={handleAddTask}
-                updateTask={updateTask}
-                deleteTask={deleteTask}
-                bulkUpdateTasks={bulkUpdateTasks}
-                bulkDeleteTasks={bulkDeleteTasks}
-                markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                sections={sections}
-                createSection={createSection}
-                updateSection={updateSection}
-                deleteSection={deleteSection}
-                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                updateTaskParentAndOrder={updateTaskParentAndOrder}
-                reorderSections={reorderSections}
-                allCategories={allCategories}
-                setIsAddTaskOpen={() => {}}
-                onOpenOverview={handleOpenOverview}
-                currentDate={currentDate}
-                expandedSections={expandedSections}
-                expandedTasks={expandedTasks}
-                toggleTask={toggleTask}
-                toggleSection={toggleSection}
-                toggleAllSections={toggleAllSections}
-                setFocusTask={setFocusTask}
-                doTodayOffIds={doTodayOffIds}
-                toggleDoToday={toggleDoToday}
-                scheduledTasksMap={scheduledTasksMap}
-                isDemo={isDemo}
-              />
-            )}
-          </CardContent>
-        </Card>
+    <div className="flex flex-col h-full w-full">
+      <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
+        <div className="flex items-center justify-between pt-4 pb-3">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <ArchiveIcon className="h-7 w-7 text-primary" /> Archive
+          </h1>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFilterPanel}
+            className="flex items-center gap-2"
+            aria-expanded={isFilterPanelOpen}
+            aria-controls="filter-panel"
+          >
+            <FilterIcon className="h-4 w-4" />
+            Filters
+          </Button>
+        </div>
+        <p className="text-muted-foreground text-sm mt-1">
+          View and manage your archived tasks.
+        </p>
       </div>
 
-      {selectedTaskIds.size > 0 && (
-        <BulkActionBar
-          selectedCount={selectedTaskIds.size}
-          onClearSelection={handleClearSelection}
-          onComplete={handleBulkComplete}
-          onArchive={handleBulkArchive}
-          onDelete={handleBulkDelete}
-          onChangePriority={handleBulkChangePriority}
+      <FilterPanel
+        isOpen={isFilterPanelOpen}
+        searchFilter={searchFilter}
+        setSearchFilter={setSearchFilter}
+        statusFilter={statusFilter}
+        setStatusFilter={setStatusFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+        priorityFilter={priorityFilter}
+        setPriorityFilter={setPriorityFilter}
+        sectionFilter={sectionFilter}
+        setSectionFilter={setSectionFilter}
+        sections={sections}
+        allCategories={allCategories}
+        hideStatusFilter={true} // Always show archived tasks
+      />
+
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <TaskList
+          processedTasks={processedTasks}
+          filteredTasks={filteredTasks}
+          loading={tasksLoading}
+          handleAddTask={handleAddTask}
+          updateTask={updateTask}
+          deleteTask={deleteTask}
+          // Removed bulkUpdateTasks and bulkDeleteTasks
+          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+          sections={sections}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          updateTaskParentAndOrder={updateTaskParentAndOrder}
+          reorderSections={reorderSections}
+          allCategories={allCategories}
+          setIsAddTaskOpen={() => {}}
+          onOpenOverview={handleOpenOverview}
+          currentDate={currentDate}
+          expandedSections={expandedSections}
+          expandedTasks={expandedTasks}
+          toggleTask={toggleTask}
+          toggleSection={toggleSection}
+          toggleAllSections={toggleAllSections}
+          setFocusTask={setFocusTask}
+          doTodayOffIds={doTodayOffIds}
+          toggleDoToday={toggleDoToday}
+          scheduledTasksMap={new Map()} // Archive doesn't typically show scheduled tasks
+          isDemo={isDemo}
         />
-      )}
+      </div>
 
       {taskToOverview && (
         <TaskDetailDialog

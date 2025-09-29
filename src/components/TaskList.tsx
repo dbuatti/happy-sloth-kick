@@ -46,8 +46,7 @@ interface TaskListProps {
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   deleteTask: (taskId: string) => void;
-  bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
-  bulkDeleteTasks: (ids: string[]) => Promise<boolean>;
+  // Removed unused props: bulkUpdateTasks, bulkDeleteTasks
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
@@ -147,6 +146,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     handleAddTask,
     updateTask,
     deleteTask,
+    // Removed unused props: bulkUpdateTasks, bulkDeleteTasks
     markAllTasksInSectionCompleted,
     sections,
     createSection,
@@ -524,7 +524,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             doTodayOffIds={doTodayOffIds}
                             scheduledTasksMap={scheduledTasksMap}
                             isDemo={isDemo}
-                            showDragHandle={false}
+                            showDragHandle={true} // Changed to true to show drag handles for tasks
                             insertionIndicator={insertionIndicator}
                           />
                         ))}
@@ -597,7 +597,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
-                      showDragHandle={false}
+                      showDragHandle={true} // Changed to true for overlay as well
                     />
                   </div>
                 )
