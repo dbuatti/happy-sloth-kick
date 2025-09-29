@@ -94,7 +94,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const handleEditSection = useCallback((section: TaskSection) => {
     setEditSectionId(section.id);
     setEditSectionName(section.name);
-  }, []); // Added useCallback
+  }, []);
 
   const handleUpdateSection = useCallback(async () => {
     if (editSectionId && editSectionName.trim()) {
@@ -102,7 +102,7 @@ const TaskList: React.FC<TaskListProps> = ({
       setEditSectionId(null);
       setEditSectionName('');
     }
-  }, [editSectionId, editSectionName, updateSection]); // Added useCallback
+  }, [editSectionId, editSectionName, updateSection]);
 
   const handleDeleteSection = async () => {
     if (sectionToDelete) {
@@ -115,7 +115,7 @@ const TaskList: React.FC<TaskListProps> = ({
   const confirmDeleteSection = useCallback((section: TaskSection) => {
     setSectionToDelete(section);
     setIsConfirmDeleteSectionOpen(true);
-  }, []); // Added useCallback
+  }, []);
 
   const renderTask = useCallback((task: Task) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
@@ -196,7 +196,7 @@ const TaskList: React.FC<TaskListProps> = ({
   ), [expandedSections, editSectionId, editSectionName, toggleSection, handleUpdateSection, markAllTasksInSectionCompleted, updateSectionIncludeInFocusMode, confirmDeleteSection, handleEditSection]);
 
 
-  // Moved these useMemo calls before the conditional return
+  // These useMemo calls are now at the top level, before any conditional returns.
   const hasFiltersApplied = useMemo(() => {
     return filteredTasks.length === 0 && processedTasks.length > 0;
   }, [filteredTasks, processedTasks]);
@@ -223,7 +223,21 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       )}
 
-      {/* "No Section" block - always rendered to ensure consistent hook calls for QuickAddTask */}
+      {/* Global Quick Add Task component */}
+      <QuickAddTask
+        onAddTask={handleAddTask}
+        defaultCategoryId={allCategories[0]?.id || ''}
+        isDemo={isDemo}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        sections={sections} // Pass sections for the selector
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
+
+      {/* "No Section" block */}
       <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
         {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
         <div className="p-3 space-y-2">
@@ -231,22 +245,12 @@ const TaskList: React.FC<TaskListProps> = ({
             tasksWithoutSection.map((task) => renderTask(task))
           )}
         </div>
-        <div className="p-3 border-t">
-          <QuickAddTask
-            sectionId={null}
-            onAddTask={handleAddTask}
-            defaultCategoryId={allCategories[0]?.id || ''}
-            isDemo={isDemo}
-            allCategories={allCategories}
-            currentDate={currentDate}
-          />
-        </div>
       </div>
 
-      {/* Mapped sections - each section div is always rendered to ensure consistent hook calls for QuickAddTask */}
+      {/* Mapped sections */}
       {sections.map(section => {
         const tasksInThisSection = getTasksForSection(section.id);
-        const showSectionContent = tasksInThisSection.length > 0 || isDemo; // Determines if content is visible
+        const showSectionContent = tasksInThisSection.length > 0 || isDemo;
 
         return (
           <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
@@ -255,16 +259,6 @@ const TaskList: React.FC<TaskListProps> = ({
               {expandedSections[section.id] !== false && (
                 tasksInThisSection.map((task) => renderTask(task))
               )}
-            </div>
-            <div className="p-3 border-t">
-              <QuickAddTask
-                sectionId={section.id}
-                onAddTask={handleAddTask}
-                defaultCategoryId={allCategories[0]?.id || ''}
-                isDemo={isDemo}
-                allCategories={allCategories}
-                currentDate={currentDate}
-              />
             </div>
           </div>
         );

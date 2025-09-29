@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Lightbulb, Calendar as CalendarIcon, BellRing } from 'lucide-react';
-import { Category, NewTaskData } from '@/hooks/useTasks'; // Removed TaskSection
+import { Category, NewTaskData, TaskSection } from '@/hooks/useTasks'; // Added TaskSection
 import { cn } from '@/lib/utils';
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,23 +12,35 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { showError, showLoading, dismissToast, showSuccess } from '@/utils/toast';
+import SectionSelector from './SectionSelector'; // Import SectionSelector
 
 interface QuickAddTaskProps {
-  sectionId: string | null;
+  // sectionId is now optional, if not provided, it means global quick add
+  sectionId?: string | null; 
   onAddTask: (taskData: NewTaskData) => Promise<any>;
   defaultCategoryId: string;
   isDemo?: boolean;
   allCategories: Category[];
   currentDate: Date;
+  sections?: TaskSection[]; // Added sections prop for global QuickAddTask
+  createSection: (name: string) => Promise<void>; // Made mandatory
+  updateSection: (sectionId: string, newName: string) => Promise<void>; // Made mandatory
+  deleteSection: (sectionId: string) => Promise<void>; // Made mandatory
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>; // Made mandatory
 }
 
 const QuickAddTask: React.FC<QuickAddTaskProps> = ({
-  sectionId,
+  sectionId: propSectionId, // Renamed to avoid conflict with state
   onAddTask,
   defaultCategoryId,
   isDemo = false,
   allCategories,
   currentDate,
+  sections = [], // Default to empty array if not provided
+  createSection,
+  updateSection,
+  deleteSection,
+  updateSectionIncludeInFocusMode,
 }) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(defaultCategoryId);
@@ -39,10 +51,16 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   const [isAdding, setIsAdding] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(propSectionId ?? null); // State for section selection
 
   useEffect(() => {
     setCategory(defaultCategoryId);
   }, [defaultCategoryId]);
+
+  useEffect(() => {
+    // If propSectionId changes, update internal state
+    setSelectedSectionId(propSectionId ?? null);
+  }, [propSectionId]);
 
   const handleAddTask = async () => {
     if (!description.trim()) {
@@ -63,7 +81,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       priority: priority,
       due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
-      section_id: sectionId,
+      section_id: propSectionId !== undefined ? propSectionId : selectedSectionId, // Use propSectionId if provided, else internal state
     };
 
     const success = await onAddTask(newTaskData);
@@ -76,6 +94,10 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       setRemindAtDate(null);
       setRemindAtTime('');
       setShowAdvanced(false);
+      // Reset selectedSectionId only if it's a global quick add (propSectionId is undefined)
+      if (propSectionId === undefined) {
+        setSelectedSectionId(null);
+      }
     }
   };
 
@@ -111,6 +133,14 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
           setRemindAtDate(null);
           setRemindAtTime('');
         }
+
+        const suggestedSection = sections.find(s => s.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''));
+        if (suggestedSection) {
+          setSelectedSectionId(suggestedSection.id);
+        } else {
+          setSelectedSectionId(null);
+        }
+
         showSuccess('AI suggestions applied!');
         setShowAdvanced(true); // Show advanced options if suggestions are applied
       } else {
@@ -123,7 +153,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       setIsSuggesting(false);
       dismissToast(toastId);
     }
-  }, [description, allCategories, defaultCategoryId, currentDate]);
+  }, [description, allCategories, defaultCategoryId, currentDate, sections, propSectionId]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey && description.trim() && !isAdding && !isSuggesting) {
@@ -131,6 +161,8 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       handleAddTask();
     }
   };
+
+  const isGlobalQuickAdd = propSectionId === undefined;
 
   return (
     <div className="flex flex-col gap-2 p-2 border rounded-lg bg-background shadow-sm">
@@ -171,6 +203,17 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
 
       {showAdvanced && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+          {isGlobalQuickAdd && (
+            <SectionSelector
+              value={selectedSectionId}
+              onChange={setSelectedSectionId}
+              sections={sections}
+              createSection={createSection}
+              updateSection={updateSection}
+              deleteSection={deleteSection}
+              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            />
+          )}
           <Select value={category} onValueChange={setCategory} disabled={isDemo || isAdding || isSuggesting}>
             <SelectTrigger className="h-9 text-base">
               <SelectValue placeholder="Select Category" />
