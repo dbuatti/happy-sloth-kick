@@ -228,7 +228,14 @@ const TaskList: React.FC<TaskListProps> = ({
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg font-semibold mb-2">No tasks for today!</p>
           <p className="mb-4">Time to relax or add some new tasks.</p>
-          {/* Removed QuickAddTask here, as FloatingAddTaskButton serves this purpose */}
+          <QuickAddTask
+            sectionId={null}
+            onAddTask={handleAddTask}
+            defaultCategoryId={allCategories[0]?.id || ''}
+            isDemo={isDemo}
+            allCategories={allCategories}
+            currentDate={currentDate}
+          />
         </div>
       )}
 
@@ -241,11 +248,11 @@ const TaskList: React.FC<TaskListProps> = ({
 
       <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && "hidden")}>
         {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
-        {expandedSections['no-section'] !== false && (
-          <div className="p-3 space-y-2">
-            {tasksWithoutSection.map((task) => renderTask(task))}
-          </div>
-        )}
+        <div className="p-3 space-y-2">
+          {expandedSections['no-section'] !== false && (
+            tasksWithoutSection.map((task) => renderTask(task))
+          )}
+        </div>
         <div className="p-3 border-t">
           <QuickAddTask
             sectionId={null}
@@ -260,16 +267,16 @@ const TaskList: React.FC<TaskListProps> = ({
 
       {sections.map(section => {
         const tasksInThisSection = getTasksForSection(section.id);
-        const showSection = tasksInThisSection.length > 0 || isDemo; // Always show if demo, or if tasks exist
+        const showSection = tasksInThisSection.length > 0 || isDemo;
 
         return (
           <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSection && "hidden")}>
             {renderSectionHeader(section, tasksInThisSection)}
-            {expandedSections[section.id] !== false && (
-              <div className="p-3 space-y-2">
-                {tasksInThisSection.map((task) => renderTask(task))}
-              </div>
-            )}
+            <div className="p-3 space-y-2">
+              {expandedSections[section.id] !== false && (
+                tasksInThisSection.map((task) => renderTask(task))
+              )}
+            </div>
             <div className="p-3 border-t">
               <QuickAddTask
                 sectionId={section.id}
