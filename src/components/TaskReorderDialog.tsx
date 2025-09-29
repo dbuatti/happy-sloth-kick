@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection /* Removed Category */ } from '@/hooks/useTasks';
 import {
   DndContext,
   KeyboardSensor,
@@ -37,8 +37,8 @@ interface TaskReorderDialogProps {
   onClose: () => void;
   sectionId: string | null;
   sectionName: string;
-  tasks: Task[];
-  allTasks: Task[];
+  tasks: Task[]; // Tasks belonging to this section
+  allTasks: Task[]; // All tasks for subtask rendering
   onSaveReorder: (sectionId: string | null, reorderedTasks: Task[]) => Promise<void>;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDeleteTask: (taskId: string) => void;
@@ -49,7 +49,7 @@ interface TaskReorderDialogProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
-  scheduledTasksMap: Map<string, any>;
+  scheduledTasksMap: Map<string, any>; // Use any for now, or import Appointment
   isDemo?: boolean;
 }
 
@@ -59,7 +59,7 @@ const SortableTaskReorderItem: React.FC<{
   onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
-  // Removed allCategories: Category[]; // Not directly used in SortableTaskReorderItem
+  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setFocusTask: (taskId: string | null) => Promise<void>;
@@ -68,10 +68,10 @@ const SortableTaskReorderItem: React.FC<{
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
   isOverlay?: boolean;
-  isDropTarget?: boolean;
-  doTodayOffIds: Set<string>; // Used to calculate isDoToday
-  // Removed index: number; // Not directly used in SortableTaskReorderItem
-}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, ...rest }) => { // Removed allCategories, index
+  isDropTarget?: boolean; // New prop for drop target highlight
+  doTodayOffIds: Set<string>;
+  // Removed index: number;
+}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, /* Removed allCategories, index, */ ...rest }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -81,11 +81,14 @@ const SortableTaskReorderItem: React.FC<{
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    // When it's the overlay, ensure it's fully opaque and has a strong shadow
     boxShadow: isOverlay ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' : 'none',
-    zIndex: isOverlay ? 999 : 'auto',
+    zIndex: isOverlay ? 999 : 'auto', // Ensure overlay is on top
+    // Add a slight rotation for the dragging overlay
     rotate: isOverlay ? '2deg' : '0deg',
   };
 
+  // Render a placeholder when the item is being dragged but is not the overlay
   if (isDragging && !isOverlay) {
     return (
       <li
@@ -104,9 +107,9 @@ const SortableTaskReorderItem: React.FC<{
       style={style}
       className={cn(
         "relative group flex items-center",
-        isOverlay ? "bg-card rounded-lg" : "",
-        isDropTarget && "border-2 border-primary bg-primary/10",
-        !isOverlay && "hover:shadow-md hover:scale-[1.005] transition-all duration-200"
+        isOverlay ? "bg-card rounded-lg" : "", // Base styling for the li wrapper
+        isDropTarget && "border-2 border-primary bg-primary/10", // Enhanced drop target highlight
+        !isOverlay && "hover:shadow-md hover:scale-[1.005] transition-all duration-200" // Add hover effects for non-overlay items
       )}
     >
       <div className="flex-1">
@@ -119,21 +122,21 @@ const SortableTaskReorderItem: React.FC<{
           // Removed allCategories={allCategories}
           onOpenOverview={rest.onOpenOverview}
           currentDate={rest.currentDate}
-          onMoveUp={async () => {}}
-          onMoveDown={async () => {}}
+          onMoveUp={async () => {}} // Not needed in reorder dialog
+          onMoveDown={async () => {}} // Not needed in reorder dialog
           level={0}
           isOverlay={isOverlay}
           setFocusTask={rest.setFocusTask}
           isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
           toggleDoToday={rest.toggleDoToday}
           // Removed doTodayOffIds={doTodayOffIds}
-          scheduledAppointment={rest.scheduledTasksMap.get(task.id)}
+          scheduledAppointment={rest.scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
           isDemo={rest.isDemo}
-          showDragHandle={true}
-          {...listeners}
-          {...attributes}
-          isSelected={false}
-          onSelectTask={() => {}}
+          showDragHandle={true} // Always show drag handle in reorder dialog
+          {...listeners} // Apply listeners to the drag handle within TaskItem
+          {...attributes} // Apply attributes to the drag handle within TaskItem
+          isSelected={false} // Selection is not relevant in reorder dialog
+          onSelectTask={() => {}} // No-op for selection in reorder dialog
           // Removed index={index}
         />
       </div>
@@ -165,7 +168,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
-  const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
+  const [overId, setOverId] = useState<UniqueIdentifier | null>(null); // New state for drop target
 
   useEffect(() => {
     if (isOpen) {
@@ -188,7 +191,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     const active = tasks.find(t => t.id === event.active.id);
     setActiveTask(active || null);
-    setOverId(null);
+    setOverId(null); // Reset overId on drag start
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -197,7 +200,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
 
   const handleDragEnd = (event: DragEndEvent) => {
     setActiveTask(null);
-    setOverId(null);
+    setOverId(null); // Reset overId on drag end
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
@@ -233,12 +236,12 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
+          onDragOver={handleDragOver} // Added onDragOver handler
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={localTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
-              {localTasks.map((task, index) => (
+              {localTasks.map((task /* Removed index */) => (
                 <SortableTaskReorderItem
                   key={task.id}
                   task={task}

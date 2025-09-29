@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task, Category } from '@/hooks/useTasks';
+import { Task /* Removed Category */ } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
 import { Appointment } from '@/hooks/useAppointments';
@@ -12,7 +12,7 @@ interface SortableTaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  // Removed allCategories: Category[]; // Not directly used in SortableTaskItem
+  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
@@ -25,14 +25,14 @@ interface SortableTaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>; // Used to calculate isDoToday for subtasks
+  doTodayOffIds: Set<string>; // Re-added: Used for calculating isDoToday for subtasks
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
   showDragHandle?: boolean;
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  // Removed index: number; // Not directly used in SortableTaskItem
+  // Removed index: number;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -45,7 +45,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  doTodayOffIds,
+  doTodayOffIds, // Re-added
   scheduledTasksMap,
   isDemo = false,
   showDragHandle = false,
@@ -107,14 +107,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       )}
       <div className={cn(
         "flex-1",
-        level > 0 && "relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30",
-        `pl-${level * 8}`
+        level > 0 && "relative before:absolute before:left-4 before:top-0 before:bottom-0 before:w-[2px] before:bg-primary/30", // Vertical line adjusted to left-4
+        `pl-${level * 8}` // Tailwind's `pl-8`, `pl-16`, etc. for deeper indentation
       )}>
         <TaskItem
           task={task}
           hasSubtasks={directSubtasks.length > 0}
           isExpanded={isExpanded}
-          toggleExpand={toggleTask}
+          toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
           allTasks={allTasks}
           onDelete={onDelete}
           onUpdate={onUpdate}
@@ -130,7 +130,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
           // Removed doTodayOffIds={doTodayOffIds}
-          scheduledAppointment={scheduledTasksMap.get(task.id)}
+          scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
           isDemo={isDemo}
           showDragHandle={showDragHandle}
           isSelected={isSelected}
@@ -139,7 +139,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
-            {directSubtasks.map((subtask, subIndex) => (
+            {directSubtasks.map((subtask /* Removed subIndex */) => (
               <SortableTaskItem
                 key={subtask.id}
                 task={subtask}
@@ -159,7 +159,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 setFocusTask={setFocusTask}
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
                 toggleDoToday={toggleDoToday}
-                doTodayOffIds={doTodayOffIds}
+                doTodayOffIds={doTodayOffIds} // Keep doTodayOffIds for nested calls
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
                 showDragHandle={showDragHandle}

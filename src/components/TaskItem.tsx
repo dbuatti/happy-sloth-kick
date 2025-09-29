@@ -16,7 +16,7 @@ import {
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { Task, Category } from '@/hooks/useTasks';
+import { Task /* Removed Category */ } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
@@ -32,7 +32,7 @@ interface TaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  // Removed allCategories: Category[]; // Not directly used in TaskItem
+  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp?: (taskId: string) => Promise<void>;
@@ -45,7 +45,7 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  // Removed doTodayOffIds: Set<string>; // Not directly used in TaskItem
+  // Removed doTodayOffIds: Set<string>;
   scheduledAppointment?: Appointment;
   isDemo?: boolean;
   showDragHandle?: boolean;
@@ -53,7 +53,7 @@ interface TaskItemProps {
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  // Removed index: number; // Not directly used in TaskItem
+  // Removed index: number;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -73,6 +73,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDoToday,
   toggleDoToday,
   // Removed doTodayOffIds,
+  // Removed scheduledTasksMap from destructuring
   scheduledAppointment,
   isDemo = false,
   showDragHandle = false,
@@ -87,6 +88,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.description || '');
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // scheduledAppointment is now passed directly as a prop, so scheduledTasksMap is not needed here.
+  // const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
 
   const originalTask = useMemo(() => {
     if (!task.original_task_id) return null;
@@ -199,13 +203,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 pr-3 shadow-sm border",
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 pr-3 shadow-sm border", // Adjusted padding
         task.status === 'completed'
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20"
           : "bg-card text-foreground border-border",
         isOverdue && task.status === 'to-do' && "bg-red-500/10 border-red-500/30",
         !isDoToday && "opacity-60",
-        isSelected && "ring-2 ring-primary ring-offset-2",
+        isSelected && "ring-2 ring-primary ring-offset-2", // Highlight when selected
         "group",
         !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer"
       )}
@@ -220,7 +224,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab -ml-1 mr-1"
+          className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab -ml-1 mr-1" // Adjusted margin
           onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
           {...listeners}
           {...attributes}
@@ -230,7 +234,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </Button>
       )}
 
-      <div className="flex-shrink-0 pr-2 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+      <div className="flex-shrink-0 pr-2 flex items-center" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}> {/* Adjusted padding */}
         {hasSubtasks && (
           <Button
             variant="ghost"
@@ -243,7 +247,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             aria-label={isExpanded ? 'Collapse sub-tasks' : 'Expand sub-tasks'}
           >
             <ChevronRight className={cn(
-              "h-4 w-4 transition-transform duration-200",
+              "h-4 w-4 transition-transform duration-200", // Smaller icon
               isExpanded ? "rotate-90" : "rotate-0"
             )} />
             {directSubtasksCount > 0 && (
@@ -267,14 +271,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Completion Checkbox Area */}
-      <div className="flex-shrink-0 mr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+      <div className="flex-shrink-0 mr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}> {/* Adjusted margin */}
         <Checkbox
           key={`${task.id}-${task.status}`}
           checked={task.status === 'completed'}
           onCheckedChange={handleCheckboxChange}
           id={`task-${task.id}`}
           onClick={(e: React.MouseEvent) => e.stopPropagation()}
-          className="flex-shrink-0 h-4 w-4 checkbox-root rounded-full border-2"
+          className="flex-shrink-0 h-4 w-4 checkbox-root rounded-full border-2" // Smaller checkbox
           aria-label={`Mark task "${task.description}" as ${task.status === 'completed' ? 'to-do' : 'completed'}`}
           disabled={isOverlay || isDemo}
         />
@@ -282,7 +286,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Clickable Content Area */}
       <div
-        className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 min-w-0 py-1"
+        className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 min-w-0 py-1" // Adjusted padding and layout for responsiveness
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
         <div className="flex-grow min-w-0 w-full">
@@ -293,14 +297,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditText(e.target.value)}
               onBlur={handleSaveEdit}
               onKeyDown={handleInputKeyDown}
-              className="h-auto text-base leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium"
+              className="h-auto text-base leading-tight p-0 border-none bg-transparent shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 w-full font-medium" // Smaller text
               onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
             />
           ) : (
             <>
               <span
                 className={cn(
-                  "block text-base leading-tight font-medium",
+                  "block text-base leading-tight font-medium", // Smaller text
                   task.status === 'completed' ? 'line-through opacity-75' : '',
                   "cursor-text"
                 )}
@@ -320,7 +324,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           )}
         </div>
 
-        <div className="flex-shrink-0 flex items-center gap-2 mt-1 sm:mt-0" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+        <div className="flex-shrink-0 flex items-center gap-2 mt-1 sm:mt-0" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}> {/* Adjusted margin */}
           {task.link && (
             isUrl(task.link) ? (
               <Tooltip>
@@ -329,11 +333,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
                     href={task.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary text-xs"
+                    className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary text-xs" // Smaller text
                     onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   >
-                    <LinkIcon className="h-3.5 w-3.5 mr-1" />
-                    <span className="truncate max-w-[100px]">{task.link}</span>
+                    <LinkIcon className="h-3.5 w-3.5 mr-1" /> {/* Smaller icon */}
+                    <span className="truncate max-w-[100px]">{task.link}</span> {/* Reduced max-width */}
                   </a>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -346,10 +350,10 @@ const TaskItem: React.FC<TaskItemProps> = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
+                    className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary" // Smaller button
                     onClick={(e: React.MouseEvent) => handleCopyPath(e, task.link!)}
                   >
-                    <ClipboardCopy className="h-3.5 w-3.5" />
+                    <ClipboardCopy className="h-3.5 w-3.5" /> {/* Smaller icon */}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -363,7 +367,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
-                  <FileText className="h-3.5 w-3.5" />
+                  <FileText className="h-3.5 w-3.5" /> {/* Smaller icon */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -376,7 +380,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
-                  <Image className="h-3.5 w-3.5" />
+                  <Image className="h-3.5 w-3.5" /> {/* Smaller icon */}
                 </span>
               </TooltipTrigger>
               <TooltipContent>
@@ -389,7 +393,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <span className={cn(
-                  "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                  "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full", // Adjusted padding
                   "text-foreground bg-muted",
                   isOverdue && "text-status-overdue bg-status-overdue/10",
                   isDueToday && "text-status-due-today bg-status-due-today/10"
@@ -406,12 +410,12 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Actions Area */}
-      <div className="flex-shrink-0 flex items-center gap-1 ml-2" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+      <div className="flex-shrink-0 flex items-center gap-1 ml-2" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}> {/* Adjusted margin */}
         {recurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="h-7 w-7 flex items-center justify-center" aria-label="Recurring task">
-                <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="h-7 w-7 flex items-center justify-center" aria-label="Recurring task"> {/* Smaller size */}
+                <Repeat className="h-3.5 w-3.5 text-muted-foreground" /> {/* Smaller icon */}
               </div>
             </TooltipTrigger>
             <TooltipContent>
@@ -429,13 +433,13 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="h-7 w-7 p-0"
+              className="h-7 w-7 p-0" // Smaller button
               aria-label="More options"
               disabled={isOverlay || isDemo}
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
             >
               <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-3.5 w-3.5" />
+              <MoreHorizontal className="h-3.5 w-3.5" /> {/* Smaller icon */}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
