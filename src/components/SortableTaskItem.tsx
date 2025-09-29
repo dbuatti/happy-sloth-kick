@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Task } from '@/hooks/useTasks'; // Removed Category import
+import { Task } from '@/hooks/useTasks';
 import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
 import { Appointment } from '@/hooks/useAppointments';
@@ -12,7 +12,7 @@ interface SortableTaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  // Removed allCategories: Category[]; // Not directly used in SortableTaskItem
+  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
@@ -32,7 +32,7 @@ interface SortableTaskItemProps {
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  // Removed index: number; // Not directly used in SortableTaskItem
+  // Removed index: number;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -117,7 +117,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           onDelete={onDelete}
           onUpdate={onUpdate}
           sections={sections}
-          // Removed allCategories={allCategories} // No longer passed to TaskItem
+          // Removed allCategories={allCategories}
           onOpenOverview={onOpenOverview}
           currentDate={currentDate}
           onMoveUp={onMoveUp}
@@ -127,17 +127,17 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
-          doTodayOffIds={doTodayOffIds}
+          // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
           scheduledAppointment={scheduledTasksMap.get(task.id)}
           isDemo={isDemo}
           showDragHandle={showDragHandle}
           isSelected={isSelected}
           onSelectTask={onSelectTask}
-          // Removed index={index} // No longer passed to TaskItem
+          // Removed index={index}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
-            {directSubtasks.map((subtask) => ( // Removed subIndex
+            {directSubtasks.map((subtask) => (
               <SortableTaskItem
                 key={subtask.id}
                 task={subtask}
@@ -146,7 +146,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 onDelete={onDelete}
                 onUpdate={onUpdate}
                 sections={sections}
-                // Removed allCategories={allCategories} // No longer passed to SortableTaskItem
+                // Removed allCategories={allCategories}
                 onOpenOverview={onOpenOverview}
                 currentDate={currentDate}
                 onMoveUp={onMoveUp}
@@ -164,7 +164,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 insertionIndicator={insertionIndicator}
                 isSelected={isSelected}
                 onSelectTask={onSelectTask}
-                // Removed index={subIndex} // No longer passed to SortableTaskItem
+                // Removed index={subIndex}
               />
             ))}
           </ul>

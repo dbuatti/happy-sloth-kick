@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
-import { isValid } from 'https://esm.sh/date-fns@3.6.0';
+import { isValid } from 'https://esm.sh/date-fns@2.30.0'; // Standardized to v2.30.0
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,13 +12,14 @@ const corsHeaders = {
 
 // Define interfaces for fetched data to provide explicit typing and improve readability
 interface Task {
+  id: string; // Added id
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   priority: string;
   due_date: string | null;
   section_id: string | null;
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  original_task_id: string | null;
+  original_task_id: string | null; // Added original_task_id
   updated_at: string;
   created_at: string;
 }
@@ -40,6 +41,11 @@ interface SleepRecord {
   wake_up_time: string | null;
   time_to_fall_asleep_minutes: number | null;
   sleep_interruptions_duration_minutes: number | null;
+}
+
+// Interface for recurring task completion log entries
+interface RecurringCompletion {
+  original_task_id: string;
 }
 
 serve(async (req: Request) => {
@@ -86,10 +92,19 @@ serve(async (req: Request) => {
 
     // Fetch all tasks for the user to allow comprehensive filtering
     const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
-      .select('description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
+      .select('id, description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
       .eq('user_id', userId);
     if (tasksError) throw tasksError;
     const allTasks: Task[] = allTasksData || [];
+
+    // Fetch recurring task completions for today
+    const { data: recurringCompletionsData, error: recurringCompletionsError } = await supabaseAdmin.from('recurring_task_completion_log')
+      .select('original_task_id')
+      .eq('user_id', userId)
+      .eq('completion_date', todayDateString);
+    if (recurringCompletionsError) throw recurringCompletionsError;
+    const completedRecurringTaskIds = new Set(recurringCompletionsData?.map((c: RecurringCompletion) => c.original_task_id) || []);
+
 
     // Fetch other relevant data concurrently
     const [appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
@@ -137,19 +152,27 @@ serve(async (req: Request) => {
       // Compare YYYY-MM-DD strings for due date to match today's date
       const isDueTodayLocal = taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] === todayDateString;
 
+      const isRecurringTemplate = t.recurring_type !== 'none';
+      const isCompletedTodayViaLog = isRecurringTemplate && completedRecurringTaskIds.has(t.id);
+
       if (t.status === 'completed' || t.status === 'archived') {
-        // A task is considered 'completed today' if its status was updated today (local time)
-        if (isUpdatedTodayLocal) {
+        // A non-recurring task is considered 'completed today' if its status was updated today (local time)
+        if (!isRecurringTemplate && isUpdatedTodayLocal) {
           completedTasks.push(t);
         }
       } else if (t.status === 'to-do') {
-        // A task is overdue if its due date is before today
-        if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) {
-          overdueTasks.push(t);
-        }
-        // A task is pending for today if it's due today, created today, or updated today
-        else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) {
-          pendingTasks.push(t);
+        // If it's a recurring template and completed via log, it's considered completed for the briefing
+        if (isCompletedTodayViaLog) {
+          completedTasks.push(t);
+        } else {
+          // A task is overdue if its due date is before today
+          if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) {
+            overdueTasks.push(t);
+          }
+          // A task is pending for today if it's due today, created today, or updated today
+          else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) {
+            pendingTasks.push(t);
+          }
         }
       }
     });

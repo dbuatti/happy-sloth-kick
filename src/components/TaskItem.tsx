@@ -16,7 +16,7 @@ import {
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { Task } from '@/hooks/useTasks'; // Removed Category import
+import { Task } from '@/hooks/useTasks';
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
@@ -32,7 +32,7 @@ interface TaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  // Removed allCategories: Category[]; // No longer needed here
+  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp?: (taskId: string) => Promise<void>;
@@ -45,7 +45,7 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>; // Used in SortableTaskItem and TaskReorderDialog for nested TaskItems
+  // Removed doTodayOffIds: Set<string>; // This prop is no longer needed here
   scheduledAppointment?: Appointment;
   isDemo?: boolean;
   showDragHandle?: boolean;
@@ -53,7 +53,7 @@ interface TaskItemProps {
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  // Removed index: number; // No longer needed here
+  // Removed index: number;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -71,7 +71,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  doTodayOffIds, // Kept as it's used in nested components
+  // Removed doTodayOffIds from destructuring
   scheduledAppointment,
   isDemo = false,
   showDragHandle = false,
