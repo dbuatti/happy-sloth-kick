@@ -215,6 +215,12 @@ serve(async (req: Request) => {
 
   } catch (error: any) {
     console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    } else {
+      console.error("Unknown error type:", error);
+    }
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
