@@ -135,7 +135,7 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        onClearFilters={handleClearFilters} // Pass the new prop
+        onClearFilters={handleClearFilters}
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -168,6 +168,8 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={new Map()} // Archive doesn't typically show scheduled tasks
           isDemo={isDemo}
+          selectedTaskIds={new Set()} // Pass empty set for archive
+          onSelectTask={() => {}} // No-op for archive
         />
       </div>
 

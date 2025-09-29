@@ -120,6 +120,18 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setSelectedTaskIds(new Set());
   }, []);
 
+  const handleSelectTask = useCallback((taskId: string, isSelected: boolean) => {
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(taskId);
+      } else {
+        newSet.delete(taskId);
+      }
+      return newSet;
+    });
+  }, []);
+
   const handleBulkComplete = useCallback(async () => {
     await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
     handleClearSelection();
@@ -209,7 +221,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           handleAddTask={handleAddTask}
           updateTask={updateTask}
           deleteTask={deleteTask}
-          // Removed bulkUpdateTasks and bulkDeleteTasks as they are not props of TaskList
           markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           sections={sections}
           createSection={createSection}
@@ -232,6 +243,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
+          selectedTaskIds={selectedTaskIds} // Pass new prop
+          onSelectTask={handleSelectTask} // Pass new prop
         />
       </div>
 
