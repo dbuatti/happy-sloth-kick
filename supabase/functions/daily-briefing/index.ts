@@ -54,11 +54,22 @@ serve(async (req: Request) => {
   }
 
   try {
+    console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+
+    // Check if the body stream is readable and not locked
+    if (!req.body || req.body.locked || !req.body.readable) {
+      console.error("Daily Briefing: Request body is not readable or already consumed.");
+      return new Response(JSON.stringify({ error: 'Request body is not readable or already consumed.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
     const rawBody = await req.text(); // Read the raw request body as text
     console.log("Daily Briefing: Raw request body:", rawBody);
 
     if (!rawBody || rawBody.trim() === '') {
-      console.error("Daily Briefing: Request body is empty or whitespace.");
+      console.error("Daily Briefing: Request body is empty or whitespace after reading.");
       return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
