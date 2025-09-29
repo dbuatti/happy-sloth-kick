@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { TaskSection, Category } from '@/hooks/useTasks';
-import { cn } from '@/lib/utils';
+// Removed cn import
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface FilterPanelProps {

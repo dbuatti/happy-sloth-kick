@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { Button } from "@/components/ui/button";
-import { ChevronsDownUp } from 'lucide-react';
+// Removed Button import
+// Removed ChevronsDownUp import
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -275,7 +275,9 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
         }
       } else if (overIsSection) {
         // Dragging a task over a section header
-        const targetSectionTasks = filteredTasks.filter(t => t.parent_task_id === null && (t.section_id === over.id || (t.section_id === null && over.id === 'no-section-header')));
+        const targetSectionTasks = filteredTasks
+                .filter(t => t.parent_task_id === null && (t.section_id === over.id || (t.section_id === null && over.id === 'no-section-header')))
+                .sort((a, b) => (a.order || 0) - (b.order || 0));
         if (targetSectionTasks.length === 0) {
           // If section is empty, indicate dropping *into* the section
           setInsertionIndicator({ id: over.id, position: 'into' });
@@ -443,7 +445,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
-            {/* Removed the "Toggle All Sections" button from here */}
+            {/* The "Toggle All Sections" button was moved to DailyTasksHeader */}
 
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
