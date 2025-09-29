@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Task, TaskSection } from '@/hooks/useTasks'; // Removed Category import
+import { Task, TaskSection } from '@/hooks/useTasks';
 import {
   DndContext,
   KeyboardSensor,
@@ -37,19 +37,18 @@ interface TaskReorderDialogProps {
   onClose: () => void;
   sectionId: string | null;
   sectionName: string;
-  tasks: Task[]; // Tasks belonging to this section
-  allTasks: Task[]; // All tasks for subtask rendering
+  tasks: Task[];
+  allTasks: Task[];
   onSaveReorder: (sectionId: string | null, reorderedTasks: Task[]) => Promise<void>;
   onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
-  // Removed allCategories: Category[]; // No longer needed as a prop
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
-  scheduledTasksMap: Map<string, any>; // Use any for now, or import Appointment
+  scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
 }
 
@@ -59,7 +58,6 @@ const SortableTaskReorderItem: React.FC<{
   onUpdateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onDeleteTask: (taskId: string) => void;
   sections: TaskSection[];
-  // Removed allCategories: Category[]; // Not directly used in SortableTaskReorderItem
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setFocusTask: (taskId: string | null) => Promise<void>;
@@ -68,10 +66,9 @@ const SortableTaskReorderItem: React.FC<{
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
   isOverlay?: boolean;
-  isDropTarget?: boolean; // New prop for drop target highlight
+  isDropTarget?: boolean;
   doTodayOffIds: Set<string>; // Used to calculate isDoToday
-  // Removed index: number;
-}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, ...rest }) => { // Removed allCategories, index
+}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, ...rest }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -117,7 +114,6 @@ const SortableTaskReorderItem: React.FC<{
           onDelete={rest.onDeleteTask}
           onUpdate={rest.onUpdateTask}
           sections={rest.sections}
-          // Removed allCategories={allCategories}
           onOpenOverview={rest.onOpenOverview}
           currentDate={rest.currentDate}
           onMoveUp={async () => {}}
@@ -127,7 +123,7 @@ const SortableTaskReorderItem: React.FC<{
           setFocusTask={rest.setFocusTask}
           isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
           toggleDoToday={rest.toggleDoToday}
-          // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
+          doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds to TaskItem
           scheduledAppointment={rest.scheduledTasksMap.get(task.id)}
           isDemo={rest.isDemo}
           showDragHandle={true}
@@ -135,7 +131,6 @@ const SortableTaskReorderItem: React.FC<{
           {...attributes}
           isSelected={false}
           onSelectTask={() => {}}
-          // Removed index={index}
         />
       </div>
     </li>
@@ -153,7 +148,6 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
   onUpdateTask,
   onDeleteTask,
   sections,
-  // Removed allCategories from destructuring
   onOpenOverview,
   currentDate,
   setFocusTask,
@@ -239,7 +233,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
         >
           <SortableContext items={localTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
-              {localTasks.map((task) => ( // Removed index
+              {localTasks.map((task) => (
                 <SortableTaskReorderItem
                   key={task.id}
                   task={task}
@@ -247,7 +241,6 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   onUpdateTask={onUpdateTask}
                   onDeleteTask={onDeleteTask}
                   sections={sections}
-                  // Removed allCategories={allCategories}
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setFocusTask={setFocusTask}
@@ -257,7 +250,6 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
                   isDropTarget={task.id === overId}
-                  // Removed index={index}
                 />
               ))}
             </ul>
@@ -271,7 +263,6 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   onUpdateTask={onUpdateTask}
                   onDeleteTask={onDeleteTask}
                   sections={sections}
-                  // Removed allCategories={allCategories}
                   onOpenOverview={onOpenOverview}
                   currentDate={currentDate}
                   setFocusTask={setFocusTask}
@@ -282,7 +273,6 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   isDemo={isDemo}
                   isOverlay={true}
                   isDropTarget={false}
-                  // Removed index={0}
                 />
               ) : null}
             </DragOverlay>,

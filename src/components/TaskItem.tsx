@@ -32,7 +32,6 @@ interface TaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp?: (taskId: string) => Promise<void>;
@@ -53,7 +52,6 @@ interface TaskItemProps {
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  // Removed index: number;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({

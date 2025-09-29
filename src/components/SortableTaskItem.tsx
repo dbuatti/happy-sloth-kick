@@ -12,7 +12,6 @@ interface SortableTaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  // Removed allCategories: Category[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp: (taskId: string) => Promise<void>;
@@ -32,7 +31,6 @@ interface SortableTaskItemProps {
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  // Removed index: number;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -117,7 +115,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           onDelete={onDelete}
           onUpdate={onUpdate}
           sections={sections}
-          // Removed allCategories={allCategories}
           onOpenOverview={onOpenOverview}
           currentDate={currentDate}
           onMoveUp={onMoveUp}
@@ -127,13 +124,12 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
-          // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
+          doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds to TaskItem
           scheduledAppointment={scheduledTasksMap.get(task.id)}
           isDemo={isDemo}
           showDragHandle={showDragHandle}
           isSelected={isSelected}
           onSelectTask={onSelectTask}
-          // Removed index={index}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -146,7 +142,6 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 onDelete={onDelete}
                 onUpdate={onUpdate}
                 sections={sections}
-                // Removed allCategories={allCategories}
                 onOpenOverview={onOpenOverview}
                 currentDate={currentDate}
                 onMoveUp={onMoveUp}
@@ -157,14 +152,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 setFocusTask={setFocusTask}
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
                 toggleDoToday={toggleDoToday}
-                doTodayOffIds={doTodayOffIds}
+                doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds to nested SortableTaskItem
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
                 showDragHandle={showDragHandle}
                 insertionIndicator={insertionIndicator}
                 isSelected={isSelected}
                 onSelectTask={onSelectTask}
-                // Removed index={subIndex}
               />
             ))}
           </ul>
