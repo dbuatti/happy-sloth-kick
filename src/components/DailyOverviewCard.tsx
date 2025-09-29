@@ -27,7 +27,7 @@ interface DailyOverviewCardProps {
   toggleAllDoToday: () => Promise<void>;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsManageSectionsOpen: React.SetStateAction<boolean>>;
+  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Corrected type
   onToggleAllSections: () => void;
 }
 
