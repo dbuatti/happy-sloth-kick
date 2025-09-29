@@ -23,13 +23,14 @@ export const suggestTaskDetails = async (
   categories: AICategory[],
   currentDate: Date
 ): Promise<AISuggestionResult | null> => { // Explicit return type
+  console.log('API: Entering suggestTaskDetails...'); // NEW LOG
   // In a real scenario, this would call an AI service
-  console.log('AI Suggestion for task:', description, 'with categories:', categories.map(c => c.name), 'on date:', format(currentDate, 'yyyy-MM-dd'));
+  console.log('API: AI Suggestion for task:', description, 'with categories:', categories.map(c => c.name), 'on date:', format(currentDate, 'yyyy-MM-dd'));
   
   // Simulate AI response
   const defaultCategoryName = categories.length > 0 ? categories[0].name : 'General';
 
-  return {
+  const result: AISuggestionResult = { // Explicitly type the result object
     cleanedDescription: description,
     category: defaultCategoryName,
     priority: 'medium', // Default priority
@@ -39,6 +40,8 @@ export const suggestTaskDetails = async (
     section: null,
     link: null,
   };
+  console.log('API: Exiting suggestTaskDetails with result:', result); // NEW LOG
+  return result;
 };
 
 export const getDailyBriefing = async (userId: string, date: Date) => {
