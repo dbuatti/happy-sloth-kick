@@ -194,7 +194,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     const toastId = showLoading('Getting AI suggestions...');
-    console.log('Toast ID generated:', toastId); // Re-added log
+    console.log('Toast ID generated:', toastId); // Explicitly re-added log
     try {
       const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
       const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
@@ -232,7 +232,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       showError('Failed to get AI suggestions. Please try again.');
     } finally {
       setIsSuggesting(false);
-      console.log('Attempting to dismiss toast with ID:', toastId); // Re-added log
+      console.log('Attempting to dismiss toast with ID:', toastId); // Explicitly re-added log
       dismissToast(toastId);
     }
   }, [description, allCategories, sections, setValue, currentDate]);
