@@ -38,8 +38,6 @@ import EmptyState from './EmptyState';
 import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { isPast, parseISO, isSameDay } from 'date-fns';
-// Re-added Button import for the Toggle All Sections button
-// Re-added ChevronsDownUp import for the Toggle All Sections button
 
 
 interface TaskListProps {
