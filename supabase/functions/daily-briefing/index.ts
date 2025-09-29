@@ -61,6 +61,7 @@ serve(async (req: Request) => {
   try {
     console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type'));
+    console.log("Daily Briefing: Incoming Content-Length header:", req.headers.get('Content-Length')); // New log
 
     const rawBody = await req.text(); // Read the raw request body as text
     console.log("Daily Briefing: Raw request body received:", rawBody);
@@ -84,16 +85,11 @@ serve(async (req: Request) => {
       });
     }
 
-    const { userId } = requestBodyParsed; // Expect only userId
-    // Hardcode date parameters for testing
-    const testDate = new Date(); // Use current date for testing
-    const localDayStartISO = new Date(testDate.getFullYear(), testDate.getMonth(), testDate.getDate(), 0, 0, 0).toISOString();
-    const localDayEndISO = new Date(testDate.getFullYear(), testDate.getMonth(), testDate.getDate(), 23, 59, 59, 999).toISOString();
-
+    const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed; // Expect all three parameters
     console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
-    if (!userId) { // Only check for userId
-      return new Response(JSON.stringify({ error: 'User ID is required.' }), {
+    if (!userId || !localDayStartISO || !localDayEndISO) {
+      return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });

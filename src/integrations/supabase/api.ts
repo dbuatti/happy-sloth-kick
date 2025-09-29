@@ -60,14 +60,13 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
   console.log('API: Calling Daily Briefing Edge Function for user:', userId, 'on date:', format(date, 'yyyy-MM-dd'));
   try {
     // Get local day start and end in ISO format for accurate filtering in the Edge Function
-    // These are now hardcoded in the Edge Function for testing
-    // const localDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
-    // const localDayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+    const localDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+    const localDayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
     const requestBody = {
       userId,
-      // localDayStartISO: localDayStart.toISOString(), // Removed for testing
-      // localDayEndISO: localDayEnd.toISOString(),     // Removed for testing
+      localDayStartISO: localDayStart.toISOString(),
+      localDayEndISO: localDayEnd.toISOString(),
     };
     console.log('API: Constructed request body object:', requestBody);
     const stringifiedBody = JSON.stringify(requestBody); // Explicitly stringify
