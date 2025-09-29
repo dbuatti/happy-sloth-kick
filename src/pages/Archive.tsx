@@ -1,10 +1,9 @@
-import React, { useState, useCallback } from 'react'; // Removed useMemo
+import React, { useState, useCallback } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Archive as ArchiveIcon, Filter as FilterIcon } from 'lucide-react';
-// Removed format from 'date-fns'
 import FilterPanel from '@/components/FilterPanel';
 
 interface ArchivePageProps {
@@ -29,7 +28,6 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
     processedTasks,
     filteredTasks,
     loading: tasksLoading,
-    // Removed userId, bulkUpdateTasks, bulkDeleteTasks as they are not used
     handleAddTask, // Not typically used in archive, but required by TaskList
     updateTask,
     deleteTask,
@@ -91,6 +89,14 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
     setIsFilterPanelOpen(prev => !prev);
   }, []);
 
+  const handleClearFilters = useCallback(() => {
+    setSearchFilter('');
+    setStatusFilter('archived'); // Keep status as 'archived' for the archive page
+    setCategoryFilter('all');
+    setPriorityFilter('all');
+    setSectionFilter('all');
+  }, []);
+
   return (
     <div className="flex flex-col h-full w-full">
       <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -129,7 +135,7 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        // Removed hideStatusFilter={true} as it's not a recognized prop
+        onClearFilters={handleClearFilters} // Pass the new prop
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -140,7 +146,6 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
           handleAddTask={handleAddTask}
           updateTask={updateTask}
           deleteTask={deleteTask}
-          // Removed bulkUpdateTasks and bulkDeleteTasks as they are not props of TaskList
           markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           sections={sections}
           createSection={createSection}

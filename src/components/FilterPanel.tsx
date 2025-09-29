@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { TaskSection, Category } from '@/hooks/useTasks';
-// Removed cn import
 import { AnimatePresence, motion } from 'framer-motion';
+import { Button } from '@/components/ui/button'; // Added Button import
+import { XCircle } from 'lucide-react'; // Added XCircle icon
 
 interface FilterPanelProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface FilterPanelProps {
   sections: TaskSection[];
   allCategories: Category[];
   hideStatusFilter?: boolean; // Optional prop to hide status filter
+  onClearFilters: () => void; // New prop for clearing all filters
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({
@@ -41,7 +43,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   sections,
   allCategories,
   hideStatusFilter = false,
+  onClearFilters, // Destructure new prop
 }) => {
+  const hasActiveFilters = searchFilter !== '' || statusFilter !== 'all' || categoryFilter !== 'all' || priorityFilter !== 'all' || sectionFilter !== 'all';
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -130,6 +135,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
               </Select>
             </div>
           </div>
+          {hasActiveFilters && (
+            <div className="mt-4 flex justify-end">
+              <Button variant="outline" onClick={onClearFilters} className="flex items-center gap-2">
+                <XCircle className="h-4 w-4" /> Clear Filters
+              </Button>
+            </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

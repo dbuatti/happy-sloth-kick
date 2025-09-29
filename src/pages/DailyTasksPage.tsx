@@ -144,6 +144,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setIsFilterPanelOpen(prev => !prev);
   }, []);
 
+  const handleClearFilters = useCallback(() => {
+    setSearchFilter('');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setPriorityFilter('all');
+    setSectionFilter('all');
+  }, []);
+
   return (
     <div className="flex flex-col h-full w-full"> {/* Main container for the page */}
       <DailyTasksHeader
@@ -190,6 +198,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
+        onClearFilters={handleClearFilters} // Pass the new prop
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Main scrollable content area */}
@@ -200,7 +209,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           handleAddTask={handleAddTask}
           updateTask={updateTask}
           deleteTask={deleteTask}
-          // Removed bulkUpdateTasks and bulkDeleteTasks
+          bulkUpdateTasks={bulkUpdateTasks}
+          bulkDeleteTasks={bulkDeleteTasks}
           markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           sections={sections}
           createSection={createSection}
