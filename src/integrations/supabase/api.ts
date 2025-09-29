@@ -37,7 +37,11 @@ export const suggestTaskDetails = async (
     });
 
     if (error) {
-      console.error('Error invoking Edge Function:', error.message); // Log error.message
+      console.error('Error invoking Edge Function:', error.message);
+      // Log additional details if available from FunctionsHttpError
+      if ((error as any).details) {
+        console.error('Edge Function details:', (error as any).details);
+      }
       return null;
     }
 
@@ -71,7 +75,11 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
     });
 
     if (error) {
-      console.error('Error invoking daily-briefing Edge Function:', error.message); // Log error.message
+      console.error('Error invoking daily-briefing Edge Function:', error.message);
+      // Log additional details if available from FunctionsHttpError
+      if ((error as any).details) {
+        console.error('Edge Function details:', (error as any).details);
+      }
       return null;
     }
 

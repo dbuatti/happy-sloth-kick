@@ -117,7 +117,8 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsConfirmDeleteSectionOpen(true);
   }, []);
 
-  const renderTask = useCallback((task: Task) => {
+  // renderTask is now a regular function, not wrapped in useCallback
+  const renderTask = (task: Task) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
     return (
       <TaskItem
@@ -141,9 +142,10 @@ const TaskList: React.FC<TaskListProps> = ({
         isDoToday={isDoToday}
       />
     );
-  }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
+  };
 
-  const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
+  // renderSectionHeader is now a regular function, not wrapped in useCallback
+  const renderSectionHeader = (section: TaskSection, tasksInThisSection: Task[]) => (
     <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">
       <div className="flex items-center gap-2">
         <Button
@@ -193,7 +195,7 @@ const TaskList: React.FC<TaskListProps> = ({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  ), [expandedSections, editSectionId, editSectionName, toggleSection, handleUpdateSection, markAllTasksInSectionCompleted, updateSectionIncludeInFocusMode, confirmDeleteSection, handleEditSection]);
+  );
 
 
   // Calculate these values directly instead of using useMemo
