@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react'; // Removed useMemo
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Archive as ArchiveIcon, Filter as FilterIcon } from 'lucide-react';
-import { format } from 'date-fns';
+// Removed format from 'date-fns'
 import FilterPanel from '@/components/FilterPanel';
 
 interface ArchivePageProps {
@@ -29,17 +29,19 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
     processedTasks,
     filteredTasks,
     loading: tasksLoading,
-    userId,
+    // Removed userId, bulkUpdateTasks, bulkDeleteTasks as they are not used
     handleAddTask, // Not typically used in archive, but required by TaskList
     updateTask,
     deleteTask,
-    bulkUpdateTasks,
-    bulkDeleteTasks,
     sections,
     allCategories,
     updateTaskParentAndOrder, // Not typically used in archive, but required by TaskList
     reorderSections, // Not typically used in archive, but required by TaskList
     markAllTasksInSectionCompleted, // Not typically used in archive, but required by TaskList
+    createSection, // Added to destructuring
+    updateSection, // Added to destructuring
+    deleteSection, // Added to destructuring
+    updateSectionIncludeInFocusMode, // Added to destructuring
     setFocusTask, // Not typically used in archive, but required by TaskList
     doTodayOffIds, // Not typically used in archive, but required by TaskList
     toggleDoToday, // Not typically used in archive, but required by TaskList
@@ -127,7 +129,7 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        hideStatusFilter={true} // Always show archived tasks
+        // Removed hideStatusFilter={true} as it's not a recognized prop
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
@@ -138,7 +140,7 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
           handleAddTask={handleAddTask}
           updateTask={updateTask}
           deleteTask={deleteTask}
-          // Removed bulkUpdateTasks and bulkDeleteTasks
+          // Removed bulkUpdateTasks and bulkDeleteTasks as they are not props of TaskList
           markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           sections={sections}
           createSection={createSection}
