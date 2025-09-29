@@ -32,7 +32,7 @@ interface TaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
-  allCategories: Category[]; // Added allCategories prop
+  allCategories: Category[]; // Used indirectly by onOpenOverview -> TaskDetailDialog
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp?: (taskId: string) => Promise<void>;
@@ -41,17 +41,19 @@ interface TaskItemProps {
   isOverlay?: boolean;
   hasSubtasks?: boolean;
   isExpanded?: boolean;
-  toggleTask?: (taskId: string) => void;
+  toggleExpand?: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
+  doTodayOffIds: Set<string>; // Used in SortableTaskItem and TaskReorderDialog for nested TaskItems
   scheduledTasksMap: Map<string, Appointment>;
+  scheduledAppointment?: Appointment; // Added this prop
   isDemo?: boolean;
   showDragHandle?: boolean;
   attributes?: React.HTMLAttributes<HTMLButtonElement>;
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
-  isSelected: boolean; // New prop for selection state
-  onSelectTask: (taskId: string, isSelected: boolean) => void; // New prop for selection handler
+  isSelected: boolean;
+  onSelectTask: (taskId: string, isSelected: boolean) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -60,23 +62,25 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDelete,
   onUpdate,
   sections,
-  allCategories, // Destructure allCategories
+  allCategories, // Destructure allCategories (used indirectly)
   onOpenOverview,
   currentDate,
   isOverlay = false,
   hasSubtasks = false,
   isExpanded = true,
-  toggleTask,
+  toggleExpand,
   setFocusTask,
   isDoToday,
   toggleDoToday,
+  doTodayOffIds, // Destructure new prop (used indirectly)
   scheduledTasksMap,
+  scheduledAppointment, // Destructure new prop
   isDemo = false,
   showDragHandle = false,
   attributes,
   listeners,
-  isSelected, // Destructure new prop
-  onSelectTask, // Destructure new prop
+  isSelected,
+  onSelectTask,
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -84,7 +88,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editText, setEditText] = useState(task.description || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
+  // scheduledAppointment is now passed directly as a prop
+  // const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
 
   const originalTask = useMemo(() => {
     if (!task.original_task_id) return null;
@@ -236,7 +241,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             className="h-8 w-8"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
-              toggleTask?.(task.id);
+              toggleExpand?.(task.id);
             }}
             aria-label={isExpanded ? 'Collapse sub-tasks' : 'Expand sub-tasks'}
           >

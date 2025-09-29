@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
-import type { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'; // Changed to import type
+// Removed import type { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronDown, ChevronRight, Settings, EyeOff, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -128,7 +128,7 @@ const TaskList: React.FC<TaskListProps> = ({
   };
 
   // Moved renderTask inside the component to ensure TaskItem is in scope
-  const renderTask = useCallback((task: Task, index: number, provided?: any, snapshot?: any) => ( // Replaced DraggableProvided and DraggableStateSnapshot with any
+  const renderTask = useCallback((task: Task, index: number, provided?: any, snapshot?: any) => (
     <TaskItem
       key={task.id}
       task={task}
@@ -137,7 +137,7 @@ const TaskList: React.FC<TaskListProps> = ({
       onOpenOverview={onOpenOverview}
       allCategories={allCategories}
       isExpanded={expandedTasks[task.id] === true}
-      toggleExpand={toggleTask}
+      toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
       setFocusTask={setFocusTask}
       doTodayOffIds={doTodayOffIds}
       toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
