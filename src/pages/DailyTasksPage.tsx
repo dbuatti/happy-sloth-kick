@@ -9,9 +9,9 @@ import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FilterPanel from '@/components/FilterPanel';
-import DailyBriefingCard from '@/components/DailyBriefingCard'; // Import DailyBriefingCard
-import { getDailyBriefing } from '@/integrations/supabase/api'; // Import getDailyBriefing
-import { useQuery } from '@tanstack/react-query'; // Import useQuery
+import DailyBriefingCard from '@/components/DailyBriefingCard';
+import { getDailyBriefing } from '@/integrations/supabase/api';
+import { useQuery } from '@tanstack/react-query';
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -32,7 +32,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Corrected initialization
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -170,13 +170,13 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   // Fetch daily briefing
   const { data: dailyBriefing, isLoading: isBriefingLoading, isError: isBriefingError } = useQuery<string | null, Error>({
     queryKey: ['dailyBriefing', userId, currentDate.toISOString().split('T')[0]],
-    queryFn: () => getDailyBriefing(userId!, currentDate),
+    queryFn: () => getDailyBriefing(userId as string, currentDate),
     enabled: !!userId && !isDemo,
-    staleTime: 5 * 60 * 1000, // Briefing can be stale for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   return (
-    <div className="flex flex-col h-full w-full"> {/* Main container for the page */}
+    <div className="flex flex-col h-full w-full">
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
@@ -224,13 +224,13 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onClearFilters={handleClearFilters}
       />
 
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Main scrollable content area */}
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
         <DailyBriefingCard
-          briefing={dailyBriefing}
+          briefing={dailyBriefing ?? null}
           isLoading={isBriefingLoading}
           isError={isBriefingError}
         />
-        <div className="mt-6"> {/* Add some spacing below the briefing card */}
+        <div className="mt-6">
           <TaskList
             processedTasks={processedTasks}
             filteredTasks={filteredTasks}
@@ -244,8 +244,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            updateTaskParentAndOrder={updateTaskParentAndOrder}
-            reorderSections={reorderSections}
+            // Removed updateTaskParentAndOrder
+            // Removed reorderSections
             allCategories={allCategories}
             setIsAddTaskOpen={() => {}}
             onOpenOverview={handleOpenOverview}
@@ -254,7 +254,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             expandedTasks={expandedTasks}
             toggleTask={toggleTask}
             toggleSection={toggleSection}
-            toggleAllSections={toggleAllSections}
+            // Removed toggleAllSections
             setFocusTask={setFocusTask}
             doTodayOffIds={doTodayOffIds}
             toggleDoToday={toggleDoToday}

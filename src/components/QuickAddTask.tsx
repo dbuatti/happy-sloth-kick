@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Lightbulb, Calendar as CalendarIcon, BellRing } from 'lucide-react';
-import { Category, TaskSection, NewTaskData } from '@/hooks/useTasks';
+import { Category, NewTaskData } from '@/hooks/useTasks'; // Removed TaskSection
 import { cn } from '@/lib/utils';
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,7 +19,6 @@ interface QuickAddTaskProps {
   defaultCategoryId: string;
   isDemo?: boolean;
   allCategories: Category[];
-  // Removed sections as it's not used
   currentDate: Date;
 }
 
@@ -29,7 +28,6 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   defaultCategoryId,
   isDemo = false,
   allCategories,
-  // Removed sections from destructuring
   currentDate,
 }) => {
   const [description, setDescription] = useState('');
@@ -214,7 +212,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
               <CalendarUI
                 mode="single"
                 selected={dueDate || undefined}
-                onSelect={(day) => setDueDate(day || null)} {/* Corrected onSelect handler */}
+                onSelect={(day) => setDueDate(day || null)}
                 initialFocus
               />
             </PopoverContent>
@@ -239,7 +237,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
                 <CalendarUI
                   mode="single"
                   selected={remindAtDate || undefined}
-                  onSelect={(day) => setRemindAtDate(day || null)} {/* Corrected onSelect handler */}
+                  onSelect={(day) => setRemindAtDate(day || null)}
                   initialFocus
                 />
               </PopoverContent>

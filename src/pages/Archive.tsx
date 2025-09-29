@@ -1,22 +1,24 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { Button } from '@/components/ui/button';
-import { Archive as ArchiveIcon, Filter as FilterIcon } from 'lucide-react';
+import DailyTasksHeader from '@/components/DailyTasksHeader';
+import BulkActionBar from '@/components/BulkActionBar';
 import FilterPanel from '@/components/FilterPanel';
+// Removed import { useAllAppointments } from '@/hooks/useAllAppointments';
+// Removed import { Appointment } from '@/hooks/useAppointments';
 
 interface ArchivePageProps {
   isDemo?: boolean;
   demoUserId?: string;
 }
 
-const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
-  const [currentDate] = useState(new Date()); // currentDate is not used for filtering in archive, but needed for useTasks hook
+const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('archived'); // Default to archived
+  const [statusFilter, setStatusFilter] = useState('archived');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [sectionFilter, setSectionFilter] = useState('all');
@@ -24,28 +26,37 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+
   const {
     processedTasks,
     filteredTasks,
     loading: tasksLoading,
-    handleAddTask, // Not typically used in archive, but required by TaskList
+    userId,
+    handleAddTask,
     updateTask,
     deleteTask,
+    bulkUpdateTasks,
+    bulkDeleteTasks,
     sections,
     allCategories,
-    updateTaskParentAndOrder, // Not typically used in archive, but required by TaskList
-    reorderSections, // Not typically used in archive, but required by TaskList
-    markAllTasksInSectionCompleted, // Not typically used in archive, but required by TaskList
-    createSection, // Added to destructuring
-    updateSection, // Added to destructuring
-    deleteSection, // Added to destructuring
-    updateSectionIncludeInFocusMode, // Added to destructuring
-    setFocusTask, // Not typically used in archive, but required by TaskList
-    doTodayOffIds, // Not typically used in archive, but required by TaskList
-    toggleDoToday, // Not typically used in archive, but required by TaskList
+    updateTaskParentAndOrder,
+    archiveAllCompletedTasks,
+    markAllTasksInSectionCompleted,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
+    reorderSections,
+    setFocusTask,
+    doTodayOffIds,
+    toggleDoToday,
+    toggleAllDoToday,
+    dailyProgress,
   } = useTasks({
     currentDate,
-    viewMode: 'archive',
     userId: demoUserId,
     searchFilter,
     statusFilter,
@@ -53,6 +64,8 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
     priorityFilter,
     sectionFilter,
   });
+
+  // Removed scheduledTasksMap as it's not used
 
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
@@ -85,13 +98,49 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
     setIsTaskOverviewOpen(true);
   }, []);
 
+  const handleClearSelection = useCallback(() => {
+    setSelectedTaskIds(new Set());
+  }, []);
+
+  const handleSelectTask = useCallback((taskId: string, isSelected: boolean) => {
+    setSelectedTaskIds(prev => {
+      const newSet = new Set(prev);
+      if (isSelected) {
+        newSet.add(taskId);
+      } else {
+        newSet.delete(taskId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleBulkComplete = useCallback(async () => {
+    await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
+
+  const handleBulkArchive = useCallback(async () => {
+    await bulkUpdateTasks({ status: 'archived' }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
+
+  const handleBulkDelete = useCallback(async () => {
+    await bulkDeleteTasks(Array.from(selectedTaskIds));
+    handleClearSelection();
+  }, [bulkDeleteTasks, selectedTaskIds, handleClearSelection]);
+
+  const handleBulkChangePriority = useCallback(async (priority: Task['priority']) => {
+    await bulkUpdateTasks({ priority }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
+
   const toggleFilterPanel = useCallback(() => {
     setIsFilterPanelOpen(prev => !prev);
   }, []);
 
   const handleClearFilters = useCallback(() => {
     setSearchFilter('');
-    setStatusFilter('archived'); // Keep status as 'archived' for the archive page
+    setStatusFilter('archived');
     setCategoryFilter('all');
     setPriorityFilter('all');
     setSectionFilter('all');
@@ -99,27 +148,36 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
-        <div className="flex items-center justify-between pt-4 pb-3">
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <ArchiveIcon className="h-7 w-7 text-primary" /> Archive
-          </h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleFilterPanel}
-            className="flex items-center gap-2"
-            aria-expanded={isFilterPanelOpen}
-            aria-controls="filter-panel"
-          >
-            <FilterIcon className="h-4 w-4" />
-            Filters
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-sm mt-1">
-          View and manage your archived tasks.
-        </p>
-      </div>
+      <DailyTasksHeader
+        currentDate={currentDate}
+        setCurrentDate={setCurrentDate}
+        tasks={processedTasks}
+        filteredTasks={filteredTasks}
+        sections={sections}
+        allCategories={allCategories}
+        userId={userId || null}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        archiveAllCompletedTasks={archiveAllCompletedTasks}
+        toggleAllDoToday={toggleAllDoToday}
+        dailyProgress={dailyProgress}
+        isDemo={isDemo}
+        tasksLoading={tasksLoading}
+        onToggleAllSections={toggleAllSections}
+        isManageCategoriesOpen={isManageCategoriesOpen}
+        setIsManageCategoriesOpen={setIsManageCategoriesOpen}
+        isManageSectionsOpen={isManageSectionsOpen}
+        setIsManageSectionsOpen={setIsManageSectionsOpen}
+        isFilterPanelOpen={isFilterPanelOpen}
+        toggleFilterPanel={toggleFilterPanel}
+        // Props specific to DailyTasksPage, not directly relevant for Archive
+        nextAvailableTask={undefined}
+        updateTask={updateTask} // Pass updateTask from useTasks
+        onOpenOverview={handleOpenOverview} // Pass handleOpenOverview
+        onOpenFocusView={() => {}} // Dummy function
+      />
 
       <FilterPanel
         isOpen={isFilterPanelOpen}
@@ -152,8 +210,8 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          updateTaskParentAndOrder={updateTaskParentAndOrder}
-          reorderSections={reorderSections}
+          // Removed updateTaskParentAndOrder
+          // Removed reorderSections
           allCategories={allCategories}
           setIsAddTaskOpen={() => {}}
           onOpenOverview={handleOpenOverview}
@@ -162,16 +220,27 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
           expandedTasks={expandedTasks}
           toggleTask={toggleTask}
           toggleSection={toggleSection}
-          toggleAllSections={toggleAllSections}
+          // Removed toggleAllSections
           setFocusTask={setFocusTask}
           doTodayOffIds={doTodayOffIds}
           toggleDoToday={toggleDoToday}
-          scheduledTasksMap={new Map()} // Archive doesn't typically show scheduled tasks
+          scheduledTasksMap={new Map()}
           isDemo={isDemo}
-          selectedTaskIds={new Set()} // Pass empty set for archive
-          onSelectTask={() => {}} // No-op for archive
+          selectedTaskIds={selectedTaskIds}
+          onSelectTask={handleSelectTask}
         />
       </div>
+
+      {selectedTaskIds.size > 0 && (
+        <BulkActionBar
+          selectedCount={selectedTaskIds.size}
+          onClearSelection={handleClearSelection}
+          onComplete={handleBulkComplete}
+          onArchive={handleBulkArchive}
+          onDelete={handleBulkDelete}
+          onChangePriority={handleBulkChangePriority}
+        />
+      )}
 
       {taskToOverview && (
         <TaskDetailDialog
@@ -193,4 +262,4 @@ const Archive: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => 
   );
 };
 
-export default Archive;
+export default ArchivePage;
