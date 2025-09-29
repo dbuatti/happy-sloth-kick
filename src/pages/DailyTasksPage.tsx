@@ -210,7 +210,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        onClearFilters={handleClearFilters}
+        onClearFilters={handleClearFilters} // Pass the new prop
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Main scrollable content area */}
@@ -243,8 +243,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
-          selectedTaskIds={selectedTaskIds} // Pass new prop
-          onSelectTask={handleSelectTask} // Pass new prop
+          selectedTaskIds={selectedTaskIds}
+          onSelectTask={handleSelectTask}
         />
       </div>
 
