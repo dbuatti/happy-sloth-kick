@@ -107,13 +107,38 @@ export const getHabitChallengeSuggestion = async () => {
   return "Try to complete your habit for 7 consecutive days!";
 };
 
-export const parseAppointmentText = async () => {
-  // This function is currently mocked, no AI API call here.
-  return {
-    title: "Parsed Appointment",
-    description: "Details from text",
-    date: format(new Date(), 'yyyy-MM-dd'), // Use current date for mock
-    startTime: "09:00",
-    endTime: "10:00",
-  };
+export const parseAppointmentText = async (text: string, date: Date) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('parse-appointment-text', {
+      body: JSON.stringify({
+        text,
+        currentDate: format(date, 'yyyy-MM-dd'),
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (error) {
+      console.error('Error invoking parse-appointment-text Edge Function:', error.message);
+      if ((error as any).details) {
+        console.error('Edge Function details:', (error as any).details);
+      }
+      return null;
+    }
+
+    // The data returned from the Edge Function is expected to match the Appointment structure
+    const result = data as {
+      title: string;
+      description: string | null;
+      date: string;
+      startTime: string;
+      endTime: string;
+    };
+    return result;
+
+  } catch (error) {
+    console.error('API: Error in parseAppointmentText:', error);
+    return null;
+  }
 };
