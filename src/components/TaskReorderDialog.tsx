@@ -70,7 +70,8 @@ const SortableTaskReorderItem: React.FC<{
   isOverlay?: boolean;
   isDropTarget?: boolean; // New prop for drop target highlight
   doTodayOffIds: Set<string>; // Added doTodayOffIds to the interface
-}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, allCategories, ...rest }) => {
+  index: number; // Added index prop
+}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, allCategories, index, ...rest }) => { // Destructure index
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -137,6 +138,7 @@ const SortableTaskReorderItem: React.FC<{
           {...attributes} // Apply attributes to the drag handle within TaskItem
           isSelected={false} // Selection is not relevant in reorder dialog
           onSelectTask={() => {}} // No-op for selection in reorder dialog
+          index={index} // Pass index
         />
       </div>
     </li>
@@ -240,7 +242,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
         >
           <SortableContext items={localTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
-              {localTasks.map((task) => (
+              {localTasks.map((task, index) => ( // Added index to map
                 <SortableTaskReorderItem
                   key={task.id}
                   task={task}
@@ -258,6 +260,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
                   isDropTarget={task.id === overId}
+                  index={index} // Pass index
                 />
               ))}
             </ul>
@@ -282,6 +285,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   isDemo={isDemo}
                   isOverlay={true}
                   isDropTarget={false}
+                  index={0} // Default index for overlay
                 />
               ) : null}
             </DragOverlay>,

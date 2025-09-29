@@ -128,28 +128,37 @@ const TaskList: React.FC<TaskListProps> = ({
   };
 
   // Moved renderTask inside the component to ensure TaskItem is in scope
-  const renderTask = useCallback((task: Task, index: number) => ( // Removed provided and snapshot parameters
-    <TaskItem
-      key={task.id}
-      task={task}
-      onUpdate={updateTask} // Corrected prop name
-      onDelete={deleteTask} // Corrected prop name
-      onOpenOverview={onOpenOverview}
-      allCategories={allCategories}
-      isExpanded={expandedTasks[task.id] === true}
-      toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
-      setFocusTask={setFocusTask}
-      doTodayOffIds={doTodayOffIds}
-      toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
-      scheduledAppointment={scheduledTasksMap.get(task.id)}
-      isDemo={isDemo}
-      // Removed provided={provided}
-      // Removed snapshot={snapshot}
-      index={index}
-      isSelected={selectedTaskIds.has(task.id)}
-      onSelectTask={onSelectTask}
-    />
-  ), [updateTask, deleteTask, onOpenOverview, allCategories, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask]);
+  const renderTask = useCallback((task: Task, index: number) => {
+    const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id); // Calculate isDoToday here
+    return (
+      <TaskItem
+        key={task.id}
+        task={task}
+        onUpdate={updateTask} // Corrected prop name
+        onDelete={deleteTask} // Corrected prop name
+        onOpenOverview={onOpenOverview}
+        allCategories={allCategories}
+        isExpanded={expandedTasks[task.id] === true}
+        toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
+        setFocusTask={setFocusTask}
+        doTodayOffIds={doTodayOffIds}
+        toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
+        scheduledTasksMap={scheduledTasksMap}
+        scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
+        isDemo={isDemo}
+        // Removed provided={provided}
+        // Removed snapshot={snapshot}
+        index={index}
+        isSelected={selectedTaskIds.has(task.id)}
+        onSelectTask={onSelectTask}
+        allTasks={processedTasks} // Pass allTasks
+        sections={sections} // Pass sections
+        currentDate={currentDate} // Pass currentDate
+        level={0} // Default level for top-level tasks
+        isDoToday={isDoToday} // Pass the calculated isDoToday prop
+      />
+    );
+  }, [updateTask, deleteTask, onOpenOverview, allCategories, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
 
   const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
     <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">

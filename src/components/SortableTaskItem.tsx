@@ -25,13 +25,14 @@ interface SortableTaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>; // Added doTodayOffIds to the interface
+  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
   showDragHandle?: boolean;
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  index: number; // Added index prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -44,7 +45,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  doTodayOffIds, // Destructure doTodayOffIds
+  doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
   showDragHandle = false,
@@ -59,6 +60,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   insertionIndicator,
   isSelected,
   onSelectTask,
+  index, // Destructure index
 }) => {
   const {
     attributes,
@@ -127,17 +129,18 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
-          doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
+          doTodayOffIds={doTodayOffIds}
           scheduledTasksMap={scheduledTasksMap}
           scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
           isDemo={isDemo}
           showDragHandle={showDragHandle}
           isSelected={isSelected}
           onSelectTask={onSelectTask}
+          index={index} // Pass index
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
-            {directSubtasks.map(subtask => (
+            {directSubtasks.map((subtask, subIndex) => (
               <SortableTaskItem
                 key={subtask.id}
                 task={subtask}
@@ -157,13 +160,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 setFocusTask={setFocusTask}
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
                 toggleDoToday={toggleDoToday}
-                doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
+                doTodayOffIds={doTodayOffIds}
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
                 showDragHandle={showDragHandle}
                 insertionIndicator={insertionIndicator}
                 isSelected={isSelected}
                 onSelectTask={onSelectTask}
+                index={subIndex} // Pass subIndex for recursive calls
               />
             ))}
           </ul>
