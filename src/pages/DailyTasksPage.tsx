@@ -32,7 +32,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = new Set<string>(); // Initialize as empty Set
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Corrected to use useState
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
