@@ -1,6 +1,4 @@
 import { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
-// Removed Button import
-// Removed ChevronsDownUp import
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,6 +36,9 @@ import EmptyState from './EmptyState';
 import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { isPast, parseISO, isSameDay } from 'date-fns';
+import { Button } from "@/components/ui/button"; // Re-added Button import for the Toggle All Sections button
+import { ChevronsDownUp } from 'lucide-react'; // Re-added ChevronsDownUp import for the Toggle All Sections button
+
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -68,6 +69,8 @@ interface TaskListProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
+  selectedTaskIds: Set<string>; // New prop for selected task IDs
+  onSelectTask: (taskId: string, isSelected: boolean) => void; // New prop for selection handler
 }
 
 // Helper component to wrap SortableSectionHeader with useSortable
@@ -166,6 +169,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     toggleDoToday,
     scheduledTasksMap,
     isDemo = false,
+    selectedTaskIds, // Destructure new prop
+    onSelectTask, // Destructure new prop
   } = props;
 
   const userId = '';
@@ -445,7 +450,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
-            {/* The "Toggle All Sections" button was moved to DailyTasksHeader */}
+            {/* Removed the "Toggle All Sections" button from here */}
 
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
@@ -516,6 +521,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             isDemo={isDemo}
                             showDragHandle={true}
                             insertionIndicator={insertionIndicator}
+                            isSelected={selectedTaskIds.has(task.id)} // Pass new prop
+                            onSelectTask={onSelectTask} // Pass new prop
                           />
                         ))}
                       </ul>
@@ -588,6 +595,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
                       showDragHandle={true}
+                      isSelected={false} // Selection is not relevant for drag overlay
+                      onSelectTask={() => {}} // No-op for selection in drag overlay
                     />
                   </div>
                 )

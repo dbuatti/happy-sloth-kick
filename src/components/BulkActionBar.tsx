@@ -1,16 +1,25 @@
+"use client";
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CheckCircle2, Archive, Trash2, ChevronDown, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CheckCircle2, Archive, Trash2, XCircle, ChevronDown, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
+import { cn } from '@/lib/utils';
 
 interface BulkActionBarProps {
   selectedCount: number;
   onClearSelection: () => void;
-  onComplete: () => void;
-  onArchive: () => void;
-  onDelete: () => void;
-  onChangePriority: (priority: Task['priority']) => void;
+  onComplete: () => Promise<void>;
+  onArchive: () => Promise<void>;
+  onDelete: () => Promise<void>;
+  onChangePriority: (priority: Task['priority']) => Promise<void>;
 }
 
 const BulkActionBar: React.FC<BulkActionBarProps> = ({
@@ -21,39 +30,56 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
   onDelete,
   onChangePriority,
 }) => {
+  if (selectedCount === 0) return null;
+
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
-      <div className="bg-card text-card-foreground rounded-xl shadow-lg p-2 flex items-center justify-between border">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClearSelection}>
-            <X className="h-5 w-5" />
-          </Button>
-          <span className="font-semibold">{selectedCount} selected</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onComplete} title="Mark as Complete">
-            <CheckCircle2 className="h-5 w-5" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 px-2">
-                Priority <ChevronDown className="ml-1 h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onSelect={() => onChangePriority('low')}>Low</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onChangePriority('medium')}>Medium</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onChangePriority('high')}>High</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => onChangePriority('urgent')}>Urgent</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onArchive} title="Archive">
-            <Archive className="h-5 w-5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete} title="Delete">
-            <Trash2 className="h-5 w-5" />
-          </Button>
-        </div>
+    <div className={cn(
+      "fixed bottom-0 left-0 right-0 z-50",
+      "bg-background border-t border-border shadow-lg",
+      "flex items-center justify-between p-3 sm:p-4"
+    )}>
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="sm" onClick={onClearSelection} className="text-muted-foreground hover:text-foreground">
+          <XCircle className="h-4 w-4 mr-2" />
+          Clear ({selectedCount})
+        </Button>
+        <span className="text-sm text-muted-foreground hidden sm:inline">
+          {selectedCount} task{selectedCount > 1 ? 's' : ''} selected
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" size="sm" onClick={onComplete}>
+          <CheckCircle2 className="h-4 w-4 mr-2" /> Complete
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onArchive}>
+          <Archive className="h-4 w-4 mr-2" /> Archive
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="secondary" size="sm">
+              <ChevronDown className="h-4 w-4 mr-2" /> More
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => onChangePriority('urgent')}>
+              <ArrowUp className="mr-2 h-4 w-4 text-priority-urgent" /> Urgent
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onChangePriority('high')}>
+              <ArrowUp className="mr-2 h-4 w-4 text-priority-high" /> High
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onChangePriority('medium')}>
+              <ArrowRight className="mr-2 h-4 w-4 text-priority-medium" /> Medium
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onChangePriority('low')}>
+              <ArrowDown className="mr-2 h-4 w-4 text-priority-low" /> Low
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+              <Trash2 className="mr-2 h-4 w-4" /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

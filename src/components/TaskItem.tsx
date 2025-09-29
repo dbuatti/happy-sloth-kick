@@ -49,6 +49,8 @@ interface TaskItemProps {
   showDragHandle?: boolean;
   attributes?: React.HTMLAttributes<HTMLButtonElement>;
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
+  isSelected: boolean; // New prop for selection state
+  onSelectTask: (taskId: string, isSelected: boolean) => void; // New prop for selection handler
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -71,6 +73,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   showDragHandle = false,
   attributes,
   listeners,
+  isSelected, // Destructure new prop
+  onSelectTask, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -150,6 +154,11 @@ const TaskItem: React.FC<TaskItemProps> = ({
     }
   };
 
+  const handleSelectionChange = (checked: boolean) => {
+    if (isOverlay || isDemo) return;
+    onSelectTask(task.id, checked);
+  };
+
   const getDueDateDisplay = (dueDate: string | null) => {
     if (!dueDate) return null;
     const date = parseISO(dueDate);
@@ -192,6 +201,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           : "bg-card text-foreground border-border",
         isOverdue && task.status === 'to-do' && "bg-red-500/10 border-red-500/30",
         !isDoToday && "opacity-60",
+        isSelected && "ring-2 ring-primary ring-offset-2", // Highlight when selected
         "group",
         !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer"
       )}
@@ -239,7 +249,20 @@ const TaskItem: React.FC<TaskItemProps> = ({
         )}
       </div>
 
-      {/* Checkbox Area */}
+      {/* Selection Checkbox */}
+      <div className="flex-shrink-0 mr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={handleSelectionChange}
+          id={`select-task-${task.id}`}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          className="flex-shrink-0 h-4 w-4 checkbox-root border-2"
+          aria-label={`Select task "${task.description}"`}
+          disabled={isOverlay || isDemo}
+        />
+      </div>
+
+      {/* Completion Checkbox Area */}
       <div className="flex-shrink-0 mr-3" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}> {/* Adjusted margin */}
         <Checkbox
           key={`${task.id}-${task.status}`}

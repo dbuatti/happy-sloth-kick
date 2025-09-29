@@ -29,6 +29,8 @@ interface SortableTaskItemProps {
   isDemo?: boolean;
   showDragHandle?: boolean;
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
+  isSelected: boolean; // Added new prop
+  onSelectTask: (taskId: string, isSelected: boolean) => void; // Added new prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -53,6 +55,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   onMoveUp,
   onMoveDown,
   insertionIndicator,
+  isSelected, // Destructure new prop
+  onSelectTask, // Destructure new prop
 }) => {
   const {
     attributes,
@@ -123,6 +127,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
           showDragHandle={showDragHandle}
+          isSelected={isSelected} // Pass new prop
+          onSelectTask={onSelectTask} // Pass new prop
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -150,6 +156,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 isDemo={isDemo}
                 showDragHandle={showDragHandle}
                 insertionIndicator={insertionIndicator}
+                isSelected={isSelected} // Pass new prop
+                onSelectTask={onSelectTask} // Pass new prop
               />
             ))}
           </ul>

@@ -129,6 +129,8 @@ const SortableTaskReorderItem: React.FC<{
           showDragHandle={true} // Always show drag handle in reorder dialog
           {...listeners} // Apply listeners to the drag handle within TaskItem
           {...attributes} // Apply attributes to the drag handle within TaskItem
+          isSelected={false} // Selection is not relevant in reorder dialog
+          onSelectTask={() => {}} // No-op for selection in reorder dialog
         />
       </div>
     </li>
@@ -302,8 +304,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
             </div>
             <DrawerFooter>
               <Footer />
-            </DrawerFooter>
-          </DrawerContent>
+            </DrawerContent>
         </Drawer>
       ) : (
         <Dialog open={isOpen} onOpenChange={onClose}>
