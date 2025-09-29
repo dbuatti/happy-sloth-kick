@@ -1,5 +1,3 @@
-// Removed /// <reference lib="deno.ns" />
-// Removed /// <reference lib="deno.unstable" />
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
@@ -34,7 +32,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Changed model to 'gemini-1.5-flash'
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
@@ -133,7 +131,7 @@ Output:
       status: 200,
     });
 
-  } catch (error: any) { // Changed to any
+  } catch (error: any) { // Type assert error to Error
     console.error('Error in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

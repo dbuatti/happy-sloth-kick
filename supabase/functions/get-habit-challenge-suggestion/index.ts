@@ -73,7 +73,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     Keep it concise and positive.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Changed model to 'gemini-1.5-flash'
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -84,7 +84,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
       status: 200,
     });
 
-  } catch (error: any) { // Changed to any
+  } catch (error: any) {
     console.error("Error in Edge Function 'get-habit-challenge-suggestion':", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
