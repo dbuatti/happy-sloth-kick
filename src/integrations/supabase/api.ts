@@ -3,6 +3,7 @@ import { supabase } from './client'; // Import supabase client
 
 export interface AICategory {
   id: string;
+  name: string;
 }
 
 // Define the expected structure of the AI suggestion result
@@ -67,11 +68,12 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
       localDayStartISO: localDayStart.toISOString(),
       localDayEndISO: localDayEnd.toISOString(),
     };
-    console.log('API: Constructed request body object:', requestBody); // New log to check the object
-    console.log('API: Sending body to daily-briefing Edge Function:', JSON.stringify(requestBody));
+    console.log('API: Constructed request body object:', requestBody); // Log the object
+    // Removed explicit JSON.stringify here, letting supabase.functions.invoke handle it
+    // console.log('API: Sending body to daily-briefing Edge Function:', JSON.stringify(requestBody)); 
 
     const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: JSON.stringify(requestBody),
+      body: requestBody, // Pass the object directly
       headers: {
         'Content-Type': 'application/json',
       },
