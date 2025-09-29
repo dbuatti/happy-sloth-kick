@@ -128,7 +128,7 @@ const TaskList: React.FC<TaskListProps> = ({
   };
 
   // Moved renderTask inside the component to ensure TaskItem is in scope
-  const renderTask = useCallback((task: Task, index: number, provided?: any, snapshot?: any) => (
+  const renderTask = useCallback((task: Task, index: number) => ( // Removed provided and snapshot parameters
     <TaskItem
       key={task.id}
       task={task}
@@ -143,8 +143,8 @@ const TaskList: React.FC<TaskListProps> = ({
       toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
       scheduledAppointment={scheduledTasksMap.get(task.id)}
       isDemo={isDemo}
-      provided={provided}
-      snapshot={snapshot}
+      // Removed provided={provided}
+      // Removed snapshot={snapshot}
       index={index}
       isSelected={selectedTaskIds.has(task.id)}
       onSelectTask={onSelectTask}

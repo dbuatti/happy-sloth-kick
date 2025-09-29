@@ -46,14 +46,15 @@ interface TaskItemProps {
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
   doTodayOffIds: Set<string>; // Used in SortableTaskItem and TaskReorderDialog for nested TaskItems
-  scheduledTasksMap: Map<string, Appointment>;
-  scheduledAppointment?: Appointment; // Added this prop
+  scheduledTasksMap: Map<string, Appointment>; // Used to derive scheduledAppointment
+  scheduledAppointment?: Appointment;
   isDemo?: boolean;
   showDragHandle?: boolean;
   attributes?: React.HTMLAttributes<HTMLButtonElement>;
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  index: number; // Added this prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -73,14 +74,15 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDoToday,
   toggleDoToday,
   doTodayOffIds, // Destructure new prop (used indirectly)
-  scheduledTasksMap,
-  scheduledAppointment, // Destructure new prop
+  scheduledTasksMap, // Destructure new prop (used indirectly)
+  scheduledAppointment,
   isDemo = false,
   showDragHandle = false,
   attributes,
   listeners,
   isSelected,
   onSelectTask,
+  index, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
