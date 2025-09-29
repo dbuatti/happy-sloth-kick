@@ -73,7 +73,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     Keep it concise and positive.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Changed model to 'gemini-1.5-flash'
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" }); // Changed model to 'gemini-2.5-flash-lite'
 
     const result = await model.generateContent(prompt);
     const response = await result.response;

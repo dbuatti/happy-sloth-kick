@@ -60,7 +60,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     console.log("GEMINI_API_KEY successfully retrieved.");
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Changed model to 'gemini-1.5-flash'
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" }); // Changed model to 'gemini-2.5-flash-lite'
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 

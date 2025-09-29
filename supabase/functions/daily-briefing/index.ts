@@ -205,8 +205,7 @@ serve(async (req: Request) => {
     Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    // Changed model to 'gemini-1.5-flash' as 'gemini-pro' seems to be causing issues.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" }); 
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
