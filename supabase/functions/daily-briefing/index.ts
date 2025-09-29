@@ -55,24 +55,32 @@ serve(async (req: Request) => {
 
   try {
     console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
-    console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type')); // New log
+    console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type'));
+
+    const rawBody = await req.text(); // Read the raw request body as text
+    console.log("Daily Briefing: Raw request body received:", rawBody);
+
+    if (!rawBody || rawBody.trim() === '') {
+      console.error("Daily Briefing: Request body is empty or whitespace after reading raw text.");
+      return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
 
     let requestBodyParsed;
     try {
-      requestBodyParsed = await req.json();
-      console.log("Daily Briefing: Received request (parsed):", requestBodyParsed);
+      requestBodyParsed = JSON.parse(rawBody);
     } catch (jsonParseError: any) {
-      if (jsonParseError instanceof SyntaxError && jsonParseError.message.includes('JSON')) {
-        console.error("Daily Briefing: Failed to parse request body as JSON (likely empty or invalid):", jsonParseError.message);
-        return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-      throw jsonParseError; // Re-throw other parsing errors
+      console.error("Daily Briefing: Failed to parse raw request body as JSON:", jsonParseError.message);
+      return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${jsonParseError.message}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
     }
 
     const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
+    console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
