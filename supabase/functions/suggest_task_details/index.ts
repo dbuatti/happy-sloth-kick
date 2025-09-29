@@ -32,7 +32,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Changed model to 'gemini-pro'
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Changed model to 'gemini-1.5-flash'
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
@@ -134,8 +134,8 @@ Output:
   } catch (error: any) { // Type assert error to Error
     console.error('Error in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
     });
   }
 });

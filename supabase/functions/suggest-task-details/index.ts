@@ -1,6 +1,6 @@
-/// <reference lib="deno.ns" />
-/// <reference lib="deno.unstable" />
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
@@ -32,7 +32,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Changed model to 'gemini-1.5-flash'
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
@@ -131,11 +131,11 @@ Output:
       status: 200,
     });
 
-  } catch (error: Error) { // Type assert error to Error
+  } catch (error: any) { // Type assert error to any
     console.error('Error in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
     });
   }
 });
