@@ -68,26 +68,12 @@ serve(async (req: Request) => {
     Example: "Try to double your daily reading time for the next 3 days!" or "Integrate a 5-minute mindfulness exercise before your morning run."
     Keep it concise and positive.`;
 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Changed model to 'gemini-pro'
 
-    const geminiResponse = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      console.error("Habit Challenge: Gemini API request failed:", geminiResponse.status, errorBody);
-      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const suggestionText = geminiData.candidates[0].content.parts[0].text;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const suggestionText = response.text();
 
     return new Response(JSON.stringify({ suggestion: suggestionText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

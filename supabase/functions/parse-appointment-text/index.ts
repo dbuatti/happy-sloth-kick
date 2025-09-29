@@ -84,26 +84,12 @@ Deno.serve(async (req) => {
       "${text}"
     `;
 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Changed model to 'gemini-pro'
 
-    const geminiResponse = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    });
-
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      console.error("Parse Appointment: Gemini API request failed:", geminiResponse.status, errorBody);
-      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    const responseText = geminiData.candidates[0].content.parts[0].text;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const responseText = response.text();
     
     let parsedData;
     try {
