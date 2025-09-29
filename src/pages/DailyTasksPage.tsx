@@ -7,9 +7,8 @@ import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
-// import { cn } from '@/lib/utils'; // Removed unused cn utility import
-import FilterPanel from '@/components/FilterPanel'; // Import the new FilterPanel
+import { Appointment } from '@/hooks/useAppointments';
+import FilterPanel from '@/components/FilterPanel';
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -19,7 +18,7 @@ interface DailyTasksPageProps {
 const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false); // New state for filter panel
+  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -30,7 +29,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // FIX: Corrected useState declaration
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -142,7 +141,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
 
   return (
-    <div className="flex-1 flex flex-col h-full">
+    <div className="flex flex-col h-full w-full"> {/* Main container for the page */}
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
@@ -152,17 +151,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         allCategories={allCategories}
         userId={userId || null}
         setIsFocusPanelOpen={setIsFocusPanelOpen}
-        // Filter props are no longer passed here
-        // searchFilter={searchFilter}
-        // setSearchFilter={setSearchFilter}
-        // statusFilter={statusFilter}
-        // setStatusFilter={setStatusFilter}
-        // categoryFilter={categoryFilter}
-        // setCategoryFilter={setCategoryFilter}
-        // priorityFilter={priorityFilter}
-        // setPriorityFilter={setPriorityFilter}
-        // sectionFilter={sectionFilter}
-        // setSectionFilter={setSectionFilter}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
@@ -203,41 +191,39 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         allCategories={allCategories}
       />
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 lg:p-6">
-          <TaskList
-            processedTasks={processedTasks}
-            filteredTasks={filteredTasks}
-            loading={tasksLoading}
-            handleAddTask={handleAddTask}
-            updateTask={updateTask}
-            deleteTask={deleteTask}
-            bulkUpdateTasks={bulkUpdateTasks}
-            bulkDeleteTasks={bulkDeleteTasks}
-            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-            sections={sections}
-            createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            updateTaskParentAndOrder={updateTaskParentAndOrder}
-            reorderSections={reorderSections}
-            allCategories={allCategories}
-            setIsAddTaskOpen={() => {}} // This is handled by QuickAddTask now
-            onOpenOverview={handleOpenOverview}
-            currentDate={currentDate}
-            expandedSections={expandedSections}
-            expandedTasks={expandedTasks}
-            toggleTask={toggleTask}
-            toggleSection={toggleSection}
-            toggleAllSections={toggleAllSections}
-            setFocusTask={setFocusTask}
-            doTodayOffIds={doTodayOffIds}
-            toggleDoToday={toggleDoToday}
-            scheduledTasksMap={scheduledTasksMap}
-            isDemo={isDemo}
-          />
-        </div>
+      <div className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Main scrollable content area */}
+        <TaskList
+          processedTasks={processedTasks}
+          filteredTasks={filteredTasks}
+          loading={tasksLoading}
+          handleAddTask={handleAddTask}
+          updateTask={updateTask}
+          deleteTask={deleteTask}
+          bulkUpdateTasks={bulkUpdateTasks}
+          bulkDeleteTasks={bulkDeleteTasks}
+          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+          sections={sections}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          updateTaskParentAndOrder={updateTaskParentAndOrder}
+          reorderSections={reorderSections}
+          allCategories={allCategories}
+          setIsAddTaskOpen={() => {}}
+          onOpenOverview={handleOpenOverview}
+          currentDate={currentDate}
+          expandedSections={expandedSections}
+          expandedTasks={expandedTasks}
+          toggleTask={toggleTask}
+          toggleSection={toggleSection}
+          toggleAllSections={toggleAllSections}
+          setFocusTask={setFocusTask}
+          doTodayOffIds={doTodayOffIds}
+          toggleDoToday={toggleDoToday}
+          scheduledTasksMap={scheduledTasksMap}
+          isDemo={isDemo}
+        />
       </div>
 
       <FloatingAddTaskButton onClick={() => handleAddTask({ description: '', category: allCategories[0]?.id || '', priority: 'medium' })} isDemo={isDemo} />
