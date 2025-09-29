@@ -27,7 +27,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
-import SortableSectionHeader from './SortableSectionHeader'; // Import the new component
+import SortableSectionHeader from './SortableSectionHeader';
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
@@ -46,7 +46,6 @@ interface TaskListProps {
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   deleteTask: (taskId: string) => void;
-  // Removed unused props: bulkUpdateTasks, bulkDeleteTasks
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
@@ -146,7 +145,6 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     handleAddTask,
     updateTask,
     deleteTask,
-    // Removed unused props: bulkUpdateTasks, bulkDeleteTasks
     markAllTasksInSectionCompleted,
     sections,
     createSection,
@@ -445,17 +443,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
-            <div className="flex justify-end mb-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleAllSections}
-                aria-label="Toggle all sections"
-                className="h-9 px-3 text-primary hover:bg-primary/10"
-              >
-                <ChevronsDownUp className="h-5 w-5 mr-2" /> Toggle All Sections
-              </Button>
-            </div>
+            {/* Removed the "Toggle All Sections" button from here */}
 
             {allSortableSections.map((currentSection: TaskSection, index) => {
               const isExpanded = expandedSections[currentSection.id] !== false;
@@ -524,7 +512,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             doTodayOffIds={doTodayOffIds}
                             scheduledTasksMap={scheduledTasksMap}
                             isDemo={isDemo}
-                            showDragHandle={true} // Changed to true to show drag handles for tasks
+                            showDragHandle={true}
                             insertionIndicator={insertionIndicator}
                           />
                         ))}
@@ -597,7 +585,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
-                      showDragHandle={true} // Changed to true for overlay as well
+                      showDragHandle={true}
                     />
                   </div>
                 )

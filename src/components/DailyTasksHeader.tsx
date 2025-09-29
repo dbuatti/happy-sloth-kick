@@ -23,7 +23,6 @@ interface DailyTasksHeaderProps {
   sections: TaskSection[];
   allCategories: Category[];
   userId: string | null;
-  // Removed setIsFocusPanelOpen as it's not used directly in this component
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -41,8 +40,6 @@ interface DailyTasksHeaderProps {
   onOpenOverview: (task: Task) => void;
   onOpenFocusView: () => void;
   tasksLoading: boolean;
-  // Removed doTodayOffIds as it's not used directly in this component
-  // Removed toggleDoToday as it's not used directly in this component
   onToggleAllSections: () => void;
   isManageCategoriesOpen: boolean;
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -57,7 +54,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setCurrentDate,
   sections,
   allCategories,
-  // Removed setIsFocusPanelOpen from destructuring
   createSection,
   updateSection,
   deleteSection,
@@ -71,8 +67,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   onOpenOverview,
   onOpenFocusView,
   tasksLoading,
-  // Removed doTodayOffIds from destructuring
-  // Removed toggleDoToday from destructuring
   onToggleAllSections,
   isManageCategoriesOpen,
   setIsManageCategoriesOpen,
