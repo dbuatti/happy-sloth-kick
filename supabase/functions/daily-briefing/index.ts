@@ -1,7 +1,7 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
-import { createClient } 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Corrected: added 'from'
 // @ts-ignore
 import { isValid, isWithinInterval, parseISO, isBefore, startOfDay } from 'https://esm.sh/date-fns@2.30.0';
 // @ts-ignore
@@ -211,7 +211,7 @@ serve(async (req: Request) => {
     const response = await result.response;
     const briefingText = response.text();
     
-    console.log("Daily Briefing: Final briefing text to send:", briefingText); // New log here
+    console.log("Daily Briefing: Final briefing text to send:", briefingText);
 
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
