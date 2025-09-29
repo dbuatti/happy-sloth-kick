@@ -153,12 +153,12 @@ serve(async (req: Request) => {
     });
 
     // Summarize data for the prompt more concisely
-    const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks, including: ${pendingTasks.map(t => t.description).slice(0, 2).join(', ')}${pendingTasks.length > 2 ? '...' : ''}.` : 'No pending tasks.';
+    const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks.` : 'No pending tasks.';
     const completedSummary = completedTasks.length > 0 ? `You've completed ${completedTasks.length} tasks today. Great job!` : 'No tasks completed yet.';
     const overdueSummary = overdueTasks.length > 0 ? `You have ${overdueTasks.length} overdue tasks.` : 'No overdue tasks.';
-    const appointmentsSummary = appointments.length > 0 ? `You have ${appointments.length} appointments today, starting with ${appointments[0].title} at ${appointments[0].start_time}.` : 'No appointments today.';
+    const appointmentsSummary = appointments.length > 0 ? `You have ${appointments.length} appointments today.` : 'No appointments today.';
     const weeklyFocusSummary = weeklyFocus?.primary_focus ? `Your primary focus this week is: ${weeklyFocus.primary_focus}.` : 'No specific weekly focus set.';
-    const sleepSummary = sleepRecord?.bed_time && sleepRecord?.wake_up_time ? `Last night, you slept from ${sleepRecord.bed_time} to ${sleepRecord.wake_up_time}.` : 'No sleep data recorded for last night.';
+    const sleepSummary = sleepRecord?.bed_time && sleepRecord?.wake_up_time ? `Last night, you recorded sleep data.` : 'No sleep data recorded for last night.';
 
     const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user.
     Today's date: ${todayDateString}
@@ -170,7 +170,7 @@ serve(async (req: Request) => {
     ${weeklyFocusSummary}
     ${sleepSummary}
 
-    Keep the briefing under 150 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
+    Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
 
     console.log("Daily Briefing: Sending prompt to Gemini API...");
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
