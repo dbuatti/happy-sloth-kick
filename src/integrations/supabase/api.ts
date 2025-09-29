@@ -63,7 +63,7 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
     const requestBody = {
       userId,
       localDayStartISO: localDayStart.toISOString(),
-      localDayEndISO: localDayDayEnd.toISOString(),
+      localDayEndISO: localDayEnd.toISOString(),
     };
 
     // Get the user's session to include the access token for authentication
