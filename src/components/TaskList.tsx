@@ -137,7 +137,7 @@ const TaskList: React.FC<TaskListProps> = ({
         isExpanded={expandedTasks[task.id] === true}
         toggleExpand={toggleTask}
         setFocusTask={setFocusTask}
-        doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds to TaskItem
+        doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
         scheduledAppointment={scheduledTasksMap.get(task.id)}
         isDemo={isDemo}

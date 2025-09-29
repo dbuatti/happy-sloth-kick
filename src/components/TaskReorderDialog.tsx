@@ -123,7 +123,7 @@ const SortableTaskReorderItem: React.FC<{
           setFocusTask={rest.setFocusTask}
           isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
           toggleDoToday={rest.toggleDoToday}
-          doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds to TaskItem
+          // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
           scheduledAppointment={rest.scheduledTasksMap.get(task.id)}
           isDemo={rest.isDemo}
           showDragHandle={true}
