@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
@@ -42,14 +42,14 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
     bulkDeleteTasks,
     sections,
     allCategories,
-    updateTaskParentAndOrder,
+    // Removed updateTaskParentAndOrder as it's not used
     archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    reorderSections,
+    // Removed reorderSections as it's not used
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
@@ -172,11 +172,10 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         setIsManageSectionsOpen={setIsManageSectionsOpen}
         isFilterPanelOpen={isFilterPanelOpen}
         toggleFilterPanel={toggleFilterPanel}
-        // Props specific to DailyTasksPage, not directly relevant for Archive
-        nextAvailableTask={undefined}
-        updateTask={updateTask} // Pass updateTask from useTasks
-        onOpenOverview={handleOpenOverview} // Pass handleOpenOverview
-        onOpenFocusView={() => {}} // Dummy function
+        nextAvailableTask={null}
+        updateTask={updateTask}
+        onOpenOverview={handleOpenOverview}
+        onOpenFocusView={() => {}}
       />
 
       <FilterPanel
@@ -213,7 +212,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
           // Removed updateTaskParentAndOrder
           // Removed reorderSections
           allCategories={allCategories}
-          setIsAddTaskOpen={() => {}}
+          // Removed setIsAddTaskOpen
           onOpenOverview={handleOpenOverview}
           currentDate={currentDate}
           expandedSections={expandedSections}

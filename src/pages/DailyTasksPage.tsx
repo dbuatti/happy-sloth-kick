@@ -6,7 +6,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { useAllAppointments } from '@/hooks/useAllAppointments'; // Corrected import syntax
 import { Appointment } from '@/hooks/useAppointments';
 import FilterPanel from '@/components/FilterPanel';
 import DailyBriefingCard from '@/components/DailyBriefingCard';
@@ -32,7 +32,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Corrected initialization
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -49,14 +49,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     bulkDeleteTasks,
     sections,
     allCategories,
-    updateTaskParentAndOrder,
+    // Removed updateTaskParentAndOrder as it's not used
     archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    reorderSections,
+    // Removed reorderSections as it's not used
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
@@ -76,7 +76,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   const scheduledTasksMap = useMemo(() => {
     const map = new Map<string, Appointment>();
-    allAppointments.forEach(app => {
+    allAppointments.forEach((app: Appointment) => { // Explicitly type 'app'
       if (app.task_id) {
         map.set(app.task_id, app);
       }
@@ -247,7 +247,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             // Removed updateTaskParentAndOrder
             // Removed reorderSections
             allCategories={allCategories}
-            setIsAddTaskOpen={() => {}}
+            // Removed setIsAddTaskOpen
             onOpenOverview={handleOpenOverview}
             currentDate={currentDate}
             expandedSections={expandedSections}

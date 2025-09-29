@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
-import { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd';
+import type { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd'; // Changed to import type
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronDown, ChevronRight, Settings, EyeOff, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -21,7 +21,7 @@ interface TaskListProps {
   markAllTasksInSectionCompleted: (sectionId: string) => Promise<any>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<any>;
-  updateSection: (id: string, updates: Partial<TaskSection>) => Promise<void>; // Corrected type
+  updateSection: (id: string, newName: string) => Promise<void>; // Corrected type to match useTasks
   deleteSection: (id: string) => Promise<any>;
   updateSectionIncludeInFocusMode: (id: string, include: boolean) => Promise<any>;
   // Removed updateTaskParentAndOrder as it's not used in current TaskList implementation
@@ -35,9 +35,9 @@ interface TaskListProps {
   toggleTask: (taskId: string) => void;
   toggleSection: (sectionId: string) => void;
   // Removed toggleAllSections as it's not used in current TaskList implementation
-  setFocusTask: (taskId: string | null) => void;
+  setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
-  toggleDoToday: (task: Task) => Promise<void>; // Corrected type to match useTasks
+  toggleDoToday: (task: Task) => Promise<void>;
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
   selectedTaskIds: Set<string>;
@@ -108,7 +108,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleUpdateSection = async () => {
     if (editSectionId && editSectionName.trim()) {
-      await updateSection(editSectionId, { name: editSectionName.trim() });
+      await updateSection(editSectionId, editSectionName.trim()); // Corrected call to match useTasks signature
       setEditSectionId(null);
       setEditSectionName('');
     }
@@ -128,12 +128,12 @@ const TaskList: React.FC<TaskListProps> = ({
   };
 
   // Moved renderTask inside the component to ensure TaskItem is in scope
-  const renderTask = useCallback((task: Task, index: number, provided?: DraggableProvided, snapshot?: DraggableStateSnapshot) => (
+  const renderTask = useCallback((task: Task, index: number, provided?: any, snapshot?: any) => ( // Replaced DraggableProvided and DraggableStateSnapshot with any
     <TaskItem
       key={task.id}
       task={task}
-      updateTask={updateTask}
-      deleteTask={deleteTask}
+      onUpdate={updateTask} // Corrected prop name
+      onDelete={deleteTask} // Corrected prop name
       onOpenOverview={onOpenOverview}
       allCategories={allCategories}
       isExpanded={expandedTasks[task.id] === true}

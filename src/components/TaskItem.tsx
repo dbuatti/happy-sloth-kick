@@ -16,7 +16,7 @@ import {
 import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
-import { Task } from '@/hooks/useTasks';
+import { Task, Category } from '@/hooks/useTasks'; // Import Category
 import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
@@ -32,6 +32,7 @@ interface TaskItemProps {
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
+  allCategories: Category[]; // Added allCategories prop
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   onMoveUp?: (taskId: string) => Promise<void>;
@@ -59,6 +60,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDelete,
   onUpdate,
   sections,
+  allCategories, // Destructure allCategories
   onOpenOverview,
   currentDate,
   isOverlay = false,
