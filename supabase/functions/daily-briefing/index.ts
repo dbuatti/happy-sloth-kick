@@ -190,11 +190,17 @@ serve(async (req: Request) => {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
       const result = await model.generateContent(prompt);
-      console.log("Daily Briefing: Received raw result from Gemini:", JSON.stringify(result, null, 2));
+      console.log("Daily Briefing: Received raw result from Gemini.");
       const response = await result.response;
-      console.log("Daily Briefing: Received response object from Gemini:", JSON.stringify(response, null, 2));
-      const briefingText = response.text();
-      console.log("Daily Briefing: Extracted briefing text from Gemini response.");
+      let briefingText = response.text();
+      
+      // Ensure briefingText is a string, provide fallback if not
+      if (typeof briefingText !== 'string') {
+        console.warn("Daily Briefing: Gemini response text was not a string. Falling back to default message.");
+        briefingText = "Hello! Here's your daily briefing: No specific updates today, but keep up the great work! ✨";
+      }
+
+      console.log("Daily Briefing: Final briefing text to send:", briefingText);
 
       return new Response(JSON.stringify({ briefing: briefingText }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
