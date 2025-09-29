@@ -55,6 +55,7 @@ serve(async (req: Request) => {
 
   try {
     console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+    console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type')); // New log
 
     let requestBodyParsed;
     try {

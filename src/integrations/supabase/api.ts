@@ -68,12 +68,12 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
       localDayStartISO: localDayStart.toISOString(),
       localDayEndISO: localDayEnd.toISOString(),
     };
-    console.log('API: Constructed request body object:', requestBody); // Log the object
-    // Removed explicit JSON.stringify here, letting supabase.functions.invoke handle it
-    // console.log('API: Sending body to daily-briefing Edge Function:', JSON.stringify(requestBody)); 
+    console.log('API: Constructed request body object:', requestBody);
+    const stringifiedBody = JSON.stringify(requestBody); // Explicitly stringify
+    console.log('API: Sending body to daily-briefing Edge Function (stringified):', stringifiedBody);
 
     const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: requestBody, // Pass the object directly
+      body: stringifiedBody, // Pass the stringified body
       headers: {
         'Content-Type': 'application/json',
       },
