@@ -133,11 +133,11 @@ const TaskList: React.FC<TaskListProps> = ({
         onUpdate={updateTask}
         onDelete={deleteTask}
         onOpenOverview={onOpenOverview}
-        allCategories={allCategories}
+        // Removed allCategories={allCategories} // No longer passed to TaskItem
         isExpanded={expandedTasks[task.id] === true}
         toggleExpand={toggleTask}
         setFocusTask={setFocusTask}
-        // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
+        doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
         scheduledAppointment={scheduledTasksMap.get(task.id)}
         isDemo={isDemo}
@@ -150,7 +150,7 @@ const TaskList: React.FC<TaskListProps> = ({
         isDoToday={isDoToday}
       />
     );
-  }, [updateTask, deleteTask, onOpenOverview, allCategories, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
+  }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
 
   const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
     <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">
