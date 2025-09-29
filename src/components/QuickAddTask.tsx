@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Lightbulb, Calendar as CalendarIcon, BellRing } from 'lucide-react';
-import { Category, NewTaskData, TaskSection } from '@/hooks/useTasks'; // Added TaskSection
+import { Category, NewTaskData, TaskSection } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { showError, showLoading, dismissToast, showSuccess } from '@/utils/toast';
-import SectionSelector from './SectionSelector'; // Import SectionSelector
+import SectionSelector from './SectionSelector';
 
 interface QuickAddTaskProps {
   // sectionId is now optional, if not provided, it means global quick add
@@ -22,7 +22,7 @@ interface QuickAddTaskProps {
   isDemo?: boolean;
   allCategories: Category[];
   currentDate: Date;
-  sections?: TaskSection[]; // Added sections prop for global QuickAddTask
+  sections: TaskSection[]; // Made mandatory as it's always passed from TaskList
   createSection: (name: string) => Promise<void>; // Made mandatory
   updateSection: (sectionId: string, newName: string) => Promise<void>; // Made mandatory
   deleteSection: (sectionId: string) => Promise<void>; // Made mandatory
@@ -36,7 +36,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   isDemo = false,
   allCategories,
   currentDate,
-  sections = [], // Default to empty array if not provided
+  sections, // No default value needed, it's mandatory now
   createSection,
   updateSection,
   deleteSection,

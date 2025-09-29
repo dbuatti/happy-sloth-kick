@@ -223,7 +223,7 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       )}
 
-      {/* Global Quick Add Task component */}
+      {/* Global Quick Add Task component - always rendered once */}
       <QuickAddTask
         onAddTask={handleAddTask}
         defaultCategoryId={allCategories[0]?.id || ''}
