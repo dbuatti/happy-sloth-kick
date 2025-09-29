@@ -1,7 +1,7 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
 import { isValid, isWithinInterval, parseISO, isBefore, startOfDay } from 'https://esm.sh/date-fns@2.30.0';
 // @ts-ignore
@@ -58,24 +58,13 @@ serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // --- TEMPORARY: Echo raw body for debugging ---
-  console.log("Daily Briefing: Bypassing all logic, returning hardcoded 200 OK.");
-  const rawBody = await req.text(); // Need to read rawBody for the echo test
-  return new Response(JSON.stringify({ echoedBody: rawBody, message: "Echo test successful." }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status: 200,
-  });
-  // --- END TEMPORARY ---
-
-  // The original logic is commented out below this point.
-  /*
   try {
     console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type'));
     console.log("Daily Briefing: Incoming Content-Length header:", req.headers.get('Content-Length'));
 
-    const rawBody = await req.text();
-    console.log("Daily Briefing: Raw request body received (echo test):", rawBody);
+    const rawBody = await req.text(); // Read the raw request body as text
+    console.log("Daily Briefing: Raw request body received:", rawBody);
 
     if (!rawBody || rawBody.trim() === '') {
       console.error("Daily Briefing: Request body is empty or whitespace after reading raw text.");
@@ -195,6 +184,7 @@ serve(async (req: Request) => {
       }
     });
 
+    // Summarize data for the prompt more concisely
     const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks.` : 'No pending tasks.';
     const completedSummary = completedTasks.length > 0 ? `You've completed ${completedTasks.length} tasks today. Great job!` : 'No tasks completed yet.';
     const overdueSummary = overdueTasks.length > 0 ? `You have ${overdueTasks.length} overdue tasks.` : 'No overdue tasks.';
@@ -221,6 +211,8 @@ serve(async (req: Request) => {
     const response = await result.response;
     const briefingText = response.text();
     
+    console.log("Daily Briefing: Final briefing text to send:", briefingText); // New log here
+
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
@@ -234,7 +226,6 @@ serve(async (req: Request) => {
       status: 500,
     });
   }
-  */
 });
 
 export {};
