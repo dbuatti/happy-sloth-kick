@@ -4,6 +4,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
 import { isValid, isWithinInterval, parseISO, isBefore, startOfDay } from 'https://esm.sh/date-fns@2.30.0';
+// @ts-ignore
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0"; // Add this import
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -173,41 +175,14 @@ serve(async (req: Request) => {
     Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
 
     console.log("Daily Briefing: Constructed prompt length:", prompt.length);
-    console.log("Daily Briefing: Making Gemini API request...");
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+    console.log("Daily Briefing: Making Gemini API request using SDK...");
 
-    let geminiResponse;
-    try {
-      geminiResponse = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      });
-      console.log("Daily Briefing: Received raw Gemini response object.");
-    } catch (fetchError: any) {
-      console.error("Daily Briefing: Error during Gemini API fetch:", fetchError);
-      return new Response(JSON.stringify({ error: `Failed to connect to Gemini API: ${fetchError.message}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as before
 
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      console.error("Daily Briefing: Gemini API request failed:", geminiResponse.status, errorBody);
-      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
-    }
-
-    const geminiData = await geminiResponse.json();
-    if (!geminiData || !geminiData.candidates || geminiData.candidates.length === 0 || !geminiData.candidates[0].content || !geminiData.candidates[0].content.parts || geminiData.candidates[0].content.parts.length === 0) {
-      console.error("Daily Briefing: Invalid Gemini API response structure:", JSON.stringify(geminiData));
-      throw new Error("Invalid Gemini API response structure.");
-    }
-    const briefingText = geminiData.candidates[0].content.parts[0].text;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const briefingText = response.text();
     console.log("Daily Briefing: Received Gemini response.");
 
     return new Response(JSON.stringify({ briefing: briefingText }), {
