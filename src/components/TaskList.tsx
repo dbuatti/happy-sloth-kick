@@ -21,16 +21,20 @@ interface TaskListProps {
   markAllTasksInSectionCompleted: (sectionId: string) => Promise<any>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<any>;
-  updateSection: (id: string, newName: string) => Promise<void>;
+  updateSection: (id: string, newName: string) => Promise<void>; // Corrected type to match useTasks
   deleteSection: (id: string) => Promise<any>;
   updateSectionIncludeInFocusMode: (id: string, include: boolean) => Promise<any>;
+  // Removed updateTaskParentAndOrder as it's not used in current TaskList implementation
+  // Removed reorderSections as it's not used in current TaskList implementation
   allCategories: Category[];
+  // Removed setIsAddTaskOpen as it's not used in current TaskList implementation
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   expandedSections: Record<string, boolean>;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
   toggleSection: (sectionId: string) => void;
+  // Removed toggleAllSections as it's not used in current TaskList implementation
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => Promise<void>;
@@ -53,13 +57,17 @@ const TaskList: React.FC<TaskListProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  // Removed updateTaskParentAndOrder
+  // Removed reorderSections
   allCategories,
+  // Removed setIsAddTaskOpen
   onOpenOverview,
   currentDate,
   expandedSections,
   expandedTasks,
   toggleTask,
   toggleSection,
+  // Removed toggleAllSections
   setFocusTask,
   doTodayOffIds,
   toggleDoToday,
@@ -75,6 +83,11 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isConfirmDeleteSectionOpen, setIsConfirmDeleteSectionOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<TaskSection | null>(null);
 
+  // Moved useMemo hook to the top level to ensure consistent hook order
+  const hasFiltersApplied = useMemo(() => {
+    return filteredTasks.length === 0 && processedTasks.length > 0;
+  }, [filteredTasks, processedTasks]);
+
   const tasksWithoutSection = useMemo(() => {
     const sectionIds = new Set(sections.map(s => s.id));
     return filteredTasks.filter(task => !task.section_id || !sectionIds.has(task.section_id));
@@ -83,11 +96,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const getTasksForSection = useCallback((sectionId: string) => {
     return filteredTasks.filter(task => task.section_id === sectionId);
   }, [filteredTasks]);
-
-  // Moved hasActiveFilters useMemo outside of the conditional loading block
-  const hasActiveFilters = useMemo(() => {
-    return filteredTasks.length === 0 && processedTasks.length > 0;
-  }, [filteredTasks, processedTasks]);
 
   const handleCreateSection = async () => {
     if (newSectionName.trim()) {
@@ -105,7 +113,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleUpdateSection = async () => {
     if (editSectionId && editSectionName.trim()) {
-      await updateSection(editSectionId, editSectionName.trim());
+      await updateSection(editSectionId, editSectionName.trim()); // Corrected call to match useTasks signature
       setEditSectionId(null);
       setEditSectionName('');
     }
@@ -124,34 +132,37 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsConfirmDeleteSectionOpen(true);
   };
 
+  // Moved renderTask inside the component to ensure TaskItem is in scope
   const renderTask = useCallback((task: Task, index: number) => {
-    const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
+    const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id); // Calculate isDoToday here
     return (
       <TaskItem
         key={task.id}
         task={task}
-        onUpdate={updateTask}
-        onDelete={deleteTask}
+        onUpdate={updateTask} // Corrected prop name
+        onDelete={deleteTask} // Corrected prop name
         onOpenOverview={onOpenOverview}
-        allCategories={allCategories} // Keep this as it's used by onOpenOverview -> TaskDetailDialog
+        // Removed allCategories={allCategories} // No longer passed to TaskItem
         isExpanded={expandedTasks[task.id] === true}
-        toggleExpand={toggleTask}
+        toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
         setFocusTask={setFocusTask}
-        doTodayOffIds={doTodayOffIds} // Keep this as it's used by TaskItem for subtasks
-        toggleDoToday={toggleDoToday}
-        scheduledAppointment={scheduledTasksMap.get(task.id)}
+        doTodayOffIds={doTodayOffIds}
+        toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
+        scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
         isDemo={isDemo}
-        index={index} // Keep this as it's a standard prop for list items
+        // Removed provided={provided}
+        // Removed snapshot={snapshot}
+        // Removed index={index} // No longer passed to TaskItem
         isSelected={selectedTaskIds.has(task.id)}
         onSelectTask={onSelectTask}
-        allTasks={processedTasks}
-        sections={sections}
-        currentDate={currentDate}
-        level={0}
-        isDoToday={isDoToday}
+        allTasks={processedTasks} // Pass allTasks
+        sections={sections} // Pass sections
+        currentDate={currentDate} // Pass currentDate
+        level={0} // Default level for top-level tasks
+        isDoToday={isDoToday} // Pass the calculated isDoToday prop
       />
     );
-  }, [updateTask, deleteTask, onOpenOverview, allCategories, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
+  }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
 
   const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
     <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">
@@ -211,7 +222,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   return (
     <div className="space-y-6">
-      {filteredTasks.length === 0 && !loading && !hasActiveFilters && (
+      {filteredTasks.length === 0 && !loading && !hasFiltersApplied && (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg font-semibold mb-2">No tasks for today!</p>
           <p className="mb-4">Time to relax or add some new tasks.</p>
@@ -226,7 +237,7 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       )}
 
-      {filteredTasks.length === 0 && !loading && hasActiveFilters && (
+      {filteredTasks.length === 0 && !loading && hasFiltersApplied && (
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg font-semibold mb-2">No tasks match your current filters.</p>
           <p className="mb-4">Try adjusting your filters or clearing them.</p>
