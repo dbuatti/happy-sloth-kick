@@ -1,9 +1,13 @@
+// @ts-ignore
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+// @ts-ignore
+Deno.serve(async (req: Request) => { // Explicitly type req as Request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -85,7 +89,7 @@ Deno.serve(async (req) => {
     `;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Changed model to 'gemini-pro'
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -94,7 +98,7 @@ Deno.serve(async (req) => {
     let parsedData;
     try {
       parsedData = JSON.parse(responseText);
-    } catch (e) {
+    } catch (e: any) { // Changed to any
       console.error("Parse Appointment: Failed to parse Gemini response:", responseText);
       throw new Error("AI response was not valid JSON.");
     }
@@ -104,7 +108,7 @@ Deno.serve(async (req) => {
       status: 200,
     });
 
-  } catch (error: any) {
+  } catch (error: any) { // Changed to any
     console.error("Error in Edge Function 'parse-appointment-text':", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -1,9 +1,12 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// Removed import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Removed unused import
+// @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
+// @ts-ignore
 import { corsHeaders } from "../_shared/cors.ts";
 
-serve(async (req) => {
+serve(async (req: Request) => { // Explicitly type req as Request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +30,7 @@ serve(async (req) => {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Corrected model name
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
     const prompt = `
       You are an AI assistant that helps parse natural language into structured goal data.
@@ -102,7 +105,7 @@ serve(async (req) => {
     let parsedContent;
     try {
       parsedContent = JSON.parse(rawContent.replace(/```json\n|```/g, ''));
-    } catch (jsonError) {
+    } catch (jsonError: any) { // Changed to any
       console.error('Failed to parse AI response as JSON:', rawContent, jsonError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -114,7 +117,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) { // Changed to any
     console.error('Error in suggest_goal_details Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

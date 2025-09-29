@@ -1,12 +1,16 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+// @ts-ignore
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req: Request) => {
+serve(async (req: Request) => { // Explicitly type req as Request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -69,7 +73,7 @@ serve(async (req: Request) => {
     Keep it concise and positive.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Changed model to 'gemini-pro'
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -80,7 +84,7 @@ serve(async (req: Request) => {
       status: 200,
     });
 
-  } catch (error: any) {
+  } catch (error: any) { // Changed to any
     console.error("Error in Edge Function 'get-habit-challenge-suggestion':", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

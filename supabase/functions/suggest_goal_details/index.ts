@@ -1,4 +1,6 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+// @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
@@ -6,15 +8,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async (req: Request) => { // Explicitly type req as Request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log("Incoming request headers:", req.headers); // Log all incoming headers
-    const rawBody = await req.text(); // Read the raw request body as text
-    console.log("Raw request body:", rawBody); // Log the raw body
+    console.log("Incoming request headers:", req.headers);
+    const rawBody = await req.text();
+    console.log("Raw request body:", rawBody);
 
     if (!rawBody) {
       console.error("Error: Request body is empty.");
@@ -26,8 +28,8 @@ serve(async (req) => {
 
     let requestBody;
     try {
-      requestBody = JSON.parse(rawBody); // Attempt to parse the raw body as JSON
-    } catch (parseError) {
+      requestBody = JSON.parse(rawBody);
+    } catch (parseError: any) { // Changed to any
       console.error("Error parsing request body as JSON:", parseError);
       return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -36,7 +38,7 @@ serve(async (req) => {
     }
 
     const { prompt, categories, currentDate } = requestBody;
-    console.log("Received request body (parsed):", requestBody); // Log the parsed body
+    console.log("Received request body (parsed):", requestBody);
 
     if (!prompt) {
       console.error("Error: Prompt is required");
@@ -57,7 +59,7 @@ serve(async (req) => {
     console.log("GEMINI_API_KEY successfully retrieved.");
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
     const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
@@ -69,12 +71,12 @@ serve(async (req) => {
 
     Provide the response in JSON format with the following fields:
     {
-      "cleanedDescription": "string", // A concise version of the goal title
-      "description": "string | null", // A more detailed description if available, otherwise null
-      "category": "string", // The most relevant category name from the available categories, or 'General' if no good match
-      "type": "daily | weekly | monthly | 3-month | 6-month | 9-month | yearly | 3-year | 5-year | 7-year | 10-year", // Suggested goal type based on the description
-      "dueDate": "YYYY-MM-DD | null", // Suggested due date if mentioned, otherwise null
-      "parentGoalId": "string | null" // If this goal seems like a sub-goal of another, suggest a placeholder ID, otherwise null
+      "cleanedDescription": "string",
+      "description": "string | null",
+      "category": "string",
+      "type": "daily | weekly | monthly | 3-month | 6-month | 9-month | yearly | 3-year | 5-year | 7-year | 10-year",
+      "dueDate": "YYYY-MM-DD | null",
+      "parentGoalId": "string | null"
     }
     
     If no specific due date is mentioned, leave 'dueDate' as null.
@@ -94,7 +96,7 @@ serve(async (req) => {
     try {
       parsedData = JSON.parse(text.replace(/```json\n|\n```/g, ''));
       console.log("Parsed AI data:", parsedData);
-    } catch (parseError) {
+    } catch (parseError: any) { // Changed to any
       console.error("Failed to parse AI response as JSON:", text, parseError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,7 +108,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) { // Changed to any
     console.error('Error processing request in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
