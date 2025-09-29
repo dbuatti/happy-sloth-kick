@@ -1,6 +1,4 @@
 import { useState, useMemo, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
-// Removed Button import
-// Removed ChevronsDownUp import
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Skeleton } from '@/components/ui/skeleton';
@@ -69,8 +67,8 @@ interface TaskListProps {
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  selectedTaskIds: Set<string>; // New prop for selected task IDs
-  onSelectTask: (taskId: string, isSelected: boolean) => void; // New prop for selection handler
+  selectedTaskIds: Set<string>;
+  onSelectTask: (taskId: string, isSelected: boolean) => void;
 }
 
 // Helper component to wrap SortableSectionHeader with useSortable
@@ -169,8 +167,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     toggleDoToday,
     scheduledTasksMap,
     isDemo = false,
-    selectedTaskIds, // Destructure new prop
-    onSelectTask, // Destructure new prop
+    selectedTaskIds,
+    onSelectTask,
   } = props;
 
   const userId = '';
@@ -488,7 +486,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     isOverlay={false}
                     isNoSection={isNoSection}
                     isDemo={isDemo}
-                    insertionIndicator={insertionIndicator}
+                    insertionIndicator={insertionIndicator} // Pass insertionIndicator
                   />
 
                   <div className={cn(
@@ -521,8 +519,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             isDemo={isDemo}
                             showDragHandle={true}
                             insertionIndicator={insertionIndicator}
-                            isSelected={selectedTaskIds.has(task.id)} // Pass new prop
-                            onSelectTask={onSelectTask} // Pass new prop
+                            isSelected={selectedTaskIds.has(task.id)}
+                            onSelectTask={onSelectTask}
                           />
                         ))}
                       </ul>
@@ -574,7 +572,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     onOpenReorderTasks={handleOpenReorderTasks}
                     isOverlay={true}
                     isNoSection={activeItemData.id === 'no-section-header'}
-                    insertionIndicator={null}
+                    insertionIndicator={null} // No insertion indicator for the overlay itself
                   />
                 ) : (
                   <div className="rotate-2">
@@ -595,8 +593,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
                       showDragHandle={true}
-                      isSelected={false} // Selection is not relevant for drag overlay
-                      onSelectTask={() => {}} // No-op for selection in drag overlay
+                      isSelected={false}
+                      onSelectTask={() => {}}
                     />
                   </div>
                 )

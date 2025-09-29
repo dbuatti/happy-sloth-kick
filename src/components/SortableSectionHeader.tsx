@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { UniqueIdentifier } from '@dnd-kit/core';
-import { showSuccess } from '@/utils/toast'; // Removed showError
+import { showSuccess } from '@/utils/toast';
 
 interface SortableSectionHeaderProps {
   section: TaskSection;
@@ -96,7 +96,7 @@ const SortableSectionHeader: React.FC<SortableSectionHeaderProps> = ({
         isNoSection && "bg-gray-100 dark:bg-gray-800",
         showInsertionBefore && "border-t-2 border-primary",
         showInsertionAfter && "border-b-2 border-primary",
-        showInsertionInto && "border-2 border-primary bg-primary/10",
+        showInsertionInto && "border-2 border-primary bg-primary/10", // Highlight for 'into'
       )}
     >
       {showInsertionBefore && (
