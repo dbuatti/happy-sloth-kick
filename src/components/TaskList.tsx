@@ -1,16 +1,13 @@
-// Removed 'declare module 'react-beautiful-dnd';' - this should be in a global .d.ts file or handled by @types.
-
 import React, { useState, useCallback, useMemo } from 'react';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
-// Removed import type { DraggableProvided, DraggableStateSnapshot } from 'react-beautiful-dnd';
 import { Button } from '@/components/ui/button';
 import { Plus, ChevronDown, ChevronRight, Settings, EyeOff, Eye } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import QuickAddTask from './QuickAddTask';
-import TaskItem from './TaskItem'; // Ensure TaskItem is imported
-import { cn } from '@/lib/utils'; // Import cn for conditional classNames
+import TaskItem from './TaskItem';
+import { cn } from '@/lib/utils';
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -22,20 +19,16 @@ interface TaskListProps {
   markAllTasksInSectionCompleted: (sectionId: string) => Promise<any>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<any>;
-  updateSection: (id: string, newName: string) => Promise<void>; // Corrected type to match useTasks
+  updateSection: (id: string, newName: string) => Promise<void>;
   deleteSection: (id: string) => Promise<any>;
   updateSectionIncludeInFocusMode: (id: string, include: boolean) => Promise<any>;
-  // Removed updateTaskParentAndOrder as it's not used in current TaskList implementation
-  // Removed reorderSections as it's not used in current TaskList implementation
   allCategories: Category[];
-  // Removed setIsAddTaskOpen as it's not used in current TaskList implementation
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   expandedSections: Record<string, boolean>;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
   toggleSection: (sectionId: string) => void;
-  // Removed toggleAllSections as it's not used in current TaskList implementation
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => Promise<void>;
@@ -58,17 +51,13 @@ const TaskList: React.FC<TaskListProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  // Removed updateTaskParentAndOrder
-  // Removed reorderSections
   allCategories,
-  // Removed setIsAddTaskOpen
   onOpenOverview,
   currentDate,
   expandedSections,
   expandedTasks,
   toggleTask,
   toggleSection,
-  // Removed toggleAllSections
   setFocusTask,
   doTodayOffIds,
   toggleDoToday,
@@ -109,7 +98,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const handleUpdateSection = async () => {
     if (editSectionId && editSectionName.trim()) {
-      await updateSection(editSectionId, editSectionName.trim()); // Corrected call to match useTasks signature
+      await updateSection(editSectionId, editSectionName.trim());
       setEditSectionId(null);
       setEditSectionName('');
     }
@@ -128,34 +117,28 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsConfirmDeleteSectionOpen(true);
   };
 
-  // Moved renderTask inside the component to ensure TaskItem is in scope
-  const renderTask = useCallback((task: Task /* Removed index: number */) => {
-    const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id); // Calculate isDoToday here
+  const renderTask = useCallback((task: Task) => {
+    const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
     return (
       <TaskItem
         key={task.id}
         task={task}
-        onUpdate={updateTask} // Corrected prop name
-        onDelete={deleteTask} // Corrected prop name
+        onUpdate={updateTask}
+        onDelete={deleteTask}
         onOpenOverview={onOpenOverview}
-        // Removed allCategories={allCategories} // This line was causing the error
         isExpanded={expandedTasks[task.id] === true}
-        toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
+        toggleExpand={toggleTask}
         setFocusTask={setFocusTask}
-        // Removed doTodayOffIds={doTodayOffIds}
-        toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
-        scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
+        toggleDoToday={toggleDoToday}
+        scheduledAppointment={scheduledTasksMap.get(task.id)}
         isDemo={isDemo}
-        // Removed provided={provided}
-        // Removed snapshot={snapshot}
-        // Removed index={index}
         isSelected={selectedTaskIds.has(task.id)}
         onSelectTask={onSelectTask}
-        allTasks={processedTasks} // Pass allTasks
-        sections={sections} // Pass sections
-        currentDate={currentDate} // Pass currentDate
-        level={0} // Default level for top-level tasks
-        isDoToday={isDoToday} // Pass the calculated isDoToday prop
+        allTasks={processedTasks}
+        sections={sections}
+        currentDate={currentDate}
+        level={0}
+        isDoToday={isDoToday}
       />
     );
   }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, doTodayOffIds, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate]);
@@ -238,8 +221,8 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       )}
 
-      {/* "No Section" block - always rendered */}
-      <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && "hidden")}>
+      {/* "No Section" block - always rendered to ensure consistent hook calls for QuickAddTask */}
+      <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
         {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
         <div className="p-3 space-y-2">
           {expandedSections['no-section'] !== false && (
@@ -258,13 +241,13 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       </div>
 
-      {/* Mapped sections - each section div is always rendered */}
+      {/* Mapped sections - each section div is always rendered to ensure consistent hook calls for QuickAddTask */}
       {sections.map(section => {
         const tasksInThisSection = getTasksForSection(section.id);
-        const showSection = tasksInThisSection.length > 0 || isDemo;
+        const showSectionContent = tasksInThisSection.length > 0 || isDemo; // Determines if content is visible
 
         return (
-          <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSection && "hidden")}>
+          <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
             {renderSectionHeader(section, tasksInThisSection)}
             <div className="p-3 space-y-2">
               {expandedSections[section.id] !== false && (

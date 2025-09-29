@@ -213,6 +213,11 @@ serve(async (req: Request) => {
     }
 
     const geminiData = await geminiResponse.json();
+    // Add robust check here
+    if (!geminiData || !geminiData.candidates || geminiData.candidates.length === 0 || !geminiData.candidates[0].content || !geminiData.candidates[0].content.parts || geminiData.candidates[0].content.parts.length === 0) {
+      console.error("Daily Briefing: Invalid Gemini API response structure:", JSON.stringify(geminiData));
+      throw new Error("Invalid Gemini API response structure.");
+    }
     const briefingText = geminiData.candidates[0].content.parts[0].text;
     console.log("Daily Briefing: Received Gemini response.");
 
