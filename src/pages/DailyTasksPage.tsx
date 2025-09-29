@@ -9,6 +9,9 @@ import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FilterPanel from '@/components/FilterPanel';
+import DailyBriefingCard from '@/components/DailyBriefingCard'; // Import DailyBriefingCard
+import { getDailyBriefing } from '@/integrations/supabase/api'; // Import getDailyBriefing
+import { useQuery } from '@tanstack/react-query'; // Import useQuery
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -164,6 +167,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setSectionFilter('all');
   }, []);
 
+  // Fetch daily briefing
+  const { data: dailyBriefing, isLoading: isBriefingLoading, isError: isBriefingError } = useQuery<string | null, Error>({
+    queryKey: ['dailyBriefing', userId, currentDate.toISOString().split('T')[0]],
+    queryFn: () => getDailyBriefing(userId!, currentDate),
+    enabled: !!userId && !isDemo,
+    staleTime: 5 * 60 * 1000, // Briefing can be stale for 5 minutes
+  });
+
   return (
     <div className="flex flex-col h-full w-full"> {/* Main container for the page */}
       <DailyTasksHeader
@@ -210,42 +221,49 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        onClearFilters={handleClearFilters} // Pass the new prop
+        onClearFilters={handleClearFilters}
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Main scrollable content area */}
-        <TaskList
-          processedTasks={processedTasks}
-          filteredTasks={filteredTasks}
-          loading={tasksLoading}
-          handleAddTask={handleAddTask}
-          updateTask={updateTask}
-          deleteTask={deleteTask}
-          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-          sections={sections}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          updateTaskParentAndOrder={updateTaskParentAndOrder}
-          reorderSections={reorderSections}
-          allCategories={allCategories}
-          setIsAddTaskOpen={() => {}}
-          onOpenOverview={handleOpenOverview}
-          currentDate={currentDate}
-          expandedSections={expandedSections}
-          expandedTasks={expandedTasks}
-          toggleTask={toggleTask}
-          toggleSection={toggleSection}
-          toggleAllSections={toggleAllSections}
-          setFocusTask={setFocusTask}
-          doTodayOffIds={doTodayOffIds}
-          toggleDoToday={toggleDoToday}
-          scheduledTasksMap={scheduledTasksMap}
-          isDemo={isDemo}
-          selectedTaskIds={selectedTaskIds}
-          onSelectTask={handleSelectTask}
+        <DailyBriefingCard
+          briefing={dailyBriefing}
+          isLoading={isBriefingLoading}
+          isError={isBriefingError}
         />
+        <div className="mt-6"> {/* Add some spacing below the briefing card */}
+          <TaskList
+            processedTasks={processedTasks}
+            filteredTasks={filteredTasks}
+            loading={tasksLoading}
+            handleAddTask={handleAddTask}
+            updateTask={updateTask}
+            deleteTask={deleteTask}
+            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+            sections={sections}
+            createSection={createSection}
+            updateSection={updateSection}
+            deleteSection={deleteSection}
+            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+            updateTaskParentAndOrder={updateTaskParentAndOrder}
+            reorderSections={reorderSections}
+            allCategories={allCategories}
+            setIsAddTaskOpen={() => {}}
+            onOpenOverview={handleOpenOverview}
+            currentDate={currentDate}
+            expandedSections={expandedSections}
+            expandedTasks={expandedTasks}
+            toggleTask={toggleTask}
+            toggleSection={toggleSection}
+            toggleAllSections={toggleAllSections}
+            setFocusTask={setFocusTask}
+            doTodayOffIds={doTodayOffIds}
+            toggleDoToday={toggleDoToday}
+            scheduledTasksMap={scheduledTasksMap}
+            isDemo={isDemo}
+            selectedTaskIds={selectedTaskIds}
+            onSelectTask={handleSelectTask}
+          />
+        </div>
       </div>
 
       <FloatingAddTaskButton onClick={() => handleAddTask({ description: '', category: allCategories[0]?.id || '', priority: 'medium' })} isDemo={isDemo} />

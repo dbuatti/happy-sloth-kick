@@ -52,9 +52,38 @@ export const suggestTaskDetails = async (
   }
 };
 
-export const getDailyBriefing = async (userId: string, date: Date) => {
-  console.log('Getting daily briefing for user:', userId, 'on date:', format(date, 'yyyy-MM-dd'));
-  return "This is a placeholder daily briefing from AI.";
+export const getDailyBriefing = async (userId: string, date: Date): Promise<string | null> => {
+  console.log('API: Calling Daily Briefing Edge Function for user:', userId, 'on date:', format(date, 'yyyy-MM-dd'));
+  try {
+    // Get local day start and end in ISO format for accurate filtering in the Edge Function
+    const localDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+    const localDayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+
+    const { data, error } = await supabase.functions.invoke('daily-briefing', {
+      body: JSON.stringify({
+        userId,
+        localDayStartISO: localDayStart.toISOString(),
+        localDayEndISO: localDayEnd.toISOString(),
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (error) {
+      console.error('Error invoking daily-briefing Edge Function:', error);
+      return null;
+    }
+
+    // The data returned from the Edge Function is expected to have a 'briefing' property
+    const briefingResult = data as { briefing: string };
+    console.log('API: Received daily briefing:', briefingResult.briefing);
+    return briefingResult.briefing;
+
+  } catch (error) {
+    console.error('API: Error in getDailyBriefing:', error);
+    return null;
+  }
 };
 
 export const getHabitChallengeSuggestion = async (userId: string, habitId: string) => {
