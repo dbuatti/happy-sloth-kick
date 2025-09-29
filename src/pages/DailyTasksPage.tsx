@@ -198,7 +198,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setSectionFilter={setSectionFilter}
         sections={sections}
         allCategories={allCategories}
-        onClearFilters={handleClearFilters} // Pass the new prop
+        onClearFilters={handleClearFilters}
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6"> {/* Main scrollable content area */}
@@ -209,8 +209,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           handleAddTask={handleAddTask}
           updateTask={updateTask}
           deleteTask={deleteTask}
-          bulkUpdateTasks={bulkUpdateTasks}
-          bulkDeleteTasks={bulkDeleteTasks}
+          // Removed bulkUpdateTasks and bulkDeleteTasks as they are not props of TaskList
           markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
           sections={sections}
           createSection={createSection}

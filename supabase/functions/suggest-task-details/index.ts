@@ -1,227 +1,141 @@
+/// <reference lib="deno.ns" />
+/// <reference lib="deno.unstable" />
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/**
- * Calculates various future dates relative to a given current date.
- * @param currentDateString The current date in 'YYYY-MM-DD' format.
- * @returns An object containing tomorrow's date, next Friday's date, and next week's date in 'YYYY-MM-DD' format.
- */
-function calculateFutureDates(currentDateString: string) {
-  const today = new Date(currentDateString);
-  
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  const tomorrowDateString = tomorrow.toISOString().split('T')[0];
-
-  const nextFriday = new Date(today);
-  const currentDay = today.getDay(); // Sunday = 0, Friday = 5
-  const daysUntilFriday = (5 - currentDay + 7) % 7;
-  // If today is Friday, add 7 days to get next Friday, otherwise add daysUntilFriday
-  nextFriday.setDate(today.getDate() + (daysUntilFriday === 0 ? 7 : daysUntilFriday));
-  const nextFridayDateString = nextFriday.toISOString().split('T')[0];
-
-  const nextWeek = new Date(today);
-  nextWeek.setDate(today.getDate() + 7);
-  const nextWeekDateString = nextWeek.toISOString().split('T')[0];
-
-  return { tomorrowDateString, nextFridayDateString, nextWeekDateString };
-}
-
-Deno.serve(async (req) => {
-  // Handle CORS preflight requests
+serve(async (req: Request) => { // Explicitly type req as Request
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     const { description, categories, currentDate } = await req.json();
-    console.log("Suggest Details: Received request:", { description, categories, currentDate });
 
-    // Validate required input parameters
-    if (!description) {
-      return new Response(JSON.stringify({ error: 'Task description is required.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (!description || !categories || !currentDate) {
+      return new Response(JSON.stringify({ error: 'Missing required parameters: description, categories, or currentDate' }), {
         status: 400,
-      });
-    }
-
-    // Retrieve Gemini API key from environment variables
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      console.error("Suggest Details: GEMINI_API_KEY not set.");
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
       });
     }
-    console.log("Suggest Details: GEMINI_API_KEY loaded.");
 
-    const categoryNames = categories.map((cat: { name: string }) => cat.name).join(', ');
-    const today = new Date(currentDate);
-    const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' });
-
-    // Calculate dynamic dates using the helper function
-    const { tomorrowDateString, nextFridayDateString, nextWeekDateString } = calculateFutureDates(currentDate);
-
-    // Construct the prompt for the Gemini AI
-    const prompt = `You are a helpful assistant that extracts structured task data from natural language descriptions.
-    Today's date is ${currentDate} (${dayOfWeek}).
-    
-    Extract the following fields in JSON format:
-    - 'category': The most relevant category from the provided list. If no clear category, default to 'General'.
-    - 'priority': 'low', 'medium', 'high', or 'urgent'. Default to 'medium'.
-    - 'dueDate': The due date in 'YYYY-MM-DD' format. If no specific date, leave null.
-    - 'remindAt': The reminder date and time in 'YYYY-MM-DDTHH:MM:SSZ' (ISO 8601 UTC) format. If no specific reminder, leave null.
-    - 'section': A suggested section name (e.g., 'Work', 'Personal', 'Groceries'). If no clear section, leave null.
-    - 'cleanedDescription': The original description with extracted keywords removed.
-    - 'link': A URL link if mentioned in the description (e.g., 'through the link', 'check this website'). If no link, leave null.
-    - 'notes': Any additional notes or details that should be extracted, or null if none.
-
-    Categories available: ${categoryNames}
-
-    Example 1:
-    Description: "Buy groceries for dinner by tomorrow high priority at 6pm personal"
-    Output:
-    {
-      "category": "Personal",
-      "priority": "high",
-      "dueDate": "${tomorrowDateString}",
-      "remindAt": "${tomorrowDateString}T18:00:00Z",
-      "section": "Groceries",
-      "cleanedDescription": "Buy groceries for dinner",
-      "link": null,
-      "notes": null
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY not set in environment variables' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    Example 2:
-    Description: "Finish report for work urgent due Friday, see details at https://example.com/report"
-    Output:
-    {
-      "category": "Work",
-      "priority": "urgent",
-      "dueDate": "${nextFridayDateString}",
-      "remindAt": null,
-      "section": "Work",
-      "cleanedDescription": "Finish report",
-      "link": "https://example.com/report",
-      "notes": null
-    }
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    Example 3:
-    Description: "Call mom"
-    Output:
-    {
-      "category": "General",
-      "priority": "medium",
-      "dueDate": null,
-      "remindAt": null,
-      "section": null,
-      "cleanedDescription": "Call mom",
-      "link": null,
-      "notes": null
-    }
+    const categoryNames = categories.map((c: { name: string }) => c.name).join(', ');
 
-    Example 4:
-    Description: "Schedule dentist appointment next week, check this site: dentist.com. Remember to ask about the new insurance."
-    Output:
-    {
-      "category": "Personal",
-      "priority": "medium",
-      "dueDate": "${nextWeekDateString}",
-      "remindAt": null,
-      "section": "Appointments",
-      "cleanedDescription": "Schedule dentist appointment",
-      "link": "https://dentist.com",
-      "notes": "Remember to ask about the new insurance."
-    }
-    
-    Your response MUST be a valid JSON object. Do NOT include any other text or markdown outside the JSON.
-    Task Description: "${description}"`;
+    const prompt = `You are an AI assistant that helps organize tasks.
+Given a task description, a list of available categories, and the current date,
+suggest a cleaned description, a category, priority, due date, notes, reminder time, section, and a relevant link.
+The output must be a JSON object matching the following TypeScript interface:
 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
+interface AISuggestionResult {
+  cleanedDescription: string;
+  category: string; // The name of the suggested category from the provided list
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  dueDate: string | null; // YYYY-MM-DD format, or null if no specific date
+  notes: string | null;
+  remindAt: string | null; // ISO string format (e.g., "2023-10-27T10:00:00Z"), or null
+  section: string | null; // The name of the suggested section, or null
+  link: string | null; // A relevant URL, or null
+}
 
-    // Call the Gemini API
-    const geminiResponse = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    });
+Available Categories: [${categoryNames}]
+Current Date: ${currentDate}
 
-    // Handle non-OK responses from Gemini API
-    if (!geminiResponse.ok) {
-      const errorBody = await geminiResponse.text();
-      console.error("Suggest Details: Gemini API request failed:", geminiResponse.status, errorBody);
-      throw new Error(`Gemini API request failed with status ${geminiResponse.status}: ${errorBody}`);
-    }
+Example 1:
+Description: "Buy groceries for dinner tomorrow high priority"
+Categories: ["Personal", "Work", "Health"]
+Current Date: 2023-10-26
+Output:
+{
+  "cleanedDescription": "Buy groceries for dinner",
+  "category": "Personal",
+  "priority": "high",
+  "dueDate": "2023-10-27",
+  "notes": null,
+  "remindAt": null,
+  "section": null,
+  "link": null
+}
 
-    const geminiData = await geminiResponse.json();
-    let responseText = geminiData.candidates[0].content.parts[0].text;
-    
-    // Clean the response text to ensure it's pure JSON by removing markdown code blocks
-    responseText = responseText.replace(/```json\n|```/g, '').trim();
+Example 2:
+Description: "Finish report by EOD urgent work"
+Categories: ["Personal", "Work", "Health"]
+Current Date: 2023-10-26
+Output:
+{
+  "cleanedDescription": "Finish report",
+  "category": "Work",
+  "priority": "urgent",
+  "dueDate": "2023-10-26",
+  "notes": null,
+  "remindAt": null,
+  "section": null,
+  "link": null
+}
 
-    let parsedData;
+Example 3:
+Description: "Call John about project status next Tuesday at 10 AM"
+Categories: ["Personal", "Work", "Health"]
+Current Date: 2023-10-26
+Output:
+{
+  "cleanedDescription": "Call John about project status",
+  "category": "Work",
+  "priority": "medium",
+  "dueDate": "2023-10-31",
+  "remindAt": "2023-10-31T10:00:00Z",
+  "notes": null,
+  "section": null,
+  "link": null
+}
+
+Now, process the following:
+Description: "${description}"
+Categories: [${categoryNames}]
+Current Date: ${currentDate}
+Output:
+`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    // Attempt to parse the JSON string from the AI response
+    let aiSuggestion: any;
     try {
-      parsedData = JSON.parse(responseText);
-    } catch (e) {
-      console.error("Suggest Details: Failed to parse Gemini response:", responseText);
-      throw new Error("AI response was not valid JSON.");
+      aiSuggestion = JSON.parse(text);
+    } catch (parseError) {
+      console.error('Failed to parse AI response as JSON:', text, parseError);
+      return new Response(JSON.stringify({ error: 'AI response was not valid JSON', rawResponse: text }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    /**
-     * Parses a date string into an ISO 8601 string if valid, otherwise returns null.
-     * @param dateStr The date string to parse.
-     * @returns ISO 8601 string or null.
-     */
-    const parseDateString = (dateStr: string | null) => {
-      if (!dateStr) return null;
-      try {
-        const date = new Date(dateStr);
-        return isNaN(date.getTime()) ? null : date.toISOString();
-      } catch {
-        return null;
-      }
-    };
-
-    // Process and format the extracted data
-    const finalDueDate = parsedData.dueDate ? parseDateString(parsedData.dueDate) : null;
-    const finalRemindAt = parsedData.remindAt ? parseDateString(parsedData.remindAt) : null;
-
-    // Find the matching category ID, defaulting to 'General' or the first available category
-    const matchedCategory = categories.find((cat: { name: string }) => cat.name.toLowerCase() === parsedData.category.toLowerCase());
-    const finalCategory = matchedCategory ? matchedCategory.id : categories.find((cat: { name: string }) => cat.name.toLowerCase() === 'general')?.id || categories[0]?.id;
-
-    const responseData = {
-      category: finalCategory,
-      priority: parsedData.priority || 'medium',
-      dueDate: finalDueDate,
-      remindAt: finalRemindAt,
-      section: parsedData.section || null,
-      cleanedDescription: parsedData.cleanedDescription || description,
-      link: parsedData.link || null,
-      notes: parsedData.notes || null,
-    };
-
-    // Return the structured response
-    return new Response(JSON.stringify(responseData), {
+    return new Response(JSON.stringify(aiSuggestion), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
-  } catch (error: any) {
-    // Catch and log any errors during the function execution
-    console.error("Error in Edge Function 'suggest-task-details' (outer catch):", error);
-    return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  } catch (error: Error) { // Type assert error to Error
+    console.error('Error in Edge Function:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-export {};

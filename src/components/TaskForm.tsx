@@ -21,6 +21,7 @@ import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import ImageUploadArea from './ImageUploadArea';
+import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }).trim(),
@@ -111,6 +112,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   className,
   allTasks,
 }) => {
+  const { user } = useAuth(); // Get the authenticated user
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -194,7 +196,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     const toastId = showLoading('Getting AI suggestions...');
-    console.log('Toast ID generated:', toastId); // Explicitly re-added log
     try {
       const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
       const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
@@ -232,7 +233,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
       showError('Failed to get AI suggestions. Please try again.');
     } finally {
       setIsSuggesting(false);
-      console.log('Attempting to dismiss toast with ID:', toastId); // Explicitly re-added log
       dismissToast(toastId);
     }
   }, [description, allCategories, sections, setValue, currentDate]);
@@ -261,8 +261,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
 
     if (imageFile) {
-      const userId = 'anonymous'; // This needs to be the actual user ID
-      const filePath = `${userId}/${uuidv4()}`;
+      if (!user?.id) {
+        showError('User not authenticated for image upload.');
+        setIsSaving(false);
+        return;
+      }
+      const filePath = `${user.id}/${uuidv4()}`; // Use dynamic user ID
       const { error: uploadError } = await supabase.storage
         .from('taskimages')
         .upload(filePath, imageFile);

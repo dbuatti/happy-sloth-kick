@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { supabase } from './client'; // Import supabase client
 
 export interface AICategory {
   id: string;
@@ -17,31 +18,38 @@ export interface AISuggestionResult {
   link: string | null;
 }
 
-// Placeholder functions for AI integration
 export const suggestTaskDetails = async (
   description: string,
   categories: AICategory[],
   currentDate: Date
-): Promise<AISuggestionResult | null> => { // Explicit return type
-  console.log('API: Entering suggestTaskDetails...'); // NEW LOG
-  // In a real scenario, this would call an AI service
-  console.log('API: AI Suggestion for task:', description, 'with categories:', categories.map(c => c.name), 'on date:', format(currentDate, 'yyyy-MM-dd'));
-  
-  // Simulate AI response
-  const defaultCategoryName = categories.length > 0 ? categories[0].name : 'General';
+): Promise<AISuggestionResult | null> => {
+  console.log('API: Calling AI Suggestion Edge Function...');
+  try {
+    const { data, error } = await supabase.functions.invoke('suggest-task-details', {
+      body: JSON.stringify({
+        description,
+        categories,
+        currentDate: format(currentDate, 'yyyy-MM-dd'),
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  const result: AISuggestionResult = { // Explicitly type the result object
-    cleanedDescription: description,
-    category: defaultCategoryName,
-    priority: 'medium', // Default priority
-    dueDate: null,
-    notes: null,
-    remindAt: null,
-    section: null,
-    link: null,
-  };
-  console.log('API: Exiting suggestTaskDetails with result:', result); // NEW LOG
-  return result;
+    if (error) {
+      console.error('Error invoking Edge Function:', error);
+      return null;
+    }
+
+    // The data returned from the Edge Function is already the AISuggestionResult
+    const result = data as AISuggestionResult;
+    console.log('API: Received AI suggestion result:', result);
+    return result;
+
+  } catch (error) {
+    console.error('API: Error in suggestTaskDetails:', error);
+    return null;
+  }
 };
 
 export const getDailyBriefing = async (userId: string, date: Date) => {
