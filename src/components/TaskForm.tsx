@@ -3,27 +3,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarUI } from "@/components/ui/calendar"; // Renamed import
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, BellRing, Lightbulb } from 'lucide-react'; // Renamed Calendar import to CalendarIcon
+import { Calendar as CalendarIcon, BellRing, Lightbulb } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
 import SectionSelector from "./SectionSelector";
 import { format, setHours, setMinutes, parseISO, isValid } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import NewTaskData
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api'; // Import AISuggestionResult
-import { showError, showLoading, dismissToast } from '@/utils/toast'; // Import showLoading and dismissToast
+import * as z from 'zod'; // Corrected import statement
+import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
+import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import ImageUploadArea from './ImageUploadArea';
 
 const taskFormSchema = z.object({
-  description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }),
+  description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }).trim(),
   category: z.string().min(1, { message: 'Category is required.' }),
   priority: z.string().min(1, { message: 'Priority is required.' }),
   dueDate: z.date().nullable().optional().transform(v => v ?? null),
@@ -78,7 +78,7 @@ export type TaskFormData = z.infer<typeof taskFormSchema>;
 
 interface TaskFormProps {
   initialData?: Partial<Task> | null;
-  onSave: (taskData: NewTaskData) => Promise<any>; // Changed from TaskFormData to NewTaskData
+  onSave: (taskData: NewTaskData) => Promise<any>;
   onCancel: () => void;
   sections: TaskSection[];
   allCategories: Category[];
@@ -91,7 +91,7 @@ interface TaskFormProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   className?: string;
-  allTasks?: Task[]; // This prop should now receive processedTasks
+  allTasks?: Task[];
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({
@@ -109,7 +109,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   className,
-  allTasks, // This is the prop, assumed to be processedTasks
+  allTasks,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -144,7 +144,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
 
     let parentTask: Task | undefined;
-    if (parentTaskId && allTasks) { // Use allTasks (processed) here
+    if (parentTaskId && allTasks) {
       parentTask = allTasks.find(t => t.id === parentTaskId);
     }
 
@@ -193,15 +193,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
       return;
     }
     setIsSuggesting(true);
-    const toastId = showLoading('Getting AI suggestions...'); // Show loading toast
+    const toastId = showLoading('Getting AI suggestions...');
+    console.log('Toast ID generated:', toastId);
     try {
-      const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name })); // Use AICategory
+      const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
       const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
 
       if (suggestions) {
         setValue('description', suggestions.cleanedDescription);
         setValue('priority', suggestions.priority);
-        setValue('category', allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories[0]?.id || ''); // Map AI category name to ID
+        setValue('category', allCategories.find(cat => cat.name.toLowerCase() === suggestions.category.toLowerCase())?.id || allCategories[0]?.id || '');
         
         if (suggestions.dueDate) {
           setValue('dueDate', parseISO(suggestions.dueDate));
@@ -217,7 +218,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
           }
         }
 
-        // Fix: Ensure suggestions.section is a string before comparison
         const suggestedSection = sections.find(s => s.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''));
         if (suggestedSection) {
           setValue('sectionId', suggestedSection.id);
@@ -232,7 +232,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
       showError('Failed to get AI suggestions. Please try again.');
     } finally {
       setIsSuggesting(false);
-      dismissToast(toastId); // Dismiss toast
+      console.log('Attempting to dismiss toast with ID:', toastId);
+      dismissToast(toastId);
     }
   }, [description, allCategories, sections, setValue, currentDate]);
 
@@ -294,7 +295,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       image_url: imageUrlToSave,
     };
 
-    const success = await onSave(newTaskData); // Call onSave with NewTaskData
+    const success = await onSave(newTaskData);
     setIsSaving(false);
     if (success) {
       onCancel();
@@ -416,7 +417,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <CalendarUI // Corrected component usage
+                  <CalendarUI
                     mode="single"
                     selected={field.value || undefined}
                     onSelect={field.onChange}
@@ -475,7 +476,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <CalendarUI // Corrected component usage
+                  <CalendarUI
                     mode="single"
                     selected={field.value || undefined}
                     onSelect={field.onChange}
