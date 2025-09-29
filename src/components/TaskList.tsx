@@ -73,7 +73,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isConfirmDeleteSectionOpen, setIsConfirmDeleteSectionOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<TaskSection | null>(null);
 
-  // Calculate tasksWithoutSection directly
   const sectionIds = useMemo(() => new Set(sections.map(s => s.id)), [sections]);
   const tasksWithoutSection = filteredTasks.filter(task => !task.section_id || !sectionIds.has(task.section_id));
 
@@ -116,7 +115,7 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsConfirmDeleteSectionOpen(true);
   }, []);
 
-  const renderTask = (task: Task) => {
+  const renderTask = useCallback((task: Task) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
     return (
       <TaskItem
@@ -140,9 +139,9 @@ const TaskList: React.FC<TaskListProps> = ({
         isDoToday={isDoToday}
       />
     );
-  };
+  }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate, doTodayOffIds]);
 
-  const renderSectionHeader = (section: TaskSection, tasksInThisSection: Task[]) => (
+  const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
     <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">
       <div className="flex items-center gap-2">
         <Button
@@ -192,7 +191,8 @@ const TaskList: React.FC<TaskListProps> = ({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
-  );
+  ), [expandedSections, editSectionId, editSectionName, toggleSection, handleUpdateSection, markAllTasksInSectionCompleted, updateSectionIncludeInFocusMode, confirmDeleteSection, handleEditSection]);
+
 
   // Calculate these values directly
   const hasFiltersApplied = filteredTasks.length === 0 && processedTasks.length > 0;
