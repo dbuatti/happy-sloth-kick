@@ -56,39 +56,22 @@ serve(async (req: Request) => {
   try {
     console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
 
-    // Check if the body stream is readable and not locked
-    if (!req.body || req.body.locked || !req.body.readable) {
-      console.error("Daily Briefing: Request body is not readable or already consumed.");
-      return new Response(JSON.stringify({ error: 'Request body is not readable or already consumed.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    const rawBody = await req.text(); // Read the raw request body as text
-    console.log("Daily Briefing: Raw request body:", rawBody);
-
-    if (!rawBody || rawBody.trim() === '') {
-      console.error("Daily Briefing: Request body is empty or whitespace after reading.");
-      return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
     let requestBodyParsed;
     try {
-      requestBodyParsed = JSON.parse(rawBody);
+      requestBodyParsed = await req.json();
+      console.log("Daily Briefing: Received request (parsed):", requestBodyParsed);
     } catch (jsonParseError: any) {
-      console.error("Daily Briefing: Failed to parse request body as JSON:", jsonParseError.message);
-      return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${jsonParseError.message}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
+      if (jsonParseError instanceof SyntaxError && jsonParseError.message.includes('JSON')) {
+        console.error("Daily Briefing: Failed to parse request body as JSON (likely empty or invalid):", jsonParseError.message);
+        return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      throw jsonParseError; // Re-throw other parsing errors
     }
 
     const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
-    console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
