@@ -196,11 +196,8 @@ const TaskList: React.FC<TaskListProps> = ({
   ), [expandedSections, editSectionId, editSectionName, toggleSection, handleUpdateSection, markAllTasksInSectionCompleted, updateSectionIncludeInFocusMode, confirmDeleteSection, handleEditSection]);
 
 
-  // These useMemo calls are now at the top level, before any conditional returns.
-  const hasFiltersApplied = useMemo(() => {
-    return filteredTasks.length === 0 && processedTasks.length > 0;
-  }, [filteredTasks, processedTasks]);
-
+  // Calculate these values directly instead of using useMemo
+  const hasFiltersApplied = filteredTasks.length === 0 && processedTasks.length > 0;
   const showNoTasksMessage = filteredTasks.length === 0 && !loading && !hasFiltersApplied;
 
   if (loading) {
