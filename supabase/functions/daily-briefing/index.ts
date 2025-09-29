@@ -5,7 +5,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
 import { isValid, isWithinInterval, parseISO, isBefore, startOfDay } from 'https://esm.sh/date-fns@2.30.0';
 // @ts-ignore
-import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0"; // Add this import
+import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -161,58 +161,15 @@ serve(async (req: Request) => {
     });
     console.log(`Daily Briefing: Processed tasks. Pending: ${pendingTasks.length}, Completed: ${completedTasks.length}, Overdue: ${overdueTasks.length}.`);
 
-    // Summarize data for the prompt more concisely
-    const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks.` : 'No pending tasks.';
-    const completedSummary = completedTasks.length > 0 ? `You've completed ${completedTasks.length} tasks today. Great job!` : 'No tasks completed yet.';
-    const overdueSummary = overdueTasks.length > 0 ? `You have ${overdueTasks.length} overdue tasks.` : 'No overdue tasks.';
-    const appointmentsSummary = appointments.length > 0 ? `You have ${appointments.length} appointments today.` : 'No appointments today.';
-    const weeklyFocusSummary = weeklyFocus?.primary_focus ? `Your primary focus this week is: ${weeklyFocus.primary_focus}.` : 'No specific weekly focus set.';
-    const sleepSummary = sleepRecord?.bed_time && sleepRecord?.wake_up_time ? `Last night, you recorded sleep data.` : 'No sleep data recorded for last night.';
+    // --- TEMPORARY: Bypass Gemini API for debugging ---
+    const briefingText = `Hello! Here's your daily briefing: You have ${pendingTasks.length} pending tasks, ${completedTasks.length} completed, and ${overdueTasks.length} overdue. You have ${appointments.length} appointments today. Keep up the great work! ✨`;
+    console.log("Daily Briefing: Using hardcoded briefing for testing:", briefingText);
+    // --- END TEMPORARY ---
 
-    const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user.
-    Today's date: ${todayDateString}
-
-    ${pendingSummary}
-    ${completedSummary}
-    ${overdueSummary}
-    ${appointmentsSummary}
-    ${weeklyFocusSummary}
-    ${sleepSummary}
-
-    Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
-
-    console.log("Daily Briefing: Constructed prompt length:", prompt.length);
-    console.log("Daily Briefing: Making Gemini API request using SDK...");
-    console.log("Daily Briefing: Prompt being sent to Gemini:", prompt); // Log the actual prompt
-
-    try {
-      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-
-      const result = await model.generateContent(prompt);
-      console.log("Daily Briefing: Received raw result from Gemini.");
-      const response = await result.response;
-      let briefingText = response.text();
-      
-      // Ensure briefingText is a string, provide fallback if not
-      if (typeof briefingText !== 'string') {
-        console.warn("Daily Briefing: Gemini response text was not a string. Falling back to default message.");
-        briefingText = "Hello! Here's your daily briefing: No specific updates today, but keep up the great work! ✨";
-      }
-
-      console.log("Daily Briefing: Final briefing text to send:", briefingText);
-
-      return new Response(JSON.stringify({ briefing: briefingText }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    } catch (geminiError: any) {
-      console.error("Daily Briefing: Error during Gemini API call or response processing:", geminiError);
-      return new Response(JSON.stringify({ error: `Gemini API error: ${geminiError.message || 'Unknown Gemini error'}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
+    return new Response(JSON.stringify({ briefing: briefingText }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    });
 
   } catch (error: any) {
     console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
