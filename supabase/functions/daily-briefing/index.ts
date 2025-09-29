@@ -55,7 +55,6 @@ serve(async (req: Request) => {
 
   try {
     const { userId, localDayStartISO, localDayEndISO } = await req.json();
-    console.log("Daily Briefing: Received request:", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
@@ -75,7 +74,6 @@ serve(async (req: Request) => {
         status: 500,
       });
     }
-    console.log("Daily Briefing: GEMINI_API_KEY status:", GEMINI_API_KEY ? 'set' : 'NOT SET');
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
@@ -89,24 +87,19 @@ serve(async (req: Request) => {
     const localDayEnd = parseISO(localDayEndISO);
     const todayStartOfDay = startOfDay(localDayStart);
 
-    console.log("Daily Briefing: Fetching all tasks...");
     const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
       .select('id, description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
       .eq('user_id', userId);
     if (tasksError) throw tasksError;
     const allTasks: Task[] = allTasksData || [];
-    console.log(`Daily Briefing: Fetched ${allTasks.length} tasks.`);
 
-    console.log("Daily Briefing: Fetching recurring task completions...");
     const { data: recurringCompletionsData, error: recurringCompletionsError } = await supabaseAdmin.from('recurring_task_completion_log')
       .select('original_task_id')
       .eq('user_id', userId)
       .eq('completion_date', todayDateString);
     if (recurringCompletionsError) throw recurringCompletionsError;
     const completedRecurringTaskIds = new Set(recurringCompletionsData?.map((c: RecurringCompletion) => c.original_task_id) || []);
-    console.log(`Daily Briefing: Fetched ${completedRecurringTaskIds.size} recurring completions.`);
 
-    console.log("Daily Briefing: Fetching appointments, weekly focus, and sleep records...");
     const [appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
       supabaseAdmin.from('schedule_appointments')
         .select('title, start_time, end_time')
@@ -132,7 +125,6 @@ serve(async (req: Request) => {
     const appointments: Appointment[] = appointmentsRes.data || [];
     const weeklyFocus: WeeklyFocus | null = weeklyFocusRes.data;
     const sleepRecord: SleepRecord | null = sleepRecordRes.data;
-    console.log(`Daily Briefing: Fetched ${appointments.length} appointments, weekly focus: ${!!weeklyFocus}, sleep record: ${!!sleepRecord}.`);
 
     const pendingTasks: Task[] = [];
     const completedTasks: Task[] = [];
@@ -159,20 +151,41 @@ serve(async (req: Request) => {
         }
       }
     });
-    console.log(`Daily Briefing: Processed tasks. Pending: ${pendingTasks.length}, Completed: ${completedTasks.length}, Overdue: ${overdueTasks.length}.`);
 
-    // --- TEMPORARY: Bypass Gemini API for debugging ---
-    const briefingText = `Hello! Here's your daily briefing: You have ${pendingTasks.length} pending tasks, ${completedTasks.length} completed, and ${overdueTasks.length} overdue. You have ${appointments.length} appointments today. Keep up the great work! ✨`;
-    console.log("Daily Briefing: Using hardcoded briefing for testing:", briefingText);
-    // --- END TEMPORARY ---
+    // Summarize data for the prompt more concisely
+    const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks.` : 'No pending tasks.';
+    const completedSummary = completedTasks.length > 0 ? `You've completed ${completedTasks.length} tasks today. Great job!` : 'No tasks completed yet.';
+    const overdueSummary = overdueTasks.length > 0 ? `You have ${overdueTasks.length} overdue tasks.` : 'No overdue tasks.';
+    const appointmentsSummary = appointments.length > 0 ? `You have ${appointments.length} appointments today.` : 'No appointments today.';
+    const weeklyFocusSummary = weeklyFocus?.primary_focus ? `Your primary focus this week is: ${weeklyFocus.primary_focus}.` : 'No specific weekly focus set.';
+    const sleepSummary = sleepRecord?.bed_time && sleepRecord?.wake_up_time ? `Last night, you recorded sleep data.` : 'No sleep data recorded for last night.';
 
+    const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user.
+    Today's date: ${todayDateString}
+
+    ${pendingSummary}
+    ${completedSummary}
+    ${overdueSummary}
+    ${appointmentsSummary}
+    ${weeklyFocusSummary}
+    ${sleepSummary}
+
+    Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const briefingText = response.text();
+    
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
-    console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
+    console.error("Error in Edge Function 'daily-briefing':", error);
     const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : error;
     return new Response(JSON.stringify({ error: errorDetails || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
