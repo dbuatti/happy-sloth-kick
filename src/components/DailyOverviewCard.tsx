@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Task } from '@/hooks/useTasks';
-import { CheckCircle2, Target, ListTodo, Clock } from 'lucide-react'; // Removed cn, ArrowRight
-import DoTodaySwitch from './DoTodaySwitch';
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Kept Tooltip imports as they are used by DoTodaySwitch internally
+import { CheckCircle2, Target, ListTodo, Clock } from 'lucide-react';
+import DoTodaySwitch from './DoTodaySwitch'; // This is used
+// Removed unused imports: cn, ArrowRight, Tooltip, TooltipContent, TooltipTrigger
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -27,7 +27,7 @@ interface DailyOverviewCardProps {
   toggleAllDoToday: () => Promise<void>;
   setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsManageSectionsOpen: React.SetStateAction<boolean>>;
   onToggleAllSections: () => void;
 }
 
