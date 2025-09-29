@@ -2,8 +2,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
+// Removed: import { corsHeaders } from "../_shared/cors.ts";
 
-const corsHeaders = {
+const corsHeaders = { // Defined directly
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
@@ -29,7 +30,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     let requestBody;
     try {
       requestBody = JSON.parse(rawBody);
-    } catch (parseError: any) { // Changed to any
+    } catch (parseError: any) {
       console.error("Error parsing request body as JSON:", parseError);
       return new Response(JSON.stringify({ error: 'Invalid JSON in request body.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -96,7 +97,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     try {
       parsedData = JSON.parse(text.replace(/```json\n|\n```/g, ''));
       console.log("Parsed AI data:", parsedData);
-    } catch (parseError: any) { // Changed to any
+    } catch (parseError: any) {
       console.error("Failed to parse AI response as JSON:", text, parseError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,7 +109,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error: any) { // Changed to any
+  } catch (error: any) {
     console.error('Error processing request in Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

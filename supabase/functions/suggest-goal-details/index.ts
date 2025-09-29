@@ -1,10 +1,15 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-// Removed import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'; // Removed unused import
+// @ts-ignore
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.15.0";
-// @ts-ignore
-import { corsHeaders } from "../_shared/cors.ts";
+// Removed: import { corsHeaders } from "../_shared/cors.ts";
+
+const corsHeaders = { // Defined directly
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req: Request) => { // Explicitly type req as Request
   if (req.method === 'OPTIONS') {
@@ -105,7 +110,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
     let parsedContent;
     try {
       parsedContent = JSON.parse(rawContent.replace(/```json\n|```/g, ''));
-    } catch (jsonError: any) { // Changed to any
+    } catch (jsonError: any) {
       console.error('Failed to parse AI response as JSON:', rawContent, jsonError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -117,7 +122,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
-  } catch (error: any) { // Changed to any
+  } catch (error: any) {
     console.error('Error in suggest_goal_details Edge Function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
