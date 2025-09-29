@@ -140,6 +140,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
 
+  const toggleFilterPanel = useCallback(() => {
+    setIsFilterPanelOpen(prev => !prev);
+  }, []);
+
   return (
     <div className="flex flex-col h-full w-full"> {/* Main container for the page */}
       <DailyTasksHeader
@@ -150,7 +154,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         sections={sections}
         allCategories={allCategories}
         userId={userId || null}
-        setIsFocusPanelOpen={setIsFocusPanelOpen}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
@@ -164,15 +167,13 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onOpenOverview={handleOpenOverview}
         onOpenFocusView={handleOpenFocusView}
         tasksLoading={tasksLoading}
-        doTodayOffIds={doTodayOffIds}
-        toggleDoToday={toggleDoToday}
         onToggleAllSections={toggleAllSections}
         isManageCategoriesOpen={isManageCategoriesOpen}
         setIsManageCategoriesOpen={setIsManageCategoriesOpen}
         isManageSectionsOpen={isManageSectionsOpen}
         setIsManageSectionsOpen={setIsManageSectionsOpen}
         isFilterPanelOpen={isFilterPanelOpen}
-        toggleFilterPanel={() => setIsFilterPanelOpen(prev => !prev)}
+        toggleFilterPanel={toggleFilterPanel}
       />
 
       <FilterPanel
