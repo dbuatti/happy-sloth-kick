@@ -6,7 +6,7 @@ import TaskDetailDialog from '@/components/TaskDetailDialog';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import BulkActionBar from '@/components/BulkActionBar';
-import { useAllAppointments } from '@/hooks/useAllAppointments'; // Corrected import syntax
+import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FilterPanel from '@/components/FilterPanel';
 import DailyBriefingCard from '@/components/DailyBriefingCard';
@@ -49,14 +49,13 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     bulkDeleteTasks,
     sections,
     allCategories,
-    // Removed updateTaskParentAndOrder as it's not used
+    updateTaskParentAndOrder,
     archiveAllCompletedTasks,
     markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    // Removed reorderSections as it's not used
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
@@ -76,7 +75,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   const scheduledTasksMap = useMemo(() => {
     const map = new Map<string, Appointment>();
-    allAppointments.forEach((app: Appointment) => { // Explicitly type 'app'
+    allAppointments.forEach((app: Appointment) => {
       if (app.task_id) {
         map.set(app.task_id, app);
       }
@@ -244,17 +243,14 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            // Removed updateTaskParentAndOrder
-            // Removed reorderSections
+            updateTaskParentAndOrder={updateTaskParentAndOrder}
             allCategories={allCategories}
-            // Removed setIsAddTaskOpen
             onOpenOverview={handleOpenOverview}
             currentDate={currentDate}
             expandedSections={expandedSections}
             expandedTasks={expandedTasks}
             toggleTask={toggleTask}
             toggleSection={toggleSection}
-            // Removed toggleAllSections
             setFocusTask={setFocusTask}
             doTodayOffIds={doTodayOffIds}
             toggleDoToday={toggleDoToday}

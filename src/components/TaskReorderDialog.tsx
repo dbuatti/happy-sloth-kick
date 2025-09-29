@@ -116,14 +116,11 @@ const SortableTaskReorderItem: React.FC<{
           sections={rest.sections}
           onOpenOverview={rest.onOpenOverview}
           currentDate={rest.currentDate}
-          onMoveUp={async () => {}}
-          onMoveDown={async () => {}}
           level={0}
           isOverlay={isOverlay}
           setFocusTask={rest.setFocusTask}
           isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
           toggleDoToday={rest.toggleDoToday}
-          // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
           scheduledAppointment={rest.scheduledTasksMap.get(task.id)}
           isDemo={rest.isDemo}
           showDragHandle={true}

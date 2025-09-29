@@ -14,8 +14,6 @@ interface SortableTaskItemProps {
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
-  onMoveUp: (taskId: string) => Promise<void>;
-  onMoveDown: (taskId: string) => Promise<void>;
   level: number;
   allTasks: Task[];
   isOverlay?: boolean;
@@ -24,13 +22,16 @@ interface SortableTaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  doTodayOffIds: Set<string>; // Used to calculate isDoToday for subtasks
+  doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
   showDragHandle?: boolean;
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  hasSubtasks?: boolean;
+  isExpanded?: boolean;
+  getSubtasksForTask: (parentTaskId: string) => Task[]; // Added this prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -52,11 +53,12 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   sections,
   onOpenOverview,
   currentDate,
-  onMoveUp,
-  onMoveDown,
   insertionIndicator,
   isSelected,
   onSelectTask,
+  hasSubtasks,
+  isExpanded,
+  getSubtasksForTask, // Destructure
 }) => {
   const {
     attributes,
@@ -65,22 +67,25 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task }, disabled: isDemo || !!task.parent_task_id });
+  } = useSortable({
+    id: task.id,
+    data: { type: 'task', task },
+    disabled: isDemo,
+  });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform || null),
     transition,
     opacity: isDragging && !isOverlay ? 0 : 1,
-    visibility: isDragging && !isOverlay ? 'hidden' : undefined,
   };
 
-  const directSubtasks = allTasks.filter(t => t.parent_task_id === task.id)
-                                 .sort((a, b) => (a.order || Infinity) - (b.order || Infinity));
+  const directSubtasks = getSubtasksForTask(task.id);
 
-  const isExpanded = expandedTasks[task.id] !== false;
+  const effectiveIsExpanded = isExpanded !== undefined ? isExpanded : expandedTasks[task.id] !== false;
 
   const showInsertionBefore = insertionIndicator?.id === task.id && insertionIndicator.position === 'before';
   const showInsertionAfter = insertionIndicator?.id === task.id && insertionIndicator.position === 'after';
+  const showInsertionInto = insertionIndicator?.id === task.id && insertionIndicator.position === 'into';
 
   if (isDragging && !isOverlay) {
     return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
@@ -93,10 +98,9 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       className={cn(
         "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
-        "flex items-center"
+        "flex items-center",
+        showInsertionInto && "bg-primary/10 border-primary"
       )}
-      {...attributes}
-      {...listeners}
     >
       {showInsertionBefore && (
         <div className="absolute -top-1 left-0 right-0 h-1 w-full bg-primary rounded-full z-10 animate-pulse" />
@@ -108,8 +112,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       )}>
         <TaskItem
           task={task}
-          hasSubtasks={directSubtasks.length > 0}
-          isExpanded={isExpanded}
+          hasSubtasks={hasSubtasks !== undefined ? hasSubtasks : directSubtasks.length > 0}
+          isExpanded={effectiveIsExpanded}
           toggleExpand={toggleTask}
           allTasks={allTasks}
           onDelete={onDelete}
@@ -117,21 +121,20 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           sections={sections}
           onOpenOverview={onOpenOverview}
           currentDate={currentDate}
-          onMoveUp={onMoveUp}
-          onMoveDown={onMoveDown}
           level={level}
           isOverlay={isOverlay}
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
-          // Removed doTodayOffIds={doTodayOffIds} // No longer passed to TaskItem
           scheduledAppointment={scheduledTasksMap.get(task.id)}
           isDemo={isDemo}
           showDragHandle={showDragHandle}
+          attributes={attributes}
+          listeners={listeners}
           isSelected={isSelected}
           onSelectTask={onSelectTask}
         />
-        {isExpanded && directSubtasks.length > 0 && (
+        {effectiveIsExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
             {directSubtasks.map((subtask) => (
               <SortableTaskItem
@@ -144,21 +147,22 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 sections={sections}
                 onOpenOverview={onOpenOverview}
                 currentDate={currentDate}
-                onMoveUp={onMoveUp}
-                onMoveDown={onMoveDown}
                 expandedTasks={expandedTasks}
                 toggleTask={toggleTask}
                 isOverlay={isOverlay}
                 setFocusTask={setFocusTask}
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
                 toggleDoToday={toggleDoToday}
-                doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds to nested SortableTaskItem
+                doTodayOffIds={doTodayOffIds}
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
                 showDragHandle={showDragHandle}
                 insertionIndicator={insertionIndicator}
                 isSelected={isSelected}
                 onSelectTask={onSelectTask}
+                hasSubtasks={getSubtasksForTask(subtask.id).length > 0}
+                isExpanded={expandedTasks[subtask.id] !== false}
+                getSubtasksForTask={getSubtasksForTask} // Pass down the function
               />
             ))}
           </ul>

@@ -6,8 +6,30 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import QuickAddTask from './QuickAddTask';
-import TaskItem from './TaskItem';
 import { cn } from '@/lib/utils';
+
+// DND imports
+import {
+  DndContext,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverEvent,
+  DragOverlay,
+  PointerSensor,
+  closestCorners,
+  UniqueIdentifier,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { createPortal } from 'react-dom';
+import SortableTaskItem from './SortableTaskItem';
+// Removed: import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -36,6 +58,7 @@ interface TaskListProps {
   isDemo?: boolean;
   selectedTaskIds: Set<string>;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -65,6 +88,7 @@ const TaskList: React.FC<TaskListProps> = ({
   isDemo = false,
   selectedTaskIds,
   onSelectTask,
+  updateTaskParentAndOrder,
 }) => {
   const [newSectionName, setNewSectionName] = useState('');
   const [isCreatingSection, setIsCreatingSection] = useState(false);
@@ -73,12 +97,174 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isConfirmDeleteSectionOpen, setIsConfirmDeleteSectionOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<TaskSection | null>(null);
 
+  // DND States
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
+  // Removed: const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
+  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null);
+
+  // Removed: const isMobile = useIsMobile();
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const sectionIds = useMemo(() => new Set(sections.map(s => s.id)), [sections]);
   const tasksWithoutSection = filteredTasks.filter(task => !task.section_id || !sectionIds.has(task.section_id));
 
-  const getTasksForSection = useCallback((sectionId: string) => {
-    return filteredTasks.filter(task => task.section_id === sectionId);
+  const getTasksForSection = useCallback((sectionId: string | null) => {
+    return filteredTasks.filter(task => task.section_id === sectionId && task.parent_task_id === null)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   }, [filteredTasks]);
+
+  const getSubtasksForTask = useCallback((parentTaskId: string) => {
+    return filteredTasks.filter(task => task.parent_task_id === parentTaskId)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [filteredTasks]);
+
+  const findTask = useCallback((id: UniqueIdentifier) => {
+    return processedTasks.find(task => task.id === id);
+  }, [processedTasks]);
+
+  const findSection = useCallback((id: UniqueIdentifier) => {
+    return sections.find(section => section.id === id);
+  }, [sections]);
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveId(event.active.id);
+    setInsertionIndicator(null);
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      setInsertionIndicator(null);
+      // Removed: setOverId(null);
+      return;
+    }
+
+    const activeTask = findTask(active.id);
+    const overItem = over.data.current;
+    const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
+    const overSection = overItem?.type === 'section' ? (overItem.section as TaskSection) : null;
+
+    // Removed: setOverId(over.id);
+
+    if (!activeTask) {
+      setInsertionIndicator(null);
+      return;
+    }
+
+    // Safely get clientY from activatorEvent
+    let pointerY: number | undefined;
+    if ('clientY' in event.activatorEvent) {
+      pointerY = (event.activatorEvent as MouseEvent | TouchEvent).clientY;
+    } else {
+      // Fallback or error handling if clientY is not available
+      pointerY = undefined;
+    }
+
+    // Logic for dropping into a task (to make it a subtask)
+    if (overTask && overTask.id !== activeTask.id && overTask.parent_task_id !== activeTask.id) {
+      const overRect = event.over?.rect;
+      if (overRect && pointerY !== undefined) {
+        const middleY = overRect.top + overRect.height / 2;
+        const quarterHeight = overRect.height / 4;
+
+        if (pointerY > middleY - quarterHeight && pointerY < middleY + quarterHeight) {
+          setInsertionIndicator({ id: overTask.id, position: 'into' });
+          return;
+        }
+      }
+    }
+
+    // Logic for dropping before/after a task or into a section
+    if (overTask) {
+      const overRect = event.over?.rect;
+      if (overRect && pointerY !== undefined) {
+        const middleY = overRect.top + overRect.height / 2;
+        setInsertionIndicator({ id: overTask.id, position: pointerY < middleY ? 'before' : 'after' });
+        return;
+      }
+    } else if (overSection) {
+      setInsertionIndicator({ id: overSection.id, position: 'into' });
+      return;
+    }
+
+    setInsertionIndicator(null);
+  }, [findTask]);
+
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    // Removed: setOverId(null);
+    setInsertionIndicator(null);
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeTask = findTask(active.id);
+    if (!activeTask) return;
+
+    const overItem = over.data.current;
+    const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
+    const overSection = overItem?.type === 'section' ? (overItem.section as TaskSection) : null;
+
+    let newParentId: string | null = null;
+    let newSectionId: string | null = null;
+    let targetOverId: string | null = null;
+    let isDraggingDown = false;
+
+    if (insertionIndicator) {
+      if (insertionIndicator.position === 'into' && overTask) {
+        newParentId = overTask.id;
+        newSectionId = overTask.section_id;
+        targetOverId = null;
+      } else if (insertionIndicator.position === 'into' && overSection) {
+        newParentId = null;
+        newSectionId = overSection.id;
+        targetOverId = null;
+      } else if (overTask) {
+        newParentId = overTask.parent_task_id;
+        newSectionId = overTask.section_id;
+        targetOverId = overTask.id;
+        const activeIndex = processedTasks.findIndex(t => t.id === active.id);
+        const overIndex = processedTasks.findIndex(t => t.id === over.id);
+        isDraggingDown = activeIndex < overIndex;
+      }
+    }
+
+    if (!insertionIndicator && overTask) {
+      newParentId = overTask.parent_task_id;
+      newSectionId = overTask.section_id;
+      targetOverId = overTask.id;
+      const activeIndex = processedTasks.findIndex(t => t.id === active.id);
+      const overIndex = processedTasks.findIndex(t => t.id === over.id);
+      isDraggingDown = activeIndex < overIndex;
+    }
+
+    if (overSection && !overTask && insertionIndicator?.position === 'into') {
+      newParentId = null;
+      newSectionId = overSection.id;
+      targetOverId = null;
+    }
+
+    if (
+      activeTask.parent_task_id !== newParentId ||
+      activeTask.section_id !== newSectionId ||
+      targetOverId !== null
+    ) {
+      await updateTaskParentAndOrder(activeTask.id, newParentId, newSectionId, targetOverId, isDraggingDown);
+    }
+  }, [findTask, processedTasks, updateTaskParentAndOrder, insertionIndicator]);
+
 
   const handleCreateSection = useCallback(async () => {
     if (newSectionName.trim()) {
@@ -115,10 +301,12 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsConfirmDeleteSectionOpen(true);
   }, []);
 
-  const renderTask = useCallback((task: Task) => {
+  const renderTask = useCallback((task: Task, level: number) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
+    const hasSubtasks = getSubtasksForTask(task.id).length > 0;
+
     return (
-      <TaskItem
+      <SortableTaskItem
         key={task.id}
         task={task}
         onUpdate={updateTask}
@@ -135,14 +323,22 @@ const TaskList: React.FC<TaskListProps> = ({
         allTasks={processedTasks}
         sections={sections}
         currentDate={currentDate}
-        level={0}
+        level={level}
         isDoToday={isDoToday}
+        hasSubtasks={hasSubtasks}
+        showDragHandle={true}
+        insertionIndicator={insertionIndicator}
+        getSubtasksForTask={getSubtasksForTask} // Pass down the function
       />
     );
-  }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate, doTodayOffIds]);
+  }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate, doTodayOffIds, getSubtasksForTask, insertionIndicator]);
 
   const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
-    <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">
+    <div
+      className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border"
+      data-dnd-type="section"
+      data-dnd-id={section.id}
+    >
       <div className="flex items-center gap-2">
         <Button
           variant="ghost"
@@ -202,93 +398,143 @@ const TaskList: React.FC<TaskListProps> = ({
     return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
   }
 
+  const activeTask = activeId ? findTask(activeId) : null;
+
   return (
-    <div className="space-y-6">
-      {showNoTasksMessage && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-semibold mb-2">No tasks for today!</p>
-          <p className="mb-4">Time to relax or add some new tasks.</p>
-        </div>
-      )}
-
-      {filteredTasks.length === 0 && !loading && hasFiltersApplied && (
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-semibold mb-2">No tasks match your current filters.</p>
-          <p className="mb-4">Try adjusting your filters or clearing them.</p>
-        </div>
-      )}
-
-      {/* Global Quick Add Task component - always rendered once */}
-      <QuickAddTask
-        onAddTask={handleAddTask}
-        defaultCategoryId={allCategories[0]?.id || ''}
-        isDemo={isDemo}
-        allCategories={allCategories}
-        currentDate={currentDate}
-        sections={sections} // Pass sections for the selector
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
-
-      {/* "No Section" block */}
-      <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
-        {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
-        <div className="p-3 space-y-2">
-          {expandedSections['no-section'] !== false && (
-            tasksWithoutSection.map((task) => renderTask(task))
-          )}
-        </div>
-      </div>
-
-      {/* Mapped sections */}
-      {sections.map(section => {
-        const tasksInThisSection = getTasksForSection(section.id);
-        const showSectionContent = tasksInThisSection.length > 0 || isDemo;
-
-        return (
-          <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
-            {renderSectionHeader(section, tasksInThisSection)}
-            <div className="p-3 space-y-2">
-              {expandedSections[section.id] !== false && (
-                tasksInThisSection.map((task) => renderTask(task))
-              )}
-            </div>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-6">
+        {showNoTasksMessage && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg font-semibold mb-2">No tasks for today!</p>
+            <p className="mb-4">Time to relax or add some new tasks.</p>
           </div>
-        );
-      })}
+        )}
 
-      <div className="flex items-center gap-2 mt-4 p-2 border rounded-lg bg-background shadow-sm">
-        <Input
-          type="text"
-          placeholder="New section name"
-          value={newSectionName}
-          onChange={(e) => setNewSectionName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCreateSection()}
-          disabled={isCreatingSection || isDemo}
-          className="flex-1 h-9 text-base"
+        {filteredTasks.length === 0 && !loading && hasFiltersApplied && (
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg font-semibold mb-2">No tasks match your current filters.</p>
+            <p className="mb-4">Try adjusting your filters or clearing them.</p>
+          </div>
+        )}
+
+        {/* Global Quick Add Task component - always rendered once */}
+        <QuickAddTask
+          onAddTask={handleAddTask}
+          defaultCategoryId={allCategories[0]?.id || ''}
+          isDemo={isDemo}
+          allCategories={allCategories}
+          currentDate={currentDate}
+          sections={sections}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         />
-        <Button onClick={handleCreateSection} disabled={isCreatingSection || !newSectionName.trim() || isDemo} className="h-9 px-4">
-          {isCreatingSection ? 'Creating...' : <Plus className="h-4 w-4" />} Add Section
-        </Button>
+
+        {/* "No Section" block */}
+        <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
+          {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
+          <div className="p-3 space-y-2">
+            {expandedSections['no-section'] !== false && (
+              <SortableContext items={tasksWithoutSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <ul className="space-y-2">
+                  {tasksWithoutSection.map((task) => renderTask(task, 0))}
+                </ul>
+              </SortableContext>
+            )}
+          </div>
+        </div>
+
+        {/* Mapped sections */}
+        {sections.map(section => {
+          const tasksInThisSection = getTasksForSection(section.id);
+          const showSectionContent = tasksInThisSection.length > 0 || isDemo;
+
+          return (
+            <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
+              {renderSectionHeader(section, tasksInThisSection)}
+              <div className="p-3 space-y-2">
+                {expandedSections[section.id] !== false && (
+                  <SortableContext items={tasksInThisSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                    <ul className="space-y-2">
+                      {tasksInThisSection.map((task) => renderTask(task, 0))}
+                    </ul>
+                  </SortableContext>
+                )}
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="flex items-center gap-2 mt-4 p-2 border rounded-lg bg-background shadow-sm">
+          <Input
+            type="text"
+            placeholder="New section name"
+            value={newSectionName}
+            onChange={(e) => setNewSectionName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleCreateSection()}
+            disabled={isCreatingSection || isDemo}
+            className="flex-1 h-9 text-base"
+          />
+          <Button onClick={handleCreateSection} disabled={isCreatingSection || !newSectionName.trim() || isDemo} className="h-9 px-4">
+            {isCreatingSection ? 'Creating...' : <Plus className="h-4 w-4" />} Add Section
+          </Button>
+        </div>
+
+        <Dialog open={isConfirmDeleteSectionOpen} onOpenChange={setIsConfirmDeleteSectionOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Delete Section</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete the section "{sectionToDelete?.name}"? All tasks within this section will be moved to "No Section". This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsConfirmDeleteSectionOpen(false)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDeleteSection}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Dialog open={isConfirmDeleteSectionOpen} onOpenChange={setIsConfirmDeleteSectionOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Delete Section</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete the section "{sectionToDelete?.name}"? All tasks within this section will be moved to "No Section". This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConfirmDeleteSectionOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeleteSection}>Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      {createPortal(
+        <DragOverlay dropAnimation={null}>
+          {activeTask ? (
+            <SortableTaskItem
+              task={activeTask}
+              allTasks={processedTasks}
+              onDelete={deleteTask}
+              onUpdate={updateTask}
+              sections={sections}
+              onOpenOverview={onOpenOverview}
+              currentDate={currentDate}
+              level={0}
+              isOverlay={true}
+              setFocusTask={setFocusTask}
+              isDoToday={!doTodayOffIds.has(activeTask.original_task_id || activeTask.id)}
+              toggleDoToday={toggleDoToday}
+              doTodayOffIds={doTodayOffIds}
+              scheduledAppointment={scheduledTasksMap.get(activeTask.id)}
+              isDemo={isDemo}
+              showDragHandle={true}
+              isSelected={false}
+              onSelectTask={() => {}}
+              expandedTasks={expandedTasks}
+              toggleTask={toggleTask}
+              insertionIndicator={null}
+              getSubtasksForTask={getSubtasksForTask} // Pass down the function
+            />
+          ) : null}
+        </DragOverlay>,
+        document.body
+      )}
+    </DndContext>
   );
 };
 

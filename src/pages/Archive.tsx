@@ -209,17 +209,14 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          // Removed updateTaskParentAndOrder
-          // Removed reorderSections
+          updateTaskParentAndOrder={() => Promise.resolve()} // Dummy function for ArchivePage
           allCategories={allCategories}
-          // Removed setIsAddTaskOpen
           onOpenOverview={handleOpenOverview}
           currentDate={currentDate}
           expandedSections={expandedSections}
           expandedTasks={expandedTasks}
           toggleTask={toggleTask}
           toggleSection={toggleSection}
-          // Removed toggleAllSections
           setFocusTask={setFocusTask}
           doTodayOffIds={doTodayOffIds}
           toggleDoToday={toggleDoToday}

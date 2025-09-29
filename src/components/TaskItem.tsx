@@ -26,7 +26,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
 
 
-interface TaskItemProps {
+export interface TaskItemProps {
   task: Task;
   allTasks: Task[];
   onDelete: (taskId: string) => void;
@@ -34,8 +34,6 @@ interface TaskItemProps {
   sections: { id: string; name: string }[];
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
-  onMoveUp?: (taskId: string) => Promise<void>;
-  onMoveDown?: (taskId: string) => Promise<void>;
   level: number;
   isOverlay?: boolean;
   hasSubtasks?: boolean;
@@ -44,7 +42,6 @@ interface TaskItemProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
-  // Removed doTodayOffIds: Set<string>; // This prop is no longer needed here
   scheduledAppointment?: Appointment;
   isDemo?: boolean;
   showDragHandle?: boolean;
@@ -69,7 +66,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  // Removed doTodayOffIds from destructuring
   scheduledAppointment,
   isDemo = false,
   showDragHandle = false,
