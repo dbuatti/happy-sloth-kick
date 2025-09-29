@@ -32,7 +32,7 @@ interface SortableTaskItemProps {
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  index: number; // Added index prop
+  index: number;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -60,7 +60,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   insertionIndicator,
   isSelected,
   onSelectTask,
-  index, // Destructure index
+  index,
 }) => {
   const {
     attributes,
@@ -130,13 +130,13 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
           doTodayOffIds={doTodayOffIds}
-          scheduledTasksMap={scheduledTasksMap}
+          // Removed scheduledTasksMap as it's not directly used in TaskItem
           scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
           isDemo={isDemo}
           showDragHandle={showDragHandle}
           isSelected={isSelected}
           onSelectTask={onSelectTask}
-          index={index} // Pass index
+          index={index}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -167,7 +167,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 insertionIndicator={insertionIndicator}
                 isSelected={isSelected}
                 onSelectTask={onSelectTask}
-                index={subIndex} // Pass subIndex for recursive calls
+                index={subIndex}
               />
             ))}
           </ul>

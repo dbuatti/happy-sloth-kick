@@ -47,7 +47,7 @@ interface TaskReorderDialogProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   setFocusTask: (taskId: string | null) => Promise<void>;
-  doTodayOffIds: Set<string>; // This prop is correctly defined here
+  doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => void;
   scheduledTasksMap: Map<string, any>; // Use any for now, or import Appointment
   isDemo?: boolean;
@@ -69,9 +69,9 @@ const SortableTaskReorderItem: React.FC<{
   isDemo?: boolean;
   isOverlay?: boolean;
   isDropTarget?: boolean; // New prop for drop target highlight
-  doTodayOffIds: Set<string>; // Added doTodayOffIds to the interface
-  index: number; // Added index prop
-}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, allCategories, index, ...rest }) => { // Destructure index
+  doTodayOffIds: Set<string>;
+  index: number;
+}> = ({ task, isOverlay, isDropTarget, doTodayOffIds, allCategories, index, ...rest }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -129,8 +129,8 @@ const SortableTaskReorderItem: React.FC<{
           setFocusTask={rest.setFocusTask}
           isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
           toggleDoToday={rest.toggleDoToday}
-          doTodayOffIds={doTodayOffIds} // Pass doTodayOffIds
-          scheduledTasksMap={rest.scheduledTasksMap}
+          doTodayOffIds={doTodayOffIds}
+          // Removed scheduledTasksMap as it's not directly used in TaskItem
           scheduledAppointment={rest.scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
           isDemo={rest.isDemo}
           showDragHandle={true} // Always show drag handle in reorder dialog
@@ -138,7 +138,7 @@ const SortableTaskReorderItem: React.FC<{
           {...attributes} // Apply attributes to the drag handle within TaskItem
           isSelected={false} // Selection is not relevant in reorder dialog
           onSelectTask={() => {}} // No-op for selection in reorder dialog
-          index={index} // Pass index
+          index={index}
         />
       </div>
     </li>
@@ -242,7 +242,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
         >
           <SortableContext items={localTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
             <ul className="space-y-2">
-              {localTasks.map((task, index) => ( // Added index to map
+              {localTasks.map((task, index) => (
                 <SortableTaskReorderItem
                   key={task.id}
                   task={task}
@@ -260,7 +260,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   scheduledTasksMap={scheduledTasksMap}
                   isDemo={isDemo}
                   isDropTarget={task.id === overId}
-                  index={index} // Pass index
+                  index={index}
                 />
               ))}
             </ul>
@@ -285,7 +285,7 @@ const TaskReorderDialog: React.FC<TaskReorderDialogProps> = ({
                   isDemo={isDemo}
                   isOverlay={true}
                   isDropTarget={false}
-                  index={0} // Default index for overlay
+                  index={0}
                 />
               ) : null}
             </DragOverlay>,

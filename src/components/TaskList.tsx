@@ -143,7 +143,7 @@ const TaskList: React.FC<TaskListProps> = ({
         setFocusTask={setFocusTask}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
-        scheduledTasksMap={scheduledTasksMap}
+        // Removed scheduledTasksMap as it's not directly used in TaskItem
         scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
         isDemo={isDemo}
         // Removed provided={provided}
