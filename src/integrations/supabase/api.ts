@@ -63,12 +63,15 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
     const localDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
     const localDayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
+    const requestBody = {
+      userId,
+      localDayStartISO: localDayStart.toISOString(),
+      localDayEndISO: localDayEnd.toISOString(),
+    };
+    console.log('API: Sending body to daily-briefing Edge Function:', JSON.stringify(requestBody));
+
     const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: JSON.stringify({
-        userId,
-        localDayStartISO: localDayStart.toISOString(),
-        localDayEndISO: localDayEnd.toISOString(),
-      }),
+      body: JSON.stringify(requestBody),
       headers: {
         'Content-Type': 'application/json',
       },

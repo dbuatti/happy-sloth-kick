@@ -54,7 +54,17 @@ serve(async (req: Request) => {
   }
 
   try {
+    // Check if the request has a body before trying to parse JSON
+    if (!req.body) {
+      console.error("Daily Briefing: Request body is empty.");
+      return new Response(JSON.stringify({ error: 'Request body is empty.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
     const { userId, localDayStartISO, localDayEndISO } = await req.json();
+    console.log("Daily Briefing: Received request:", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
