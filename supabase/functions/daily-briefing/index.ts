@@ -84,11 +84,16 @@ serve(async (req: Request) => {
       });
     }
 
-    const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
+    const { userId } = requestBodyParsed; // Expect only userId
+    // Hardcode date parameters for testing
+    const testDate = new Date(); // Use current date for testing
+    const localDayStartISO = new Date(testDate.getFullYear(), testDate.getMonth(), testDate.getDate(), 0, 0, 0).toISOString();
+    const localDayEndISO = new Date(testDate.getFullYear(), testDate.getMonth(), testDate.getDate(), 23, 59, 59, 999).toISOString();
+
     console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
-    if (!userId || !localDayStartISO || !localDayEndISO) {
-      return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
+    if (!userId) { // Only check for userId
+      return new Response(JSON.stringify({ error: 'User ID is required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
