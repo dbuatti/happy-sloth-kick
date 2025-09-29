@@ -14,7 +14,6 @@ Deno.serve(async (req: Request) => { // Explicitly type req as Request
 
   try {
     const { text, currentDate } = await req.json();
-    console.log("Parse Appointment: Received request:", { text, currentDate });
 
     if (!text) {
       return new Response(JSON.stringify({ error: 'Text is required.' }), {
@@ -31,7 +30,6 @@ Deno.serve(async (req: Request) => { // Explicitly type req as Request
         status: 500,
       });
     }
-    console.log("Parse Appointment: GEMINI_API_KEY loaded.");
 
     const today = new Date(currentDate);
     const tomorrow = new Date(today);

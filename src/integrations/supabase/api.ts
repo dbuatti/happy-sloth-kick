@@ -23,7 +23,6 @@ export const suggestTaskDetails = async (
   categories: AICategory[],
   currentDate: Date
 ): Promise<AISuggestionResult | null> => {
-  console.log('API: Calling AI Suggestion Edge Function...');
   try {
     const { data, error } = await supabase.functions.invoke('suggest-task-details', {
       body: JSON.stringify({
@@ -47,7 +46,6 @@ export const suggestTaskDetails = async (
 
     // The data returned from the Edge Function is already the AISuggestionResult
     const result = data as AISuggestionResult;
-    console.log('API: Received AI suggestion result:', result);
     return result;
 
   } catch (error) {
@@ -57,7 +55,6 @@ export const suggestTaskDetails = async (
 };
 
 export const getDailyBriefing = async (userId: string, date: Date): Promise<string | null> => {
-  console.log('API: Calling Daily Briefing Edge Function for user:', userId, 'on date:', format(date, 'yyyy-MM-dd'));
   try {
     // Get local day start and end in ISO format for accurate filtering in the Edge Function
     const localDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
@@ -66,11 +63,8 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
     const requestBody = {
       userId,
       localDayStartISO: localDayStart.toISOString(),
-      localDayEndISO: localDayEnd.toISOString(),
+      localDayEndISO: localDayDayEnd.toISOString(),
     };
-    console.log('API: Constructed request body object:', requestBody);
-    const stringifiedBody = JSON.stringify(requestBody);
-    console.log('API: Sending body to daily-briefing Edge Function (stringified):', stringifiedBody);
 
     // Get the user's session to include the access token for authentication
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -82,19 +76,13 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
     const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/daily-briefing`;
 
-    console.log('API: Direct fetch to Edge Function URL:', EDGE_FUNCTION_URL);
-    console.log('API: Fetch headers:', {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    });
-
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
       },
-      body: stringifiedBody,
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -106,7 +94,6 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
     const data = await response.json();
     // The data returned from the Edge Function is expected to have a 'briefing' property
     const briefingResult = data as { briefing: string };
-    console.log('API: Received daily briefing (direct fetch):', briefingResult.briefing);
     return briefingResult.briefing;
 
   } catch (error) {
@@ -115,17 +102,17 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
   }
 };
 
-export const getHabitChallengeSuggestion = async (userId: string, habitId: string) => {
-  console.log('Getting habit challenge suggestion for user:', userId, 'habit:', habitId);
+export const getHabitChallengeSuggestion = async () => {
+  // This function is currently mocked, no AI API call here.
   return "Try to complete your habit for 7 consecutive days!";
 };
 
-export const parseAppointmentText = async (text: string, date: Date) => {
-  console.log('Parsing appointment text:', text, 'for date:', format(date, 'yyyy-MM-dd'));
+export const parseAppointmentText = async () => {
+  // This function is currently mocked, no AI API call here.
   return {
     title: "Parsed Appointment",
     description: "Details from text",
-    date: format(date, 'yyyy-MM-dd'),
+    date: format(new Date(), 'yyyy-MM-dd'), // Use current date for mock
     startTime: "09:00",
     endTime: "10:00",
   };

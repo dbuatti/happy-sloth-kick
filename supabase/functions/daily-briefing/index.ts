@@ -59,12 +59,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
-    console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type'));
-    console.log("Daily Briefing: Incoming Content-Length header:", req.headers.get('Content-Length'));
-
-    const rawBody = await req.text(); // Read the raw request body as text
-    console.log("Daily Briefing: Raw request body received:", rawBody);
+    const rawBody = await req.text();
 
     if (!rawBody || rawBody.trim() === '') {
       console.error("Daily Briefing: Request body is empty or whitespace after reading raw text.");
@@ -86,7 +81,6 @@ serve(async (req: Request) => {
     }
 
     const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
-    console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
@@ -211,8 +205,6 @@ serve(async (req: Request) => {
     const response = await result.response;
     const briefingText = response.text();
     
-    console.log("Daily Briefing: Final briefing text to send:", briefingText);
-
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

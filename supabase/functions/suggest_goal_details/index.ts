@@ -15,9 +15,7 @@ serve(async (req: Request) => { // Explicitly type req as Request
   }
 
   try {
-    console.log("Incoming request headers:", req.headers);
     const rawBody = await req.text();
-    console.log("Raw request body:", rawBody);
 
     if (!rawBody) {
       console.error("Error: Request body is empty.");
@@ -39,7 +37,6 @@ serve(async (req: Request) => { // Explicitly type req as Request
     }
 
     const { prompt, categories, currentDate } = requestBody;
-    console.log("Received request body (parsed):", requestBody);
 
     if (!prompt) {
       console.error("Error: Prompt is required");
@@ -57,7 +54,6 @@ serve(async (req: Request) => { // Explicitly type req as Request
         status: 500,
       });
     }
-    console.log("GEMINI_API_KEY successfully retrieved.");
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" }); // Changed model to 'gemini-2.5-flash-lite'
@@ -86,17 +82,13 @@ serve(async (req: Request) => { // Explicitly type req as Request
     If the goal is very short-term or ongoing, suggest 'daily' or 'weekly'. For longer-term, use appropriate 'X-month' or 'X-year' types.
     Ensure 'cleanedDescription' is always present.`;
 
-    console.log("Sending AI prompt:", aiPrompt);
-
     const result = await model.generateContent(aiPrompt);
     const response = await result.response;
     const text = response.text();
-    console.log("Raw AI response:", text);
 
     let parsedData;
     try {
       parsedData = JSON.parse(text.replace(/```json\n|\n```/g, ''));
-      console.log("Parsed AI data:", parsedData);
     } catch (parseError: any) {
       console.error("Failed to parse AI response as JSON:", text, parseError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response.' }), {
