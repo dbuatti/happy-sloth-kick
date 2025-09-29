@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod'; // Corrected import statement
+import * as z from 'zod';
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -194,7 +194,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     }
     setIsSuggesting(true);
     const toastId = showLoading('Getting AI suggestions...');
-    console.log('Toast ID generated:', toastId);
+    console.log('Toast ID generated:', toastId); // Re-added log
     try {
       const categoriesForAI: AICategory[] = allCategories.map(cat => ({ id: cat.id, name: cat.name }));
       const suggestions: AISuggestionResult | null = await suggestTaskDetails(description, categoriesForAI, currentDate);
@@ -232,7 +232,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       showError('Failed to get AI suggestions. Please try again.');
     } finally {
       setIsSuggesting(false);
-      console.log('Attempting to dismiss toast with ID:', toastId);
+      console.log('Attempting to dismiss toast with ID:', toastId); // Re-added log
       dismissToast(toastId);
     }
   }, [description, allCategories, sections, setValue, currentDate]);
