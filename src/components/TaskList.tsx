@@ -83,11 +83,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isConfirmDeleteSectionOpen, setIsConfirmDeleteSectionOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<TaskSection | null>(null);
 
-  // Moved useMemo hook to the top level to ensure consistent hook order
-  const hasFiltersApplied = useMemo(() => {
-    return filteredTasks.length === 0 && processedTasks.length > 0;
-  }, [filteredTasks, processedTasks]);
-
   const tasksWithoutSection = useMemo(() => {
     const sectionIds = new Set(sections.map(s => s.id));
     return filteredTasks.filter(task => !task.section_id || !sectionIds.has(task.section_id));
@@ -133,7 +128,7 @@ const TaskList: React.FC<TaskListProps> = ({
   };
 
   // Moved renderTask inside the component to ensure TaskItem is in scope
-  const renderTask = useCallback((task: Task, index: number) => {
+  const renderTask = useCallback((task: Task) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id); // Calculate isDoToday here
     return (
       <TaskItem
@@ -142,17 +137,17 @@ const TaskList: React.FC<TaskListProps> = ({
         onUpdate={updateTask} // Corrected prop name
         onDelete={deleteTask} // Corrected prop name
         onOpenOverview={onOpenOverview}
-        // Removed allCategories={allCategories} // No longer passed to TaskItem
+        // Removed allCategories={allCategories}
         isExpanded={expandedTasks[task.id] === true}
         toggleExpand={toggleTask} // Pass toggleTask as toggleExpand
         setFocusTask={setFocusTask}
-        doTodayOffIds={doTodayOffIds}
+        // Removed doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday} // Pass the function directly, it expects a Task object
         scheduledAppointment={scheduledTasksMap.get(task.id)} // Pass scheduledAppointment
         isDemo={isDemo}
         // Removed provided={provided}
         // Removed snapshot={snapshot}
-        // Removed index={index} // No longer passed to TaskItem
+        // Removed index={index}
         isSelected={selectedTaskIds.has(task.id)}
         onSelectTask={onSelectTask}
         allTasks={processedTasks} // Pass allTasks
@@ -220,6 +215,10 @@ const TaskList: React.FC<TaskListProps> = ({
     return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
   }
 
+  const hasFiltersApplied = useMemo(() => {
+    return filteredTasks.length === 0 && processedTasks.length > 0;
+  }, [filteredTasks, processedTasks]);
+
   return (
     <div className="space-y-6">
       {filteredTasks.length === 0 && !loading && !hasFiltersApplied && (
@@ -249,7 +248,7 @@ const TaskList: React.FC<TaskListProps> = ({
           {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
           {expandedSections['no-section'] !== false && (
             <div className="p-3 space-y-2">
-              {tasksWithoutSection.map((task, index) => renderTask(task, index))}
+              {tasksWithoutSection.map((task) => renderTask(task))}
             </div>
           )}
           <div className="p-3 border-t">
@@ -274,7 +273,7 @@ const TaskList: React.FC<TaskListProps> = ({
             {renderSectionHeader(section, tasksInThisSection)}
             {expandedSections[section.id] !== false && (
               <div className="p-3 space-y-2">
-                {tasksInThisSection.map((task, index) => renderTask(task, index))}
+                {tasksInThisSection.map((task) => renderTask(task))}
               </div>
             )}
             <div className="p-3 border-t">
