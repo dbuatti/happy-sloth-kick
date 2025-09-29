@@ -107,6 +107,17 @@ serve(async (req: Request) => {
       });
     }
 
+    // --- TEMPORARY: List available Gemini models for debugging ---
+    try {
+      const genAI_temp = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const { models } = await genAI_temp.listModels();
+      console.log("Daily Briefing: Available Gemini Models:");
+      models.forEach(model => console.log(`  - ${model.name} (Supported methods: ${model.supportedGenerationMethods?.join(', ')})`));
+    } catch (listModelsError: any) {
+      console.error("Daily Briefing: Error listing Gemini models:", listModelsError.message);
+    }
+    // --- END TEMPORARY ---
+
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: {
         autoRefreshToken: false,
@@ -205,7 +216,7 @@ serve(async (req: Request) => {
     Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Changed model to 'gemini-pro'
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Keeping gemini-pro for now, will update after listModels output
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
