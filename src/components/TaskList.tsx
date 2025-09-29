@@ -228,14 +228,7 @@ const TaskList: React.FC<TaskListProps> = ({
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg font-semibold mb-2">No tasks for today!</p>
           <p className="mb-4">Time to relax or add some new tasks.</p>
-          <QuickAddTask
-            sectionId={null}
-            onAddTask={handleAddTask}
-            defaultCategoryId={allCategories[0]?.id || ''}
-            isDemo={isDemo}
-            allCategories={allCategories}
-            currentDate={currentDate}
-          />
+          {/* Removed QuickAddTask here, as FloatingAddTaskButton serves this purpose */}
         </div>
       )}
 
