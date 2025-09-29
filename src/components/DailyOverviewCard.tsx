@@ -4,10 +4,9 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { CheckCircle2, Target, ListTodo } from 'lucide-react'; // Removed Archive as it's not used
 import { Task } from '@/hooks/useTasks';
-import { CheckCircle2, Target, ListTodo, Clock } from 'lucide-react';
-import DoTodaySwitch from './DoTodaySwitch'; // This is used
-// Removed unused imports: cn, ArrowRight, Tooltip, TooltipContent, TooltipTrigger
+// import { cn } from '@/lib/utils'; // Removed unused import
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -21,14 +20,15 @@ interface DailyOverviewCardProps {
   onOpenFocusView: () => void;
   tasksLoading: boolean;
   isDemo?: boolean;
-  doTodayOffIds: Set<string>;
-  toggleDoToday: (task: Task) => void;
-  archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>;
-  setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>; // Corrected type
-  onToggleAllSections: () => void;
+  // Removed unused props:
+  // doTodayOffIds: Set<string>;
+  // toggleDoToday: (task: Task) => void;
+  // archiveAllCompletedTasks: () => Promise<void>;
+  // toggleAllDoToday: () => Promise<void>;
+  // setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  // setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  // setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  // onToggleAllSections: () => void;
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -39,92 +39,77 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   onOpenFocusView,
   tasksLoading,
   isDemo,
-  doTodayOffIds,
-  toggleDoToday,
+  // Removed unused props from destructuring:
+  // doTodayOffIds,
+  // toggleDoToday,
+  // archiveAllCompletedTasks,
+  // toggleAllDoToday,
+  // setIsFocusPanelOpen,
+  // setIsManageCategoriesOpen,
+  // setIsManageSectionsOpen,
+  // onToggleAllSections,
 }) => {
-  const totalTasks = dailyProgress.totalPendingCount + dailyProgress.completedCount;
-  const completionPercentage = totalTasks > 0 ? (dailyProgress.completedCount / totalTasks) * 100 : 0;
+  const progressPercentage = dailyProgress.totalPendingCount === 0
+    ? 100
+    : Math.round((dailyProgress.completedCount / (dailyProgress.completedCount + dailyProgress.totalPendingCount)) * 100) || 0;
 
-  const handleMarkNextTaskDone = async () => {
-    if (nextAvailableTask && !isDemo) {
+  const handleMarkDone = async () => {
+    if (nextAvailableTask) {
       await updateTask(nextAvailableTask.id, { status: 'completed' });
     }
   };
 
-  const handleToggleDoTodaySwitch = (task: Task) => {
-    toggleDoToday(task);
+  const handleDetailsClick = () => {
+    if (nextAvailableTask) {
+      onOpenOverview(nextAvailableTask);
+    }
   };
 
   return (
-    <Card className="w-full shadow-lg border-primary/20 bg-gradient-to-br from-background to-primary/5">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-xl font-semibold">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-primary" />
-            <span>Daily Overview</span>
-          </div>
-          <Button variant="outline" size="sm" onClick={onOpenFocusView} disabled={isDemo} className="flex items-center gap-1">
-            <Target className="h-4 w-4" />
-            Focus Mode
-          </Button>
+    <Card className="relative overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <CheckCircle2 className="h-5 w-5 text-primary" />
+          Daily Overview
         </CardTitle>
+        <Button variant="outline" size="sm" onClick={onOpenFocusView} disabled={isDemo}>
+          <Target className="h-4 w-4 mr-2" /> Focus Mode
+        </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <ListTodo className="h-4 w-4" />
-            <span>{dailyProgress.totalPendingCount} Pending</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <span>{dailyProgress.completedCount} Completed</span>
-          </div>
+      <CardContent>
+        <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+          <p className="flex items-center gap-1">
+            <ListTodo className="h-4 w-4" /> {dailyProgress.totalPendingCount} Pending
+          </p>
+          <p className="flex items-center gap-1">
+            <CheckCircle2 className="h-4 w-4 text-green-500" /> {dailyProgress.completedCount} Completed
+          </p>
           {dailyProgress.overdueCount > 0 && (
-            <div className="flex items-center gap-1 text-red-500">
-              <Clock className="h-4 w-4" />
-              <span>{dailyProgress.overdueCount} Overdue</span>
-            </div>
+            <p className="flex items-center gap-1 text-red-500">
+              {/* Removed Archive icon as it's not imported anymore */}
+              {dailyProgress.overdueCount} Overdue
+            </p>
           )}
         </div>
+        <Progress value={progressPercentage} className="h-2 mb-4" />
 
-        <Progress value={completionPercentage} className="h-2" />
-
-        <div className="pt-2">
-          {tasksLoading ? (
-            <div className="text-center text-muted-foreground">Loading tasks...</div>
-          ) : nextAvailableTask ? (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 border rounded-lg bg-secondary/20">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-lg truncate">{nextAvailableTask.description}</h3>
-                {nextAvailableTask.due_date && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    Due: {new Date(nextAvailableTask.due_date).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <DoTodaySwitch
-                  isOn={!doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id)}
-                  onToggle={() => handleToggleDoTodaySwitch(nextAvailableTask)}
-                  taskId={nextAvailableTask.id}
-                  isDemo={isDemo}
-                />
-                <Button variant="secondary" size="sm" onClick={handleMarkNextTaskDone} disabled={isDemo}>
-                  Done
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => onOpenOverview(nextAvailableTask)} disabled={isDemo}>
-                  Details
-                </Button>
-              </div>
+        {tasksLoading ? (
+          <div className="flex items-center justify-center h-16">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : nextAvailableTask ? (
+          <div className="flex items-center justify-between gap-2 mt-4 p-3 bg-muted rounded-lg">
+            <span className="font-medium text-base flex-grow truncate">
+              {nextAvailableTask.description}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={handleMarkDone} disabled={isDemo}>Done</Button>
+              <Button variant="outline" size="sm" onClick={handleDetailsClick} disabled={isDemo}>Details</Button>
             </div>
-          ) : (
-            <div className="text-center text-muted-foreground p-4 border rounded-lg bg-secondary/20">
-              <p className="font-medium">No tasks currently in focus or available.</p>
-              <p className="text-sm mt-1">Time to relax or add a new task!</p>
-            </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground mt-4">No tasks currently in focus. Great job!</p>
+        )}
       </CardContent>
     </Card>
   );
