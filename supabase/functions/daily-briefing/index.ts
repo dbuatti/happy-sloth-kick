@@ -89,19 +89,24 @@ serve(async (req: Request) => {
     const localDayEnd = parseISO(localDayEndISO);
     const todayStartOfDay = startOfDay(localDayStart);
 
+    console.log("Daily Briefing: Fetching all tasks...");
     const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
       .select('id, description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
       .eq('user_id', userId);
     if (tasksError) throw tasksError;
     const allTasks: Task[] = allTasksData || [];
+    console.log(`Daily Briefing: Fetched ${allTasks.length} tasks.`);
 
+    console.log("Daily Briefing: Fetching recurring task completions...");
     const { data: recurringCompletionsData, error: recurringCompletionsError } = await supabaseAdmin.from('recurring_task_completion_log')
       .select('original_task_id')
       .eq('user_id', userId)
       .eq('completion_date', todayDateString);
     if (recurringCompletionsError) throw recurringCompletionsError;
     const completedRecurringTaskIds = new Set(recurringCompletionsData?.map((c: RecurringCompletion) => c.original_task_id) || []);
+    console.log(`Daily Briefing: Fetched ${completedRecurringTaskIds.size} recurring completions.`);
 
+    console.log("Daily Briefing: Fetching appointments, weekly focus, and sleep records...");
     const [appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
       supabaseAdmin.from('schedule_appointments')
         .select('title, start_time, end_time')
@@ -127,6 +132,7 @@ serve(async (req: Request) => {
     const appointments: Appointment[] = appointmentsRes.data || [];
     const weeklyFocus: WeeklyFocus | null = weeklyFocusRes.data;
     const sleepRecord: SleepRecord | null = sleepRecordRes.data;
+    console.log(`Daily Briefing: Fetched ${appointments.length} appointments, weekly focus: ${!!weeklyFocus}, sleep record: ${!!sleepRecord}.`);
 
     const pendingTasks: Task[] = [];
     const completedTasks: Task[] = [];
@@ -153,6 +159,7 @@ serve(async (req: Request) => {
         }
       }
     });
+    console.log(`Daily Briefing: Processed tasks. Pending: ${pendingTasks.length}, Completed: ${completedTasks.length}, Overdue: ${overdueTasks.length}.`);
 
     // Summarize data for the prompt more concisely
     const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks.` : 'No pending tasks.';
@@ -176,14 +183,16 @@ serve(async (req: Request) => {
 
     console.log("Daily Briefing: Constructed prompt length:", prompt.length);
     console.log("Daily Briefing: Making Gemini API request using SDK...");
+    console.log("Daily Briefing: Prompt being sent to Gemini:", prompt); // Log the actual prompt
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Use the same model as before
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     const result = await model.generateContent(prompt);
+    console.log("Daily Briefing: Received result from Gemini.");
     const response = await result.response;
     const briefingText = response.text();
-    console.log("Daily Briefing: Received Gemini response.");
+    console.log("Daily Briefing: Received Gemini response text.");
 
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
