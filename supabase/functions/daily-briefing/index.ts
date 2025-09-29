@@ -185,19 +185,28 @@ serve(async (req: Request) => {
     console.log("Daily Briefing: Making Gemini API request using SDK...");
     console.log("Daily Briefing: Prompt being sent to Gemini:", prompt); // Log the actual prompt
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    try {
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
-    const result = await model.generateContent(prompt);
-    console.log("Daily Briefing: Received result from Gemini.");
-    const response = await result.response;
-    const briefingText = response.text();
-    console.log("Daily Briefing: Received Gemini response text.");
+      const result = await model.generateContent(prompt);
+      console.log("Daily Briefing: Received raw result from Gemini:", JSON.stringify(result, null, 2));
+      const response = await result.response;
+      console.log("Daily Briefing: Received response object from Gemini:", JSON.stringify(response, null, 2));
+      const briefingText = response.text();
+      console.log("Daily Briefing: Extracted briefing text from Gemini response.");
 
-    return new Response(JSON.stringify({ briefing: briefingText }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+      return new Response(JSON.stringify({ briefing: briefingText }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    } catch (geminiError: any) {
+      console.error("Daily Briefing: Error during Gemini API call or response processing:", geminiError);
+      return new Response(JSON.stringify({ error: `Gemini API error: ${geminiError.message || 'Unknown Gemini error'}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
 
   } catch (error: any) {
     console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
