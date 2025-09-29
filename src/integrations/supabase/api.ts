@@ -69,32 +69,48 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
       localDayEndISO: localDayEnd.toISOString(),
     };
     console.log('API: Constructed request body object:', requestBody);
-    const stringifiedBody = JSON.stringify(requestBody); // Explicitly stringify
+    const stringifiedBody = JSON.stringify(requestBody);
     console.log('API: Sending body to daily-briefing Edge Function (stringified):', stringifiedBody);
 
-    const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: stringifiedBody, // Pass the stringified body
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (error) {
-      console.error('Error invoking daily-briefing Edge Function:', error.message);
-      // Log additional details from the FunctionsHttpError object
-      if ((error as any).details) {
-        console.error('Edge Function details:', (error as any).details);
-      }
+    // Get the user's session to include the access token for authentication
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      console.error('API: Failed to get user session for Edge Function call:', sessionError?.message);
       return null;
     }
 
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+    const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/daily-briefing`;
+
+    console.log('API: Direct fetch to Edge Function URL:', EDGE_FUNCTION_URL);
+    console.log('API: Fetch headers:', {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    });
+
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: stringifiedBody,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error invoking daily-briefing Edge Function (direct fetch):', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
     // The data returned from the Edge Function is expected to have a 'briefing' property
     const briefingResult = data as { briefing: string };
-    console.log('API: Received daily briefing:', briefingResult.briefing);
+    console.log('API: Received daily briefing (direct fetch):', briefingResult.briefing);
     return briefingResult.briefing;
 
   } catch (error) {
-    console.error('API: Error in getDailyBriefing:', error);
+    console.error('API: Error in getDailyBriefing (outer catch):', error);
     return null;
   }
 };
