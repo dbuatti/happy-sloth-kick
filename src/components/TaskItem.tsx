@@ -46,7 +46,7 @@ interface TaskItemProps {
   isDoToday: boolean;
   toggleDoToday: (task: Task) => void;
   doTodayOffIds: Set<string>; // Used in SortableTaskItem and TaskReorderDialog for nested TaskItems
-  scheduledTasksMap: Map<string, Appointment>; // Used to derive scheduledAppointment
+  // Removed scheduledTasksMap as it's not directly used in TaskItem
   scheduledAppointment?: Appointment;
   isDemo?: boolean;
   showDragHandle?: boolean;
@@ -54,7 +54,7 @@ interface TaskItemProps {
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  index: number; // Added this prop
+  index: number; // Standard prop for list items
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -74,7 +74,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isDoToday,
   toggleDoToday,
   doTodayOffIds, // Destructure new prop (used indirectly)
-  scheduledTasksMap, // Destructure new prop (used indirectly)
+  // Removed scheduledTasksMap from destructuring
   scheduledAppointment,
   isDemo = false,
   showDragHandle = false,
@@ -82,7 +82,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   listeners,
   isSelected,
   onSelectTask,
-  index, // Destructure new prop
+  index, // Destructure new prop (standard list item prop)
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -90,7 +90,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editText, setEditText] = useState(task.description || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // scheduledAppointment is now passed directly as a prop
+  // scheduledAppointment is now passed directly as a prop, so scheduledTasksMap is not needed here.
   // const scheduledAppointment = useMemo(() => scheduledTasksMap.get(task.id), [scheduledTasksMap, task.id]);
 
   const originalTask = useMemo(() => {
@@ -205,8 +205,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     <div
       className={cn(
         "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 pr-3 shadow-sm border", // Adjusted padding
-        task.status === 'completed' 
-          ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20" 
+        task.status === 'completed'
+          ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20"
           : "bg-card text-foreground border-border",
         isOverdue && task.status === 'to-do' && "bg-red-500/10 border-red-500/30",
         !isDoToday && "opacity-60",
@@ -286,7 +286,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Clickable Content Area */}
-      <div 
+      <div
         className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 min-w-0 py-1" // Adjusted padding and layout for responsiveness
         onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
       >
