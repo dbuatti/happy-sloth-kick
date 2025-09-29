@@ -54,17 +54,30 @@ serve(async (req: Request) => {
   }
 
   try {
-    // Check if the request has a body before trying to parse JSON
-    if (!req.body) {
-      console.error("Daily Briefing: Request body is empty.");
-      return new Response(JSON.stringify({ error: 'Request body is empty.' }), {
+    const rawBody = await req.text(); // Read the raw request body as text
+    console.log("Daily Briefing: Raw request body:", rawBody);
+
+    if (!rawBody || rawBody.trim() === '') {
+      console.error("Daily Briefing: Request body is empty or whitespace.");
+      return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
 
-    const { userId, localDayStartISO, localDayEndISO } = await req.json();
-    console.log("Daily Briefing: Received request:", { userId, localDayStartISO, localDayEndISO });
+    let requestBodyParsed;
+    try {
+      requestBodyParsed = JSON.parse(rawBody);
+    } catch (jsonParseError: any) {
+      console.error("Daily Briefing: Failed to parse request body as JSON:", jsonParseError.message);
+      return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${jsonParseError.message}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+
+    const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
+    console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
