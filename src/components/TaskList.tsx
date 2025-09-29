@@ -73,10 +73,9 @@ const TaskList: React.FC<TaskListProps> = ({
   const [isConfirmDeleteSectionOpen, setIsConfirmDeleteSectionOpen] = useState(false);
   const [sectionToDelete, setSectionToDelete] = useState<TaskSection | null>(null);
 
-  const tasksWithoutSection = useMemo(() => {
-    const sectionIds = new Set(sections.map(s => s.id));
-    return filteredTasks.filter(task => !task.section_id || !sectionIds.has(task.section_id));
-  }, [filteredTasks, sections]);
+  // Calculate tasksWithoutSection directly
+  const sectionIds = useMemo(() => new Set(sections.map(s => s.id)), [sections]);
+  const tasksWithoutSection = filteredTasks.filter(task => !task.section_id || !sectionIds.has(task.section_id));
 
   const getTasksForSection = useCallback((sectionId: string) => {
     return filteredTasks.filter(task => task.section_id === sectionId);
@@ -117,7 +116,6 @@ const TaskList: React.FC<TaskListProps> = ({
     setIsConfirmDeleteSectionOpen(true);
   }, []);
 
-  // renderTask is now a regular function, not wrapped in useCallback
   const renderTask = (task: Task) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
     return (
@@ -144,7 +142,6 @@ const TaskList: React.FC<TaskListProps> = ({
     );
   };
 
-  // renderSectionHeader is now a regular function, not wrapped in useCallback
   const renderSectionHeader = (section: TaskSection, tasksInThisSection: Task[]) => (
     <div className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border">
       <div className="flex items-center gap-2">
@@ -197,8 +194,7 @@ const TaskList: React.FC<TaskListProps> = ({
     </div>
   );
 
-
-  // Calculate these values directly instead of using useMemo
+  // Calculate these values directly
   const hasFiltersApplied = filteredTasks.length === 0 && processedTasks.length > 0;
   const showNoTasksMessage = filteredTasks.length === 0 && !loading && !hasFiltersApplied;
 

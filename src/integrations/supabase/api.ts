@@ -76,7 +76,7 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
 
     if (error) {
       console.error('Error invoking daily-briefing Edge Function:', error.message);
-      // Log additional details if available from FunctionsHttpError
+      // Log additional details from the FunctionsHttpError object
       if ((error as any).details) {
         console.error('Edge Function details:', (error as any).details);
       }
