@@ -63,7 +63,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onDelete,
   onUpdate,
   sections,
-  allCategories, // Destructure allCategories (used indirectly)
   onOpenOverview,
   currentDate,
   isOverlay = false,
@@ -73,8 +72,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   setFocusTask,
   isDoToday,
   toggleDoToday,
-  doTodayOffIds, // Destructure new prop (used indirectly)
-  // Removed scheduledTasksMap from destructuring
+  // Removed unused props: allCategories, doTodayOffIds, index
   scheduledAppointment,
   isDemo = false,
   showDragHandle = false,
@@ -82,7 +80,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
   listeners,
   isSelected,
   onSelectTask,
-  index, // Destructure new prop (standard list item prop)
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
