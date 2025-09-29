@@ -78,6 +78,7 @@ serve(async (req: Request) => {
         status: 500,
       });
     }
+    console.log("Daily Briefing: GEMINI_API_KEY status:", GEMINI_API_KEY ? 'set' : 'NOT SET');
 
     // Initialize Supabase client with service role key for elevated permissions
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -176,13 +177,13 @@ serve(async (req: Request) => {
     const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user based on their productivity data.
     Today's date (client local time): ${todayDateString}
 
-    Here's the user's data:
-    - Pending tasks for today: ${JSON.stringify(pendingTasks.map((t: Task) => ({ description: t.description, priority: t.priority, due_date: t.due_date })))}
-    - Completed tasks today: ${JSON.stringify(completedTasks.map((t: Task) => t.description))}
-    - Overdue tasks: ${JSON.stringify(overdueTasks.map((t: Task) => ({ description: t.description, due_date: t.due_date })))}
-    - Appointments today: ${JSON.stringify(appointments.map((a: Appointment) => ({ title: a.title, start_time: a.start_time, end_time: a.end_time })))}
-    - Weekly focus: ${JSON.stringify(weeklyFocus)}
-    - Last night's sleep record: ${JSON.stringify(sleepRecord)}
+    Here's a summary of the user's data:
+    - Pending tasks for today: ${pendingTasks.map(t => t.description).join(', ') || 'None'}
+    - Completed tasks today: ${completedTasks.map(t => t.description).join(', ') || 'None'}
+    - Overdue tasks: ${overdueTasks.map(t => `${t.description} (due ${t.due_date ? t.due_date.split('T')[0] : 'N/A'})`).join(', ') || 'None'}
+    - Appointments today: ${appointments.map(a => `${a.title} (${a.start_time}-${a.end_time})`).join(', ') || 'None'}
+    - Weekly focus: ${weeklyFocus ? `${weeklyFocus.primary_focus || ''} ${weeklyFocus.secondary_focus || ''} ${weeklyFocus.tertiary_focus || ''}`.trim() || 'None' : 'None'}
+    - Last night's sleep record: ${sleepRecord ? `Bedtime: ${sleepRecord.bed_time || 'N/A'}, Wakeup: ${sleepRecord.wake_up_time || 'N/A'}, Time to fall asleep: ${sleepRecord.time_to_fall_asleep_minutes || 'N/A'} mins, Interruptions: ${sleepRecord.sleep_interruptions_duration_minutes || 'N/A'} mins` : 'No sleep data available.'}
 
     Structure the briefing as follows:
     - Start with a friendly greeting.

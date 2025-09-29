@@ -91,18 +91,18 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   };
 
-  const handleEditSection = (section: TaskSection) => {
+  const handleEditSection = useCallback((section: TaskSection) => {
     setEditSectionId(section.id);
     setEditSectionName(section.name);
-  };
+  }, []); // Added useCallback
 
-  const handleUpdateSection = async () => {
+  const handleUpdateSection = useCallback(async () => {
     if (editSectionId && editSectionName.trim()) {
       await updateSection(editSectionId, editSectionName.trim());
       setEditSectionId(null);
       setEditSectionName('');
     }
-  };
+  }, [editSectionId, editSectionName, updateSection]); // Added useCallback
 
   const handleDeleteSection = async () => {
     if (sectionToDelete) {
@@ -112,10 +112,10 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   };
 
-  const confirmDeleteSection = (section: TaskSection) => {
+  const confirmDeleteSection = useCallback((section: TaskSection) => {
     setSectionToDelete(section);
     setIsConfirmDeleteSectionOpen(true);
-  };
+  }, []); // Added useCallback
 
   const renderTask = useCallback((task: Task) => {
     const isDoToday = !doTodayOffIds.has(task.original_task_id || task.id);
@@ -180,30 +180,32 @@ const TaskList: React.FC<TaskListProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => handleEditSection(section)}>Rename Section</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => markAllTasksInSectionCompleted(section.id)}>Mark All Completed</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
+          <DropdownMenuItem onSelect={() => handleEditSection(section)}>Rename Section</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>Mark All Completed</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
             {section.include_in_focus_mode ? (
               <span className="flex items-center"><EyeOff className="mr-2 h-4 w-4" /> Exclude from Focus Mode</span>
             ) : (
               <span className="flex items-center"><Eye className="mr-2 h-4 w-4" /> Include in Focus Mode</span>
             )}
           </DropdownMenuItem>
-          <DropdownMenuItem className="text-destructive" onClick={() => confirmDeleteSection(section)}>Delete Section</DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive" onSelect={() => confirmDeleteSection(section)}>Delete Section</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
   ), [expandedSections, editSectionId, editSectionName, toggleSection, handleUpdateSection, markAllTasksInSectionCompleted, updateSectionIncludeInFocusMode, confirmDeleteSection, handleEditSection]);
 
-  if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
-  }
 
+  // Moved these useMemo calls before the conditional return
   const hasFiltersApplied = useMemo(() => {
     return filteredTasks.length === 0 && processedTasks.length > 0;
   }, [filteredTasks, processedTasks]);
 
   const showNoTasksMessage = filteredTasks.length === 0 && !loading && !hasFiltersApplied;
+
+  if (loading) {
+    return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
+  }
 
   return (
     <div className="space-y-6">
