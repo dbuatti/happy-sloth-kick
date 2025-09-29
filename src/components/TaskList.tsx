@@ -130,10 +130,6 @@ const TaskList: React.FC<TaskListProps> = ({
     return processedTasks.find(task => task.id === id);
   }, [processedTasks]);
 
-  // Removed: const findSection = useCallback((id: UniqueIdentifier) => {
-  //   return sections.find(section => section.id === id);
-  // }, [sections]);
-
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id);
     setInsertionIndicator(null);
@@ -308,7 +304,7 @@ const TaskList: React.FC<TaskListProps> = ({
         onDelete={deleteTask}
         onOpenOverview={onOpenOverview}
         isExpanded={expandedTasks[task.id] === true}
-        toggleExpand={toggleTask}
+        toggleTask={toggleTask}
         setFocusTask={setFocusTask}
         toggleDoToday={toggleDoToday}
         scheduledAppointment={scheduledTasksMap.get(task.id)}
@@ -323,7 +319,10 @@ const TaskList: React.FC<TaskListProps> = ({
         hasSubtasks={hasSubtasks}
         showDragHandle={true}
         insertionIndicator={insertionIndicator}
-        getSubtasksForTask={getSubtasksForTask} // Pass down the function
+        getSubtasksForTask={getSubtasksForTask}
+        expandedTasks={expandedTasks} // Pass down
+        scheduledTasksMap={scheduledTasksMap} // Pass down
+        doTodayOffIds={doTodayOffIds} // Pass down
       />
     );
   }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate, doTodayOffIds, getSubtasksForTask, insertionIndicator]);
@@ -523,7 +522,8 @@ const TaskList: React.FC<TaskListProps> = ({
               expandedTasks={expandedTasks}
               toggleTask={toggleTask}
               insertionIndicator={null}
-              getSubtasksForTask={getSubtasksForTask} // Pass down the function
+              getSubtasksForTask={getSubtasksForTask}
+              scheduledTasksMap={scheduledTasksMap} // Pass down
             />
           ) : null}
         </DragOverlay>,

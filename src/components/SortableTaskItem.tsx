@@ -32,8 +32,8 @@ interface SortableTaskItemProps {
   hasSubtasks?: boolean;
   isExpanded?: boolean;
   getSubtasksForTask: (parentTaskId: string) => Task[];
-  toggleExpand?: (taskId: string) => void; // Added missing prop
-  scheduledAppointment?: Appointment; // Added missing prop
+  // Removed toggleExpand as it was redundant with toggleTask
+  scheduledAppointment?: Appointment;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -61,8 +61,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   hasSubtasks,
   isExpanded,
   getSubtasksForTask,
-  toggleExpand, // Destructure
-  scheduledAppointment, // Destructure
+  // Removed toggleExpand from destructuring
+  scheduledAppointment,
 }) => {
   const {
     attributes,
@@ -130,7 +130,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           setFocusTask={setFocusTask}
           isDoToday={isDoToday}
           toggleDoToday={toggleDoToday}
-          scheduledAppointment={scheduledAppointment} {/* Passed down */}
+          scheduledAppointment={scheduledAppointment}
           isDemo={isDemo}
           showDragHandle={showDragHandle}
           attributes={attributes}
@@ -152,7 +152,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 onOpenOverview={onOpenOverview}
                 currentDate={currentDate}
                 expandedTasks={expandedTasks}
-                toggleTask={toggleTask}
+                toggleTask={toggleTask} // Corrected: Pass toggleTask
                 isOverlay={isOverlay}
                 setFocusTask={setFocusTask}
                 isDoToday={!doTodayOffIds.has(subtask.original_task_id || subtask.id)}
@@ -167,8 +167,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 hasSubtasks={getSubtasksForTask(subtask.id).length > 0}
                 isExpanded={expandedTasks[subtask.id] !== false}
                 getSubtasksForTask={getSubtasksForTask}
-                toggleExpand={toggleTask} // Passed down
-                scheduledAppointment={scheduledTasksMap.get(subtask.id)} // Passed down
+                scheduledAppointment={scheduledTasksMap.get(subtask.id)}
               />
             ))}
           </ul>
