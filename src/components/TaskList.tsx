@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import QuickAddTask from './QuickAddTask';
 import TaskItem from './TaskItem'; // Ensure TaskItem is imported
-// import { cn } from '@/lib/utils'; // Import cn for conditional classNames
+import { cn } from '@/lib/utils'; // Import cn for conditional classNames
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -228,7 +228,6 @@ const TaskList: React.FC<TaskListProps> = ({
         <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg font-semibold mb-2">No tasks for today!</p>
           <p className="mb-4">Time to relax or add some new tasks.</p>
-          {/* Removed QuickAddTask here, as FloatingAddTaskButton serves this purpose */}
         </div>
       )}
 
@@ -239,7 +238,8 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       )}
 
-      <div className={("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && "hidden")}>
+      {/* "No Section" block - always rendered */}
+      <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && "hidden")}>
         {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
         <div className="p-3 space-y-2">
           {expandedSections['no-section'] !== false && (
@@ -258,12 +258,13 @@ const TaskList: React.FC<TaskListProps> = ({
         </div>
       </div>
 
+      {/* Mapped sections - each section div is always rendered */}
       {sections.map(section => {
         const tasksInThisSection = getTasksForSection(section.id);
         const showSection = tasksInThisSection.length > 0 || isDemo;
 
         return (
-          <div key={section.id} className={("border rounded-lg bg-card shadow-sm", !showSection && "hidden")}>
+          <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSection && "hidden")}>
             {renderSectionHeader(section, tasksInThisSection)}
             <div className="p-3 space-y-2">
               {expandedSections[section.id] !== false && (

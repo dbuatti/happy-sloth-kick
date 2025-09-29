@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
-import { isValid, isWithinInterval, parseISO } from 'https://esm.sh/date-fns@2.30.0'; // Added isWithinInterval, parseISO
+import { isValid, isWithinInterval, parseISO, isBefore, startOfDay } from 'https://esm.sh/date-fns@2.30.0'; // Added isBefore, startOfDay
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,14 +12,14 @@ const corsHeaders = {
 
 // Define interfaces for fetched data to provide explicit typing and improve readability
 interface Task {
-  id: string; // Added id
+  id: string;
   description: string;
   status: 'to-do' | 'completed' | 'skipped' | 'archived';
   priority: string;
   due_date: string | null;
   section_id: string | null;
   recurring_type: 'none' | 'daily' | 'weekly' | 'monthly';
-  original_task_id: string | null; // Added original_task_id
+  original_task_id: string | null;
   updated_at: string;
   created_at: string;
 }
@@ -90,6 +90,7 @@ serve(async (req: Request) => {
     const todayDateString = localDayStartISO.split('T')[0]; // YYYY-MM-DD
     const localDayStart = parseISO(localDayStartISO); // Date object for start of local day
     const localDayEnd = parseISO(localDayEndISO);     // Date object for end of local day
+    const todayStartOfDay = startOfDay(localDayStart); // Start of today for comparison
 
     // Fetch all tasks for the user
     const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
@@ -143,31 +144,29 @@ serve(async (req: Request) => {
     const overdueTasks: Task[] = [];
 
     allTasks.forEach(t => {
-      const taskUpdatedAt = t.updated_at ? parseISO(t.updated_at) : null;
-      const taskCreatedAt = t.created_at ? parseISO(t.created_at) : null;
-      const taskDueDate = t.due_date ? parseISO(t.due_date) : null; // Parse due_date as Date object
-
-      const isUpdatedTodayLocal = taskUpdatedAt && isValid(taskUpdatedAt) && isWithinInterval(taskUpdatedAt, { start: localDayStart, end: localDayEnd });
-      const isCreatedTodayLocal = taskCreatedAt && isValid(taskCreatedAt) && isWithinInterval(taskCreatedAt, { start: localDayStart, end: localDayEnd });
-      const isDueTodayLocal = taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] === todayDateString;
-
+      const taskDueDate = t.due_date ? parseISO(t.due_date) : null;
       const isRecurringTemplate = t.recurring_type !== 'none';
-      const isCompletedTodayViaLog = isRecurringTemplate && completedRecurringTaskIds.has(t.id);
+      const effectiveTaskId = t.original_task_id || t.id; // Use original_task_id for recurring tasks
 
-      if (t.status === 'completed' || t.status === 'archived') {
-        if (!isRecurringTemplate && isUpdatedTodayLocal) {
-          completedTasks.push(t);
-        }
+      // Determine if the task is completed for today
+      const isCompletedForToday = (t.status === 'completed' && t.updated_at && isValid(parseISO(t.updated_at)) && isWithinInterval(parseISO(t.updated_at), { start: localDayStart, end: localDayEnd })) ||
+                                  (isRecurringTemplate && completedRecurringTaskIds.has(effectiveTaskId));
+
+      // Determine if the task is due today
+      const isDueToday = taskDueDate && isValid(taskDueDate) && startOfDay(taskDueDate).toISOString().split('T')[0] === todayDateString;
+
+      // Determine if the task is overdue
+      const isOverdue = taskDueDate && isValid(taskDueDate) && isBefore(startOfDay(taskDueDate), todayStartOfDay);
+
+      if (isCompletedForToday) {
+        completedTasks.push(t);
       } else if (t.status === 'to-do') {
-        if (isCompletedTodayViaLog) {
-          completedTasks.push(t);
-        } else {
-          if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) {
-            overdueTasks.push(t);
-          } else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) {
-            pendingTasks.push(t);
-          }
+        if (isOverdue) {
+          overdueTasks.push(t);
+        } else if (isDueToday || isRecurringTemplate) { // Recurring tasks are always "pending" if not completed
+          pendingTasks.push(t);
         }
+        // Tasks that are not due today, not overdue, not recurring, and not completed are ignored for today's briefing
       }
     });
     console.log("Daily Briefing: Pending tasks count:", pendingTasks.length);
