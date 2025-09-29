@@ -172,7 +172,8 @@ serve(async (req: Request) => {
 
     Keep the briefing under 100 words. Start with a friendly greeting, summarize key points, and end with an encouraging closing. Use emojis.`;
 
-    console.log("Daily Briefing: Sending prompt to Gemini API...");
+    console.log("Daily Briefing: Constructed prompt length:", prompt.length);
+    console.log("Daily Briefing: Making Gemini API request...");
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
     let geminiResponse;
@@ -186,6 +187,7 @@ serve(async (req: Request) => {
           contents: [{ parts: [{ text: prompt }] }],
         }),
       });
+      console.log("Daily Briefing: Received raw Gemini response object.");
     } catch (fetchError: any) {
       console.error("Daily Briefing: Error during Gemini API fetch:", fetchError);
       return new Response(JSON.stringify({ error: `Failed to connect to Gemini API: ${fetchError.message}` }), {

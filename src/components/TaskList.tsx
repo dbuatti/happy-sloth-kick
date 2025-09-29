@@ -82,14 +82,14 @@ const TaskList: React.FC<TaskListProps> = ({
     return filteredTasks.filter(task => task.section_id === sectionId);
   }, [filteredTasks]);
 
-  const handleCreateSection = async () => {
+  const handleCreateSection = useCallback(async () => {
     if (newSectionName.trim()) {
       setIsCreatingSection(true);
       await createSection(newSectionName.trim());
       setNewSectionName('');
       setIsCreatingSection(false);
     }
-  };
+  }, [newSectionName, createSection]);
 
   const handleEditSection = useCallback((section: TaskSection) => {
     setEditSectionId(section.id);
@@ -104,13 +104,13 @@ const TaskList: React.FC<TaskListProps> = ({
     }
   }, [editSectionId, editSectionName, updateSection]);
 
-  const handleDeleteSection = async () => {
+  const handleDeleteSection = useCallback(async () => {
     if (sectionToDelete) {
       await deleteSection(sectionToDelete.id);
       setIsConfirmDeleteSectionOpen(false);
       setSectionToDelete(null);
     }
-  };
+  }, [sectionToDelete, deleteSection]);
 
   const confirmDeleteSection = useCallback((section: TaskSection) => {
     setSectionToDelete(section);
