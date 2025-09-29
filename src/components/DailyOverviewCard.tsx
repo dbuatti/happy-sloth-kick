@@ -1,12 +1,13 @@
+"use client";
+
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ListTodo, Brain, CheckCircle2, Clock, Sparkles, FolderOpen, Tag, Archive, ToggleRight, ChevronDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Task } from '@/hooks/useTasks';
-import { Progress } from '@/components/Progress';
-import NextTaskCard from './dashboard/NextTaskCard';
-import { Card, CardTitle, CardHeader, CardContent } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { cn } from '@/lib/utils';
+import { CheckCircle2, Target, ListTodo, Clock } from 'lucide-react'; // Removed cn, ArrowRight
+import DoTodaySwitch from './DoTodaySwitch';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Kept Tooltip imports as they are used by DoTodaySwitch internally
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -40,102 +41,89 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   isDemo,
   doTodayOffIds,
   toggleDoToday,
-  archiveAllCompletedTasks,
-  toggleAllDoToday,
-  setIsFocusPanelOpen,
-  setIsManageCategoriesOpen,
-  setIsManageSectionsOpen,
-  onToggleAllSections,
 }) => {
-  const { totalPendingCount, completedCount, overdueCount } = dailyProgress;
-  const totalTasksForProgress = totalPendingCount + completedCount;
-  const isNextTaskDoToday = nextAvailableTask ? !doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id) : false;
+  const totalTasks = dailyProgress.totalPendingCount + dailyProgress.completedCount;
+  const completionPercentage = totalTasks > 0 ? (dailyProgress.completedCount / totalTasks) * 100 : 0;
 
-  const showNextTask = nextAvailableTask && totalPendingCount > 0;
+  const handleMarkNextTaskDone = async () => {
+    if (nextAvailableTask && !isDemo) {
+      await updateTask(nextAvailableTask.id, { status: 'completed' });
+    }
+  };
+
+  const handleToggleDoTodaySwitch = (task: Task) => {
+    toggleDoToday(task);
+  };
 
   return (
-    <Card className="mx-4 mt-4 p-0 shadow-sm rounded-xl bg-background">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" /> Daily Overview
+    <Card className="w-full shadow-lg border-primary/20 bg-gradient-to-br from-background to-primary/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-xl font-semibold">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-primary" />
+            <span>Daily Overview</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={onOpenFocusView} disabled={isDemo} className="flex items-center gap-1">
+            <Target className="h-4 w-4" />
+            Focus Mode
+          </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 p-4">
-        {showNextTask ? (
-          <NextTaskCard
-            nextAvailableTask={nextAvailableTask}
-            updateTask={updateTask}
-            onOpenOverview={onOpenOverview}
-            loading={tasksLoading}
-            onOpenFocusView={onOpenFocusView}
-            isDoToday={isNextTaskDoToday}
-            toggleDoToday={toggleDoToday}
-            isDemo={isDemo}
-          />
-        ) : (
-          <div className="text-center py-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              {totalPendingCount === 0 && completedCount > 0
-                ? "All tasks completed for today! 🎉"
-                : totalPendingCount === 0 && completedCount === 0
-                ? "No tasks for today. Enjoy your free time! 🧘‍♀️"
-                : "No next task available, but here's your progress:"}
-            </p>
+      <CardContent className="space-y-4">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <ListTodo className="h-4 w-4" />
+            <span>{dailyProgress.totalPendingCount} Pending</span>
           </div>
-        )}
+          <div className="flex items-center gap-1">
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+            <span>{dailyProgress.completedCount} Completed</span>
+          </div>
+          {dailyProgress.overdueCount > 0 && (
+            <div className="flex items-center gap-1 text-red-500">
+              <Clock className="h-4 w-4" />
+              <span>{dailyProgress.overdueCount} Overdue</span>
+            </div>
+          )}
+        </div>
 
-        <div className={cn("mt-4 pt-4 border-t", !showNextTask && "border-t-0 pt-0")}>
-          <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
-            <div className="flex items-center gap-1">
-              <ListTodo className="h-4 w-4 text-foreground" />
-              <span className="font-semibold text-foreground text-lg">{totalPendingCount} pending</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-primary text-lg">{completedCount} completed</span>
-            </div>
-          </div>
-          <Progress
-            value={totalTasksForProgress > 0 ? (completedCount / totalTasksForProgress) * 100 : 0}
-            className="h-4 rounded-full"
-            indicatorClassName="bg-gradient-to-r from-primary to-accent rounded-full"
-          />
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-3 gap-2">
-            {overdueCount > 0 ? (
-              <p className="text-sm text-destructive flex items-center gap-1">
-                <Clock className="h-4 w-4" /> {overdueCount} overdue
-              </p>
-            ) : <div />}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 text-xs" disabled={isDemo}>
-                  Bulk Actions <ChevronDown className="ml-2 h-3.5 w-3.5" />
+        <Progress value={completionPercentage} className="h-2" />
+
+        <div className="pt-2">
+          {tasksLoading ? (
+            <div className="text-center text-muted-foreground">Loading tasks...</div>
+          ) : nextAvailableTask ? (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 border rounded-lg bg-secondary/20">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-lg truncate">{nextAvailableTask.description}</h3>
+                {nextAvailableTask.due_date && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    Due: {new Date(nextAvailableTask.due_date).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <DoTodaySwitch
+                  isOn={!doTodayOffIds.has(nextAvailableTask.original_task_id || nextAvailableTask.id)}
+                  onToggle={() => handleToggleDoTodaySwitch(nextAvailableTask)}
+                  taskId={nextAvailableTask.id}
+                  isDemo={isDemo}
+                />
+                <Button variant="secondary" size="sm" onClick={handleMarkNextTaskDone} disabled={isDemo}>
+                  Done
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={archiveAllCompletedTasks}>
-                  <Archive className="mr-2 h-3.5 w-3.5" /> Archive Completed
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={toggleAllDoToday}>
-                  <ToggleRight className="mr-2 h-3.5 w-3.5" /> Toggle All 'Do Today'
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={onToggleAllSections}>
-                  <ChevronDown className="mr-2 h-3.5 w-3.5" /> Toggle All Sections
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsManageCategoriesOpen(true)}>
-                  <Tag className="mr-2 h-4 w-4" /> Manage Categories
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setIsManageSectionsOpen(true)}>
-                  <FolderOpen className="mr-2 h-4 w-4" /> Manage Sections
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => setIsFocusPanelOpen(true)}>
-                  <Brain className="mr-2 h-4 w-4" /> Open Focus Tools
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                <Button variant="outline" size="sm" onClick={() => onOpenOverview(nextAvailableTask)} disabled={isDemo}>
+                  Details
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground p-4 border rounded-lg bg-secondary/20">
+              <p className="font-medium">No tasks currently in focus or available.</p>
+              <p className="text-sm mt-1">Time to relax or add a new task!</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

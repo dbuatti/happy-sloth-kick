@@ -16,38 +16,38 @@ import {
   UniqueIdentifier,
   PointerSensor,
   closestCorners,
-  DragOverEvent, // Import DragOverEvent
+  DragOverEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
-  useSortable, // Import useSortable
+  useSortable,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities'; // Import CSS
+import { CSS } from '@dnd-kit/utilities';
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
-import SortableSectionHeader from './SortableSectionHeader';
+import SortableSectionHeader from './SortableSectionHeader'; // Import the new component
 import TaskForm from './TaskForm';
 import { cn } from '@/lib/utils';
 import TaskItem from './TaskItem';
 import QuickAddTask from './QuickAddTask';
 import { Appointment } from '@/hooks/useAppointments';
-import TaskReorderDialog from './TaskReorderDialog'; // Import the new dialog
-import EmptyState from './EmptyState'; // Import EmptyState
+import TaskReorderDialog from './TaskReorderDialog';
+import EmptyState from './EmptyState';
 import { DraggableAttributes } from '@dnd-kit/core';
 import { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { isPast, parseISO, isSameDay } from 'date-fns';
 
 interface TaskListProps {
-  processedTasks: Task[]; // This is processedTasks from useTaskProcessing
+  processedTasks: Task[];
   filteredTasks: Task[];
   loading: boolean;
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   deleteTask: (taskId: string) => void;
   bulkUpdateTasks: (updates: Partial<Task>, ids: string[]) => Promise<void>;
-  bulkDeleteTasks: (ids: string[]) => Promise<boolean>; // Added this prop
+  bulkDeleteTasks: (ids: string[]) => Promise<boolean>;
   markAllTasksInSectionCompleted: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
@@ -60,7 +60,6 @@ interface TaskListProps {
   setIsAddTaskOpen: (open: boolean) => void;
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
-  // setCurrentDate: React.Dispatch<React.SetStateAction<Date>>; // Removed as it's not used directly by TaskList
   expandedSections: Record<string, boolean>;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
@@ -74,10 +73,10 @@ interface TaskListProps {
 }
 
 // Helper component to wrap SortableSectionHeader with useSortable
-interface SortableSectionHeaderPropsForWrapper { // Define the interface for SortableSectionHeader props
+interface SortableSectionHeaderPropsForWrapper {
   section: TaskSection;
   sectionTasksCount: number;
-  sectionOverdueCount: number; // New prop
+  sectionOverdueCount: number;
   isExpanded: boolean;
   toggleSection: (sectionId: string) => void;
   handleAddTaskToSpecificSection: (sectionId: string | null) => void;
@@ -95,7 +94,7 @@ interface SortableSectionHeaderPropsForWrapper { // Define the interface for Sor
   transform?: { x: number; y: number; scaleX: number; scaleY: number } | null;
   transition?: string;
   isDragging?: boolean;
-  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null; // Added
+  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
 }
 
 interface SortableSectionWrapperProps extends SortableSectionHeaderPropsForWrapper {
@@ -116,7 +115,7 @@ const SortableSectionWrapper: React.FC<SortableSectionWrapperProps> = ({ section
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0 : 1,
-    visibility: isDragging ? 'hidden' : undefined, // Omit visibility when not hidden
+    visibility: isDragging ? 'hidden' : undefined,
   };
 
   if (isDragging && !rest.isOverlay) {
@@ -127,7 +126,7 @@ const SortableSectionWrapper: React.FC<SortableSectionWrapperProps> = ({ section
     <div ref={setNodeRef} style={style}>
       <SortableSectionHeader
         section={section}
-        isDemo={isDemo} // Pass explicitly
+        isDemo={isDemo}
         {...rest}
         attributes={attributes}
         listeners={listeners}
@@ -171,8 +170,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     isDemo = false,
   } = props;
 
-  // Removed unused userId variable
-  const userId = ''; 
+  const userId = '';
 
   const [isAddTaskOpenLocal, setIsAddTaskOpenLocal] = useState(false);
   const [preselectedSectionId, setPreselectedSectionId] = useState<string | null>(null);
@@ -182,7 +180,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
 
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [activeItemData, setActiveItemData] = useState<Task | TaskSection | null>(null);
-  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null); // New state for insertion indicator
+  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -206,7 +204,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     const noSection: TaskSection = {
       id: 'no-section-header',
       name: 'No Section',
-      user_id: userId, // userId is not used here, but keeping for type consistency if it were to be used
+      user_id: userId,
       order: sections.length,
       include_in_focus_mode: true,
     };
@@ -271,9 +269,9 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     if (activeIsTask) {
       if (overIsTask) {
         // Dragging a task over another task
-        const overRect = event.over?.rect; // FIX: Using optional chaining
+        const overRect = event.over?.rect;
         if (overRect) {
-          const mouseY = (event.activatorEvent as PointerEvent).clientY; // FIX: Cast to PointerEvent
+          const mouseY = (event.activatorEvent as PointerEvent).clientY;
           const middleOfOver = overRect.top + overRect.height / 2;
           setInsertionIndicator({ id: over.id, position: mouseY > middleOfOver ? 'after' : 'before' });
         }
@@ -297,7 +295,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
     setActiveItemData(null);
-    setInsertionIndicator(null); // Reset insertion indicator
+    setInsertionIndicator(null);
     const { active, over } = event;
 
     if (!over || active.id === over.id) {
@@ -308,7 +306,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     if (isSectionHeaderId(active.id) && isSectionHeaderId(over.id)) {
       const a = String(active.id);
       const b = String(over.id);
-      if (a !== 'no-section-header' && b !== 'no-section-header') { // Prevent reordering 'No Section'
+      if (a !== 'no-section-header' && b !== 'no-section-header') {
         await reorderSections(a, b);
       }
       return;
@@ -323,13 +321,13 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
     let overTaskId: string | null = null;
-    let isDraggingDown = false; // Default value
+    let isDraggingDown = false;
 
     if (isSectionHeaderId(over.id)) {
       // Dropped onto a section header
       newSectionId = over.id === 'no-section-header' ? null : String(over.id);
-      newParentId = null; // Top-level task in the new section
-      overTaskId = null; // No specific task to drop over
+      newParentId = null;
+      overTaskId = null;
     } else {
       // Dropped onto another task
       const overTask = getTaskById(over.id);
@@ -342,13 +340,13 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     
     const activeIndex = allVisibleItemIds.indexOf(active.id);
     const overIndex = allVisibleItemIds.indexOf(over.id);
-    isDraggingDown = activeIndex < overIndex; // Determine if dragging down
+    isDraggingDown = activeIndex < overIndex;
 
     await updateTaskParentAndOrder(
       String(active.id), 
       newParentId, 
       newSectionId, 
-      overTaskId, // Pass overTaskId
+      overTaskId,
       isDraggingDown
     );
   };
@@ -364,14 +362,10 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
     setIsTaskReorderDialogOpen(true);
   };
 
-  const handleSaveReorderTasks = async (_sectionId: string | null, reorderedTasks: Task[]) => { // Removed unused sectionId
+  const handleSaveReorderTasks = async (_sectionId: string | null, reorderedTasks: Task[]) => {
     if (isDemo) return;
-    // This function will be called from TaskReorderDialog
-    // It needs to update the order of tasks in the database
-    // We can use updateTaskParentAndOrder for this, iterating through the reorderedTasks
     for (let i = 0; i < reorderedTasks.length; i++) {
       const task = reorderedTasks[i];
-      // Only update if the order has actually changed
       if (task.order !== i) {
         await updateTask(task.id, { order: i });
       }
@@ -447,7 +441,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver} // Add onDragOver to update overId
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={allVisibleItemIds} strategy={verticalListSortingStrategy}>
@@ -476,7 +470,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
               const isNoSection = currentSection.id === 'no-section-header';
 
               if (isNoSection && topLevelTasksInSection.length === 0 && !isDemo) {
-                return null; // Hide "No Section" header if empty and not in demo mode
+                return null;
               }
 
               return (
@@ -487,7 +481,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                   <SortableSectionWrapper
                     section={currentSection}
                     sectionTasksCount={remainingTasksCount}
-                    sectionOverdueCount={overdueTasksCount} // Pass new prop
+                    sectionOverdueCount={overdueTasksCount}
                     isExpanded={isExpanded}
                     toggleSection={toggleSection}
                     handleAddTaskToSpecificSection={(sectionId: string | null) => openAddTaskForSection(sectionId)}
@@ -495,11 +489,11 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     handleDeleteSectionClick={async (sectionId: string) => { await deleteSection(sectionId); }}
                     updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                     onUpdateSectionName={updateSection}
-                    onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
+                    onOpenReorderTasks={handleOpenReorderTasks}
                     isOverlay={false}
-                    isNoSection={isNoSection} // Pass isNoSection prop
+                    isNoSection={isNoSection}
                     isDemo={isDemo}
-                    insertionIndicator={insertionIndicator} // Pass insertion indicator
+                    insertionIndicator={insertionIndicator}
                   />
 
                   <div className={cn(
@@ -520,7 +514,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             onMoveUp={async () => {}}
                             onMoveDown={async () => {}}
                             level={0}
-                            allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
+                            allTasks={processedTasks}
                             isOverlay={false}
                             expandedTasks={expandedTasks}
                             toggleTask={toggleTask}
@@ -530,8 +524,8 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                             doTodayOffIds={doTodayOffIds}
                             scheduledTasksMap={scheduledTasksMap}
                             isDemo={isDemo}
-                            showDragHandle={false} // Drag handle not shown in main list
-                            insertionIndicator={insertionIndicator} // Pass insertion indicator
+                            showDragHandle={false}
+                            insertionIndicator={insertionIndicator}
                           />
                         ))}
                       </ul>
@@ -580,16 +574,16 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                     handleDeleteSectionClick={async () => {}}
                     updateSectionIncludeInFocusMode={async () => {}}
                     onUpdateSectionName={async () => {}}
-                    onOpenReorderTasks={handleOpenReorderTasks} // Pass the new handler
+                    onOpenReorderTasks={handleOpenReorderTasks}
                     isOverlay={true}
                     isNoSection={activeItemData.id === 'no-section-header'}
-                    insertionIndicator={null} // Overlay doesn't need insertion indicator
+                    insertionIndicator={null}
                   />
                 ) : (
                   <div className="rotate-2">
                     <TaskItem
                       task={activeItemData as Task}
-                      allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
+                      allTasks={processedTasks}
                       onDelete={() => {}}
                       onUpdate={async (taskId, updates) => { await updateTask(taskId, updates); return taskId; }}
                       sections={sections}
@@ -603,7 +597,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
                       toggleDoToday={toggleDoToday}
                       scheduledTasksMap={scheduledTasksMap}
                       level={0}
-                      showDragHandle={false} // Drag handle not shown in main list overlay
+                      showDragHandle={false}
                     />
                   </div>
                 )
@@ -623,7 +617,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             </DialogDescription>
           </DialogHeader>
           <TaskForm
-            onSave={async (newTaskData) => { // Changed parameter name to newTaskData
+            onSave={async (newTaskData) => {
               const success = await handleAddTask(newTaskData);
               if (success) setIsAddTaskOpenLocal(false);
               return success;
@@ -638,7 +632,7 @@ const TaskList = forwardRef<any, TaskListProps>((props, ref) => {
             updateSection={updateSection}
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            allTasks={processedTasks} // Changed from 'tasks' to 'processedTasks'
+            allTasks={processedTasks}
           />
         </DialogContent>
       </Dialog>

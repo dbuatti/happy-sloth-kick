@@ -3,7 +3,7 @@ import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
-import DailyOverviewCard from './DailyOverviewCard';
+import DailyOverviewCard from './DailyOverviewCard'; // Import the new component
 import { Button } from '@/components/ui/button';
 import { Filter as FilterIcon, Settings as SettingsIcon, Archive as ArchiveIcon, ListTodo, ChevronsDownUp } from 'lucide-react';
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from '@/components/ui/separator'; // Import Separator
+import { Separator } from '@/components/ui/separator';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -136,7 +136,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setCurrentDate={setCurrentDate}
       />
 
-      <Separator className="my-4" /> {/* Added separator */}
+      <Separator className="my-4" />
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}
