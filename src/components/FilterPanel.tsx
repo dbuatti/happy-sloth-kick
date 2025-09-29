@@ -2,34 +2,32 @@
 
 import React from 'react';
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { TaskSection, Category } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface FilterPanelProps {
+  isOpen: boolean;
   searchFilter: string;
-  setSearchFilter: (value: string) => void;
+  setSearchFilter: (filter: string) => void;
   statusFilter: string;
-  setStatusFilter: (value: string) => void;
+  setStatusFilter: (filter: string) => void;
   categoryFilter: string;
-  setCategoryFilter: (value: string) => void;
+  setCategoryFilter: (filter: string) => void;
   priorityFilter: string;
-  setPriorityFilter: (value: string) => void;
+  setPriorityFilter: (filter: string) => void;
   sectionFilter: string;
-  setSectionFilter: (value: string) => void;
+  setSectionFilter: (filter: string) => void;
   sections: TaskSection[];
   allCategories: Category[];
-  isOpen: boolean;
+  hideStatusFilter?: boolean; // Optional prop to hide status filter
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({
+  isOpen,
   searchFilter,
   setSearchFilter,
   statusFilter,
@@ -42,86 +40,99 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   setSectionFilter,
   sections,
   allCategories,
-  isOpen,
+  hideStatusFilter = false,
 }) => {
   return (
-    <div className={cn(
-      "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 transition-all duration-300 ease-in-out overflow-hidden",
-      isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-    )}>
-      <div className="space-y-1">
-        <Label htmlFor="search-tasks">Search Tasks</Label>
-        <Input
-          id="search-tasks"
-          placeholder="Search tasks..."
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          className="w-full"
-        />
-      </div>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2 }}
+          className="bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg px-4 lg:px-6 pb-4 overflow-hidden"
+        >
+          <Separator className="my-4" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="search-filter" className="text-sm">Search</Label>
+              <Input
+                id="search-filter"
+                placeholder="Search tasks..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="h-9 text-base"
+              />
+            </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="status-filter">Status</Label>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger id="status-filter" className="w-full">
-            <SelectValue placeholder="All Statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="to-do">To-Do</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="skipped">Skipped</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            {!hideStatusFilter && (
+              <div>
+                <Label htmlFor="status-filter" className="text-sm">Status</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger id="status-filter" className="h-9 text-base">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="to-do">To-Do</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="skipped">Skipped</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-      <div className="space-y-1">
-        <Label htmlFor="category-filter">Category</Label>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger id="category-filter" className="w-full">
-            <SelectValue placeholder="All Categories" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {allCategories.map(category => (
-              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+            <div>
+              <Label htmlFor="category-filter" className="text-sm">Category</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger id="category-filter" className="h-9 text-base">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {allCategories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="priority-filter">Priority</Label>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger id="priority-filter" className="w-full">
-            <SelectValue placeholder="All Priorities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Priorities</SelectItem>
-            <SelectItem value="urgent">Urgent</SelectItem>
-            <SelectItem value="high">High</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            <div>
+              <Label htmlFor="priority-filter" className="text-sm">Priority</Label>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger id="priority-filter" className="h-9 text-base">
+                  <SelectValue placeholder="Filter by priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Priorities</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      <div className="space-y-1">
-        <Label htmlFor="section-filter">Section</Label>
-        <Select value={sectionFilter} onValueChange={setSectionFilter}>
-          <SelectTrigger id="section-filter" className="w-full">
-            <SelectValue placeholder="All Sections" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sections</SelectItem>
-            <SelectItem value="no-section">No Section</SelectItem>
-            {sections.map(section => (
-              <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
+            <div>
+              <Label htmlFor="section-filter" className="text-sm">Section</Label>
+              <Select value={sectionFilter} onValueChange={setSectionFilter}>
+                <SelectTrigger id="section-filter" className="h-9 text-base">
+                  <SelectValue placeholder="Filter by section" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sections</SelectItem>
+                  <SelectItem value="no-section">No Section</SelectItem>
+                  {sections.map(section => (
+                    <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
