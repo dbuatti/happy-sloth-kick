@@ -30,6 +30,7 @@ import {
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
 // Removed: import { useIsMobile } from '@/hooks/use-mobile';
+import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -54,7 +55,7 @@ interface TaskListProps {
   setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => Promise<void>;
-  scheduledTasksMap: Map<string, any>;
+  scheduledTasksMap: Map<string, Appointment>; // Explicitly type scheduledTasksMap
   isDemo?: boolean;
   selectedTaskIds: Set<string>;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
@@ -99,10 +100,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   // DND States
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
-  // Removed: const [overId, setOverId] = useState<UniqueIdentifier | null>(null);
   const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null);
-
-  // Removed: const isMobile = useIsMobile();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -132,9 +130,9 @@ const TaskList: React.FC<TaskListProps> = ({
     return processedTasks.find(task => task.id === id);
   }, [processedTasks]);
 
-  const findSection = useCallback((id: UniqueIdentifier) => {
-    return sections.find(section => section.id === id);
-  }, [sections]);
+  // Removed: const findSection = useCallback((id: UniqueIdentifier) => {
+  //   return sections.find(section => section.id === id);
+  // }, [sections]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id);
@@ -145,7 +143,6 @@ const TaskList: React.FC<TaskListProps> = ({
     const { active, over } = event;
     if (!over || active.id === over.id) {
       setInsertionIndicator(null);
-      // Removed: setOverId(null);
       return;
     }
 
@@ -154,8 +151,6 @@ const TaskList: React.FC<TaskListProps> = ({
     const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
     const overSection = overItem?.type === 'section' ? (overItem.section as TaskSection) : null;
 
-    // Removed: setOverId(over.id);
-
     if (!activeTask) {
       setInsertionIndicator(null);
       return;
@@ -163,10 +158,11 @@ const TaskList: React.FC<TaskListProps> = ({
 
     // Safely get clientY from activatorEvent
     let pointerY: number | undefined;
-    if ('clientY' in event.activatorEvent) {
-      pointerY = (event.activatorEvent as MouseEvent | TouchEvent).clientY;
+    if (event.activatorEvent instanceof MouseEvent) {
+      pointerY = event.activatorEvent.clientY;
+    } else if (event.activatorEvent instanceof TouchEvent && event.activatorEvent.touches.length > 0) {
+      pointerY = event.activatorEvent.touches[0].clientY;
     } else {
-      // Fallback or error handling if clientY is not available
       pointerY = undefined;
     }
 
@@ -203,7 +199,6 @@ const TaskList: React.FC<TaskListProps> = ({
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
-    // Removed: setOverId(null);
     setInsertionIndicator(null);
 
     if (!over || active.id === over.id) {
