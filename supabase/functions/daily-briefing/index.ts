@@ -58,13 +58,24 @@ serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // --- TEMPORARY: Echo raw body for debugging ---
+  console.log("Daily Briefing: Bypassing all logic, returning hardcoded 200 OK.");
+  const rawBody = await req.text(); // Need to read rawBody for the echo test
+  return new Response(JSON.stringify({ echoedBody: rawBody, message: "Echo test successful." }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    status: 200,
+  });
+  // --- END TEMPORARY ---
+
+  // The original logic is commented out below this point.
+  /*
   try {
     console.log("Daily Briefing: Incoming headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
     console.log("Daily Briefing: Incoming Content-Type header:", req.headers.get('Content-Type'));
-    console.log("Daily Briefing: Incoming Content-Length header:", req.headers.get('Content-Length')); // New log
+    console.log("Daily Briefing: Incoming Content-Length header:", req.headers.get('Content-Length'));
 
-    const rawBody = await req.text(); // Read the raw request body as text
-    console.log("Daily Briefing: Raw request body received:", rawBody);
+    const rawBody = await req.text();
+    console.log("Daily Briefing: Raw request body received (echo test):", rawBody);
 
     if (!rawBody || rawBody.trim() === '') {
       console.error("Daily Briefing: Request body is empty or whitespace after reading raw text.");
@@ -85,7 +96,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed; // Expect all three parameters
+    const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
     console.log("Daily Briefing: Received request (parsed):", { userId, localDayStartISO, localDayEndISO });
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
@@ -184,7 +195,6 @@ serve(async (req: Request) => {
       }
     });
 
-    // Summarize data for the prompt more concisely
     const pendingSummary = pendingTasks.length > 0 ? `You have ${pendingTasks.length} pending tasks.` : 'No pending tasks.';
     const completedSummary = completedTasks.length > 0 ? `You've completed ${completedTasks.length} tasks today. Great job!` : 'No tasks completed yet.';
     const overdueSummary = overdueTasks.length > 0 ? `You have ${overdueTasks.length} overdue tasks.` : 'No overdue tasks.';
@@ -224,6 +234,7 @@ serve(async (req: Request) => {
       status: 500,
     });
   }
+  */
 });
 
 export {};
