@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 // @ts-ignore
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 // @ts-ignore
-import { isValid } from 'https://esm.sh/date-fns@2.30.0'; // Standardized to v2.30.0
+import { isValid, isWithinInterval, parseISO } from 'https://esm.sh/date-fns@2.30.0'; // Added isWithinInterval, parseISO
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,15 +87,17 @@ serve(async (req: Request) => {
       },
     });
 
-    // Extract today's date string (YYYY-MM-DD) from the client's local day start
-    const todayDateString = localDayStartISO.split('T')[0];
+    const todayDateString = localDayStartISO.split('T')[0]; // YYYY-MM-DD
+    const localDayStart = parseISO(localDayStartISO); // Date object for start of local day
+    const localDayEnd = parseISO(localDayEndISO);     // Date object for end of local day
 
-    // Fetch all tasks for the user to allow comprehensive filtering
+    // Fetch all tasks for the user
     const { data: allTasksData, error: tasksError } = await supabaseAdmin.from('tasks')
       .select('id, description, status, priority, due_date, section_id, recurring_type, original_task_id, updated_at, created_at')
       .eq('user_id', userId);
     if (tasksError) throw tasksError;
     const allTasks: Task[] = allTasksData || [];
+    console.log("Daily Briefing: Fetched tasks count:", allTasks.length);
 
     // Fetch recurring task completions for today
     const { data: recurringCompletionsData, error: recurringCompletionsError } = await supabaseAdmin.from('recurring_task_completion_log')
@@ -104,7 +106,7 @@ serve(async (req: Request) => {
       .eq('completion_date', todayDateString);
     if (recurringCompletionsError) throw recurringCompletionsError;
     const completedRecurringTaskIds = new Set(recurringCompletionsData?.map((c: RecurringCompletion) => c.original_task_id) || []);
-
+    console.log("Daily Briefing: Completed recurring tasks count:", completedRecurringTaskIds.size);
 
     // Fetch other relevant data concurrently
     const [appointmentsRes, weeklyFocusRes, sleepRecordRes] = await Promise.all([
@@ -125,7 +127,6 @@ serve(async (req: Request) => {
         .maybeSingle(),
     ]);
 
-    // Handle potential errors from data fetches
     if (appointmentsRes.error) throw appointmentsRes.error;
     if (weeklyFocusRes.error) throw weeklyFocusRes.error;
     if (sleepRecordRes.error) throw sleepRecordRes.error;
@@ -133,51 +134,46 @@ serve(async (req: Request) => {
     const appointments: Appointment[] = appointmentsRes.data || [];
     const weeklyFocus: WeeklyFocus | null = weeklyFocusRes.data;
     const sleepRecord: SleepRecord | null = sleepRecordRes.data;
+    console.log("Daily Briefing: Fetched appointments count:", appointments.length);
+    console.log("Daily Briefing: Fetched weekly focus:", weeklyFocus ? 'yes' : 'no');
+    console.log("Daily Briefing: Fetched sleep record:", sleepRecord ? 'yes' : 'no');
 
-    // Filter tasks into categories for the AI prompt
     const pendingTasks: Task[] = [];
     const completedTasks: Task[] = [];
     const overdueTasks: Task[] = [];
 
     allTasks.forEach(t => {
-      // Parse date strings into Date objects, handling potential nulls
-      const taskUpdatedAt = t.updated_at ? new Date(t.updated_at) : null;
-      const taskCreatedAt = t.created_at ? new Date(t.created_at) : null;
-      // Treat due_date as UTC midnight for consistent comparison with todayDateString
-      const taskDueDate = t.due_date ? new Date(t.due_date + 'T00:00:00Z') : null;
+      const taskUpdatedAt = t.updated_at ? parseISO(t.updated_at) : null;
+      const taskCreatedAt = t.created_at ? parseISO(t.created_at) : null;
+      const taskDueDate = t.due_date ? parseISO(t.due_date) : null; // Parse due_date as Date object
 
-      // Check if dates are valid and within today's local time boundaries
-      const isUpdatedTodayLocal = taskUpdatedAt && isValid(taskUpdatedAt) && taskUpdatedAt.toISOString() >= localDayStartISO && taskUpdatedAt.toISOString() <= localDayEndISO;
-      const isCreatedTodayLocal = taskCreatedAt && isValid(taskCreatedAt) && taskCreatedAt.toISOString() >= localDayStartISO && taskCreatedAt.toISOString() <= localDayEndISO;
-      // Compare YYYY-MM-DD strings for due date to match today's date
+      const isUpdatedTodayLocal = taskUpdatedAt && isValid(taskUpdatedAt) && isWithinInterval(taskUpdatedAt, { start: localDayStart, end: localDayEnd });
+      const isCreatedTodayLocal = taskCreatedAt && isValid(taskCreatedAt) && isWithinInterval(taskCreatedAt, { start: localDayStart, end: localDayEnd });
       const isDueTodayLocal = taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] === todayDateString;
 
       const isRecurringTemplate = t.recurring_type !== 'none';
       const isCompletedTodayViaLog = isRecurringTemplate && completedRecurringTaskIds.has(t.id);
 
       if (t.status === 'completed' || t.status === 'archived') {
-        // A non-recurring task is considered 'completed today' if its status was updated today (local time)
         if (!isRecurringTemplate && isUpdatedTodayLocal) {
           completedTasks.push(t);
         }
       } else if (t.status === 'to-do') {
-        // If it's a recurring template and completed via log, it's considered completed for the briefing
         if (isCompletedTodayViaLog) {
           completedTasks.push(t);
         } else {
-          // A task is overdue if its due date is before today
           if (taskDueDate && isValid(taskDueDate) && taskDueDate.toISOString().split('T')[0] < todayDateString) {
             overdueTasks.push(t);
-          }
-          // A task is pending for today if it's due today, created today, or updated today
-          else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) {
+          } else if (isDueTodayLocal || isCreatedTodayLocal || isUpdatedTodayLocal) {
             pendingTasks.push(t);
           }
         }
       }
     });
+    console.log("Daily Briefing: Pending tasks count:", pendingTasks.length);
+    console.log("Daily Briefing: Completed tasks count:", completedTasks.length);
+    console.log("Daily Briefing: Overdue tasks count:", overdueTasks.length);
 
-    // Construct the prompt for the Gemini AI
     const prompt = `Generate a concise, encouraging, and actionable daily briefing for a user based on their productivity data.
     Today's date (client local time): ${todayDateString}
 
@@ -198,9 +194,9 @@ serve(async (req: Request) => {
     - End with an encouraging closing statement.
     Keep it under 200 words. Use emojis where appropriate.`;
 
+    console.log("Daily Briefing: Sending prompt to Gemini API...");
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-    // Call the Gemini API
     const geminiResponse = await fetch(API_URL, {
       method: 'POST',
       headers: {
@@ -211,7 +207,6 @@ serve(async (req: Request) => {
       }),
     });
 
-    // Handle non-OK responses from Gemini API
     if (!geminiResponse.ok) {
       const errorBody = await geminiResponse.text();
       console.error("Daily Briefing: Gemini API request failed:", geminiResponse.status, errorBody);
@@ -220,15 +215,14 @@ serve(async (req: Request) => {
 
     const geminiData = await geminiResponse.json();
     const briefingText = geminiData.candidates[0].content.parts[0].text;
+    console.log("Daily Briefing: Received Gemini response.");
 
-    // Return the generated briefing
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
-    // Catch and log any errors during the function execution
     console.error("Error in Edge Function 'daily-briefing' (outer catch):", error);
     return new Response(JSON.stringify({ error: error.message || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
