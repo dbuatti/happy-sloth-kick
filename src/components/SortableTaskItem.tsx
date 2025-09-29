@@ -27,8 +27,8 @@ interface SortableTaskItemProps {
   doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
-  showDragHandle?: boolean; // Prop to control drag handle visibility
-  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null; // Added
+  showDragHandle?: boolean;
+  insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -44,7 +44,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   doTodayOffIds,
   scheduledTasksMap,
   isDemo = false,
-  showDragHandle = false, // Default to false
+  showDragHandle = false,
   onDelete,
   onUpdate,
   sections,
@@ -52,7 +52,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   currentDate,
   onMoveUp,
   onMoveDown,
-  insertionIndicator, // Destructured
+  insertionIndicator,
 }) => {
   const {
     attributes,
@@ -61,7 +61,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: task.id, data: { type: 'task', task }, disabled: isDemo || !!task.parent_task_id }); // Disable drag for subtasks and in demo mode
+  } = useSortable({ id: task.id, data: { type: 'task', task }, disabled: isDemo || !!task.parent_task_id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform || null),
@@ -91,8 +91,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
         "flex items-center"
       )}
-      {...attributes} // Apply attributes to the whole li for dragging
-      {...listeners} // Apply listeners to the whole li for dragging
+      {...attributes}
+      {...listeners}
     >
       {showInsertionBefore && (
         <div className="absolute -top-1 left-0 right-0 h-1 w-full bg-primary rounded-full z-10 animate-pulse" />
@@ -122,7 +122,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           toggleDoToday={toggleDoToday}
           scheduledTasksMap={scheduledTasksMap}
           isDemo={isDemo}
-          showDragHandle={showDragHandle} // Pass the prop
+          showDragHandle={showDragHandle}
         />
         {isExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -148,8 +148,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 doTodayOffIds={doTodayOffIds}
                 scheduledTasksMap={scheduledTasksMap}
                 isDemo={isDemo}
-                showDragHandle={showDragHandle} // Pass the prop to subtasks as well
-                insertionIndicator={insertionIndicator} // Pass insertion indicator
+                showDragHandle={showDragHandle}
+                insertionIndicator={insertionIndicator}
               />
             ))}
           </ul>
