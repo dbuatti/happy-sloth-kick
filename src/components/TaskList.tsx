@@ -416,20 +416,6 @@ const TaskList: React.FC<TaskListProps> = ({
           </div>
         )}
 
-        {/* Global Quick Add Task component - always rendered once */}
-        <QuickAddTask
-          onAddTask={handleAddTask}
-          defaultCategoryId={allCategories[0]?.id || ''}
-          isDemo={isDemo}
-          allCategories={allCategories}
-          currentDate={currentDate}
-          sections={sections}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
-          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        />
-
         {/* "No Section" block */}
         <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
           {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
