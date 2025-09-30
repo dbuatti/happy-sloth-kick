@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Import useState
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +9,7 @@ import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import ConfirmationDialog from './ConfirmationDialog'; // Import the new dialog
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -39,6 +40,8 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   toggleAllDoToday,
   markAllTasksAsCompleted,
 }) => {
+  const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false); // State for confirmation dialog
+
   const progressPercentage = dailyProgress.totalPendingCount === 0
     ? 100
     : Math.round((dailyProgress.completedCount / (dailyProgress.completedCount + dailyProgress.totalPendingCount)) * 100) || 0;
@@ -60,7 +63,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
       case 'urgent': return 'bg-priority-urgent';
       case 'high': return 'bg-priority-high';
       case 'medium': return 'bg-priority-medium';
-      case 'low': return 'bg-priority-low';
+      case 'low': return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
@@ -232,7 +235,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={markAllTasksAsCompleted}
+            onClick={() => setIsConfirmMarkAllDoneOpen(true)} // Open confirmation dialog
             disabled={isDemo || dailyProgress.totalPendingCount === 0}
             className="flex items-center justify-center"
           >
@@ -258,6 +261,19 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
           </Button>
         </div>
       </CardContent>
+
+      <ConfirmationDialog
+        isOpen={isConfirmMarkAllDoneOpen}
+        onClose={() => setIsConfirmMarkAllDoneOpen(false)}
+        onConfirm={() => {
+          markAllTasksAsCompleted();
+          setIsConfirmMarkAllDoneOpen(false);
+        }}
+        title="Confirm Mark All Done"
+        description="Are you sure you want to mark all pending tasks as completed for today? This action cannot be undone easily."
+        confirmText="Mark All Done"
+        confirmVariant="default"
+      />
     </Card>
   );
 };
