@@ -108,7 +108,8 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
         "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
         "flex items-center",
-        showInsertionInto && "bg-primary/10 border-primary"
+        // Apply a distinct style when dragging *into* this task
+        showInsertionInto && "bg-primary/10 border-primary ring-2 ring-primary ring-offset-2 rounded-xl" // Added styling
       )}
     >
       {showInsertionBefore && (

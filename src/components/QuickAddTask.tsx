@@ -13,6 +13,7 @@ import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
 
 interface QuickAddTaskProps {
   onAddTask: (taskData: NewTaskData) => Promise<any>;
@@ -121,6 +122,8 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
     setSelectedSection(value === "no-section-selected" ? null : value);
   }, []);
 
+  const canSuggest = description.trim().length > 5; // Enable suggestion if description is long enough
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -133,22 +136,29 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
           disabled={isAdding || isDemo || isSuggesting}
           className="flex-grow h-9 text-base"
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={handleSuggest}
-          disabled={isAdding || isDemo || isSuggesting || !description.trim()}
-          title="Suggest details from description"
-          aria-label="Suggest task details"
-          className="h-9 w-9"
-        >
-          {isSuggesting ? (
-            <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
-          ) : (
-            <Lightbulb className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant={canSuggest ? "default" : "outline"} // Make it default variant when active
+              size="icon"
+              onClick={handleSuggest}
+              disabled={isAdding || isDemo || isSuggesting || !canSuggest}
+              title="Get AI suggestions for task details"
+              aria-label="Suggest task details"
+              className={cn("h-9 w-9")}
+            >
+              {isSuggesting ? (
+                <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
+              ) : (
+                <Lightbulb className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Get AI suggestions for category, priority, due date, etc.</p>
+          </TooltipContent>
+        </Tooltip>
         <Button onClick={handleAddTask} disabled={isAdding || isDemo || !description.trim()} className="h-9 text-base">
           {isAdding ? 'Adding...' : <Plus className="h-4 w-4" />}
         </Button>
@@ -169,7 +179,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
             <SelectValue placeholder="Section" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="no-section-selected">No Section</SelectItem> {/* Changed value */}
+            <SelectItem value="no-section-selected">No Section</SelectItem>
             {sections.map(section => (
               <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
             ))}

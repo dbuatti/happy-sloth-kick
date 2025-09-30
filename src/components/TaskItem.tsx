@@ -190,7 +190,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const isOverdue = task.due_date && task.status === 'to-do' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
   const isDueToday = task.due_date && task.status === 'to-do' && isSameDay(parseISO(task.due_date), currentDate);
 
-  return (
+  const content = (
     <div
       className={cn(
         "relative flex items-center w-full rounded-xl transition-all duration-300 py-1.5 pl-4 pr-3 shadow-sm border", // Reduced py from 2 to 1.5
@@ -386,8 +386,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 <span className={cn(
                   "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
                   "text-foreground bg-muted",
-                  isOverdue && "text-red-700 bg-red-200 dark:text-red-200 dark:bg-red-700", // More prominent overdue
-                  isDueToday && !isOverdue && "text-yellow-700 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-700" // More prominent due today
+                  isOverdue && "text-red-700 bg-red-200 dark:text-red-200 dark:bg-red-700 font-bold", // More prominent overdue
+                  isDueToday && !isOverdue && "text-yellow-700 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-700 font-bold" // More prominent due today
                 )}>
                   <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date)}
                 </span>
@@ -406,7 +406,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="h-7 w-7 flex items-center justify-center" aria-label="Recurring task">
-                <Repeat className="h-3.5 w-3.5 text-muted-foreground" />
+                <Repeat className="h-4 w-4 text-muted-foreground" /> {/* Slightly larger icon */}
               </div>
             </TooltipTrigger>
             <TooltipContent>
@@ -513,6 +513,23 @@ const TaskItem: React.FC<TaskItemProps> = ({
         </div>
       )}
     </div>
+  );
+
+  return (
+    <>
+      {!isDoToday && !isOverlay ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {content}
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>This task is currently hidden from "Do Today". Toggle the switch to include it.</p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        content
+      )}
+    </>
   );
 };
 

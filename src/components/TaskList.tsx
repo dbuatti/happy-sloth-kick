@@ -14,6 +14,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
+import { ListTodo } from 'lucide-react'; // Import ListTodo for empty state icon
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -114,13 +115,20 @@ const TaskList: React.FC<TaskListProps> = ({
 
     sections.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(section => {
       const tasks = tasksBySection.get(section.id) || [];
-      if (tasks.length > 0) {
+      // Only add sections that have tasks or are explicitly expanded
+      if (tasks.length > 0 || expandedSections[section.id] !== false) {
         result.push({ section, tasks: tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) });
       }
     });
 
+    // If there are no sections at all, but there are filtered tasks, ensure they are shown
+    if (result.length === 0 && filteredTasks.length > 0) {
+      result.push({ section: null, tasks: filteredTasks.filter(t => t.parent_task_id === null).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) });
+    }
+
+
     return result;
-  }, [filteredTasks, sections]);
+  }, [filteredTasks, sections, expandedSections]);
 
   const findTask = useCallback((id: string) => {
     return processedTasks.find(task => task.id === id);
@@ -281,10 +289,19 @@ const TaskList: React.FC<TaskListProps> = ({
     return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
   }
 
+  // Overall empty state for filtered tasks
   if (filteredTasks.length === 0 && !loading) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        No tasks found for this day or matching your filters.
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <ListTodo className="h-12 w-12 mb-4" />
+        <p className="text-lg font-semibold mb-2">No tasks found!</p>
+        <p className="text-center max-w-md">
+          It looks like there are no tasks matching your current filters or for this day.
+          Try adjusting your filters or add a new task to get started!
+        </p>
+        <Button onClick={() => onOpenAddTaskDialog(null, null)} className="mt-6">
+          <Plus className="h-4 w-4 mr-2" /> Add Your First Task
+        </Button>
       </div>
     );
   }
@@ -334,39 +351,45 @@ const TaskList: React.FC<TaskListProps> = ({
               </div>
             </div>
             {(!section || expandedSections[section.id] !== false) && (
-              <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                <ul className="divide-y divide-border">
-                  {tasks.map(task => (
-                    <SortableTaskItem
-                      key={task.id}
-                      task={task}
-                      onUpdate={updateTask}
-                      onDelete={deleteTask}
-                      onOpenOverview={onOpenOverview}
-                      currentDate={currentDate}
-                      isExpanded={expandedTasks[task.id] === true}
-                      toggleTask={toggleTask}
-                      setFocusTask={setFocusTask}
-                      doTodayOffIds={doTodayOffIds}
-                      toggleDoToday={toggleDoToday}
-                      scheduledAppointment={scheduledTasksMap.get(task.id)}
-                      isDemo={isDemo}
-                      selectedTaskIds={selectedTaskIds}
-                      onSelectTask={onSelectTask}
-                      allTasks={processedTasks}
-                      getSubtasksForTask={(parentTaskId) => processedTasks.filter(t => t.parent_task_id === parentTaskId)}
-                      sections={sections}
-                      level={0}
-                      expandedTasks={expandedTasks}
-                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
-                      scheduledTasksMap={scheduledTasksMap}
-                      insertionIndicator={insertionIndicator}
-                      isSelected={selectedTaskIds.has(task.id)}
-                      onAddSubtask={onOpenAddTaskDialog}
-                    />
-                  ))}
-                </ul>
-              </SortableContext>
+              tasks.length > 0 ? ( // Conditional rendering for tasks within a section
+                <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                  <ul className="divide-y divide-border">
+                    {tasks.map(task => (
+                      <SortableTaskItem
+                        key={task.id}
+                        task={task}
+                        onUpdate={updateTask}
+                        onDelete={deleteTask}
+                        onOpenOverview={onOpenOverview}
+                        currentDate={currentDate}
+                        isExpanded={expandedTasks[task.id] === true}
+                        toggleTask={toggleTask}
+                        setFocusTask={setFocusTask}
+                        doTodayOffIds={doTodayOffIds}
+                        toggleDoToday={toggleDoToday}
+                        scheduledAppointment={scheduledTasksMap.get(task.id)}
+                        isDemo={isDemo}
+                        selectedTaskIds={selectedTaskIds}
+                        onSelectTask={onSelectTask}
+                        allTasks={processedTasks}
+                        getSubtasksForTask={(parentTaskId) => processedTasks.filter(t => t.parent_task_id === parentTaskId)}
+                        sections={sections}
+                        level={0}
+                        expandedTasks={expandedTasks}
+                        isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                        scheduledTasksMap={scheduledTasksMap}
+                        insertionIndicator={insertionIndicator}
+                        isSelected={selectedTaskIds.has(task.id)}
+                        onAddSubtask={onOpenAddTaskDialog}
+                      />
+                    ))}
+                  </ul>
+                </SortableContext>
+              ) : (
+                <div className="p-4 text-center text-muted-foreground">
+                  <p>No tasks in this section. Add one above!</p>
+                </div>
+              )
             )}
           </div>
         ))}
