@@ -144,7 +144,7 @@ const TaskList: React.FC<TaskListProps> = ({
     const activeTask = findTask(active.id);
     const overItem = over.data.current;
     const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
-    const overSection = overItem?.type === 'section' ? (overItem.section as TaskSection) : null;
+    const overSection = overItem?.type === 'section' ? (overItem.item as TaskSection) : null; // Corrected type for section
 
     if (!activeTask) {
       setInsertionIndicator(null);
@@ -205,7 +205,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
     const overItem = over.data.current;
     const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
-    const overSection = overItem?.type === 'section' ? (overItem.section as TaskSection) : null;
+    const overSection = overItem?.type === 'section' ? (overItem.item as TaskSection) : null; // Corrected type for section
 
     let newParentId: string | null = null;
     let newSectionId: string | null = null;
