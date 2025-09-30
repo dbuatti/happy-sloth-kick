@@ -174,9 +174,7 @@ const TaskList: React.FC<TaskListProps> = ({
     // Determine if dragging before or after a task
     const overElement = document.getElementById(`task-item-${overId}`);
     if (overElement) {
-      const { top, height } = overElement.getBoundingClientRect();
-      // const middle = top + height / 2; // Removed unused middle variable
-
+      overElement.getBoundingClientRect();
       // Use event.delta.y to determine if dragging upwards or downwards
       if (event.delta.y < 0) { // Dragging upwards
         setInsertionIndicator({ id: overId, position: 'before' });
