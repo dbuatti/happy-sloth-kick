@@ -39,6 +39,8 @@ export const useTaskProcessing = ({
 }: UseTaskProcessingProps) => {
   const todayStart = startOfDay(effectiveCurrentDate);
 
+  console.log("[useTaskProcessing] Effective Current Date:", effectiveCurrentDate.toISOString());
+
   const processedTasks = useMemo(() => {
     const allProcessedTasks: Task[] = [];
     const processedSeriesKeys = new Set<string>();
@@ -147,8 +149,6 @@ export const useTaskProcessing = ({
               completed_at: isCompletedTodayInLog ? todayStart.toISOString() : null, // Set completed_at if completed
               isDoTodayOff: false, // Recurring tasks are never "off" via doTodayOffIds
             };
-            // console.log(`[useTaskProcessing] Template Task ID: ${templateTask.id}, Template Recurring Type: ${templateTask.recurring_type}`); // Removed log
-            // console.log(`[useTaskProcessing] Created virtual task ID: ${virtualTask.id}, Virtual Recurring Type: ${virtualTask.recurring_type}`); // Removed log
             allProcessedTasks.push(virtualTask);
           }
         } else {
@@ -166,8 +166,10 @@ export const useTaskProcessing = ({
         }
       }
     });
+    console.log("[useTaskProcessing] Processed Tasks (count):", allProcessedTasks.length);
+    console.log("[useTaskProcessing] Processed Tasks (contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042):", allProcessedTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042'));
     return allProcessedTasks;
-  }, [rawTasks, todayStart, categoriesMap, doTodayOffIds, recurringTaskCompletions]); // Add recurringTaskCompletions to dependencies
+  }, [rawTasks, todayStart, categoriesMap, doTodayOffIds, recurringTaskCompletions]);
 
   const filtered = useMemo(() => {
     let filteredTasks = processedTasks;
@@ -243,6 +245,8 @@ export const useTaskProcessing = ({
         return isWithinFutureLimit;
       });
     }
+    console.log("[useTaskProcessing] Filtered Tasks (count):", filteredTasks.length);
+    console.log("[useTaskProcessing] Filtered Tasks (contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042):", filteredTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042'));
     return filteredTasks;
   }, [
     processedTasks,
