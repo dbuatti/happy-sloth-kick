@@ -179,9 +179,10 @@ export const useTaskProcessing = ({
           isValid(parseISO(task.completed_at)) &&
           isSameDay(parseISO(task.completed_at), effectiveCurrentDate);
 
-        const isToDoAndNotOff = task.status === 'to-do' && !task.isDoTodayOff;
+        // Modified: Include 'to-do' tasks regardless of 'isDoTodayOff' status
+        const isToDo = task.status === 'to-do';
 
-        return isCompletedOrArchivedToday || isToDoAndNotOff;
+        return isCompletedOrArchivedToday || isToDo;
       });
     }
 
