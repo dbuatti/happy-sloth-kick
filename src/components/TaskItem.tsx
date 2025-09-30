@@ -191,7 +191,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   return (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-2 pl-4 pr-3 shadow-sm border",
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-1.5 pl-4 pr-3 shadow-sm border", // Reduced py from 2 to 1.5
         task.status === 'completed'
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20"
           : "bg-card text-foreground border-border",

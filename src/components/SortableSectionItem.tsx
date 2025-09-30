@@ -6,16 +6,16 @@ import { CSS } from '@dnd-kit/utilities';
 import { TaskSection, Category, NewTaskData, Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Settings, EyeOff, Eye, GripVertical } from 'lucide-react'; // Import GripVertical
+import { ChevronDown, ChevronRight, Settings, EyeOff, Eye, GripVertical, Plus } from 'lucide-react'; // Import Plus
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  // Removed: DropdownMenuSeparator, // This line was causing the error
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
-import QuickAddTask from './QuickAddTask';
+// Removed: import QuickAddTask from './QuickAddTask'; // No longer needed here
 import { UniqueIdentifier } from '@dnd-kit/core';
 
 interface SortableSectionItemProps {
@@ -32,7 +32,7 @@ interface SortableSectionItemProps {
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<any>;
   confirmDeleteSection: (section: TaskSection) => void;
   isDemo?: boolean;
-  handleAddTask: (taskData: NewTaskData) => Promise<any>;
+  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Still needed for QuickAddTask in TaskList
   allCategories: Category[];
   currentDate: Date;
   sections: TaskSection[]; // All sections for QuickAddTask
@@ -41,6 +41,7 @@ interface SortableSectionItemProps {
   deleteSection: (id: string) => Promise<any>;
   renderTask: (task: Task, level: number) => React.ReactNode;
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
+  onOpenAddTaskDialog: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
 }
 
 const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
@@ -52,12 +53,12 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
   editSectionName,
   handleUpdateSection,
   handleEditSection,
-  onEditSectionNameChange, // Destructure new prop
+  onEditSectionNameChange,
   markAllTasksInSectionCompleted,
   updateSectionIncludeInFocusMode,
   confirmDeleteSection,
   isDemo,
-  handleAddTask,
+  handleAddTask, // Keep for now, might be removed if QuickAddTask is fully externalized
   allCategories,
   currentDate,
   sections,
@@ -66,6 +67,7 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
   deleteSection,
   renderTask,
   insertionIndicator,
+  onOpenAddTaskDialog, // Destructure new prop
 }) => {
   const {
     attributes,
@@ -128,7 +130,7 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
           {editSectionId === section.id ? (
             <Input
               value={editSectionName}
-              onChange={(e) => onEditSectionNameChange(e.target.value)} // Use new prop
+              onChange={(e) => onEditSectionNameChange(e.target.value)}
               onBlur={handleUpdateSection}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -156,6 +158,16 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
             aria-label="Drag to reorder section"
           >
             <GripVertical className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-foreground"
+            onClick={() => onOpenAddTaskDialog(null, section.id)}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label={`Add task to ${section.name}`}
+          >
+            <Plus className="h-4 w-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -187,22 +199,10 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
               </ul>
             ) : (
               <p className="text-muted-foreground text-sm text-center py-4">
-                {section.id === 'no-section' ? "No tasks without a section. Add one above or drag a task here!" : `No tasks in "${section.name}". Add one below!`}
+                {section.id === 'no-section' ? "No tasks without a section. Click '+' above to add one, or drag a task here!" : `No tasks in "${section.name}". Click '+' above to add one!`}
               </p>
             )}
-            <QuickAddTask
-              sectionId={section.id}
-              onAddTask={handleAddTask}
-              defaultCategoryId={allCategories[0]?.id || ''}
-              isDemo={isDemo}
-              allCategories={allCategories}
-              currentDate={currentDate}
-              sections={sections}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            />
+            {/* Removed QuickAddTask from here */}
           </>
         )}
       </div>

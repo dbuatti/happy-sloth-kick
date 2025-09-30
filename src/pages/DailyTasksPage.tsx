@@ -36,7 +36,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [selectedTaskIds, setSelectedTaskIds] = new Set<string>(); // Initialize as empty Set
   const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
@@ -298,7 +298,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             updateTaskParentAndOrder={updateTaskParentAndOrder}
-            reorderSections={reorderSections} // Pass reorderSections here
+            reorderSections={reorderSections}
             allCategories={allCategories}
             onOpenOverview={handleOpenOverview}
             currentDate={currentDate}
@@ -313,6 +313,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             isDemo={isDemo}
             selectedTaskIds={selectedTaskIds}
             onSelectTask={handleSelectTask}
+            onOpenAddTaskDialog={openAddTaskDialog} // Pass new prop
           />
         </div>
       </div>

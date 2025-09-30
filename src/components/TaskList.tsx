@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-// Removed: import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 // DND imports
 import {
@@ -35,7 +35,7 @@ interface TaskListProps {
   processedTasks: Task[];
   filteredTasks: Task[];
   loading: boolean;
-  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Corrected type from NewTask to NewTaskData
+  handleAddTask: (taskData: NewTaskData) => Promise<any>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<any>;
   deleteTask: (id: string) => Promise<any>;
   markAllTasksInSectionCompleted: (sectionId: string) => Promise<any>;
@@ -60,6 +60,7 @@ interface TaskListProps {
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
   reorderSections: (activeId: string, overId: string) => Promise<void>;
+  onOpenAddTaskDialog: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -91,6 +92,7 @@ const TaskList: React.FC<TaskListProps> = ({
   onSelectTask,
   updateTaskParentAndOrder,
   reorderSections,
+  onOpenAddTaskDialog, // Destructure new prop
 }) => {
   const [newSectionName, setNewSectionName] = useState('');
   const [isCreatingSection, setIsCreatingSection] = useState(false);
@@ -445,6 +447,7 @@ const TaskList: React.FC<TaskListProps> = ({
           deleteSection={deleteSection}
           renderTask={renderTask}
           insertionIndicator={insertionIndicator}
+          onOpenAddTaskDialog={onOpenAddTaskDialog} // Pass new prop
         />
 
         {/* Mapped sections */}
@@ -476,6 +479,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 deleteSection={deleteSection}
                 renderTask={renderTask}
                 insertionIndicator={insertionIndicator}
+                onOpenAddTaskDialog={onOpenAddTaskDialog} // Pass new prop
               />
             );
           })}
@@ -568,6 +572,7 @@ const TaskList: React.FC<TaskListProps> = ({
               deleteSection={deleteSection}
               renderTask={renderTask}
               insertionIndicator={null}
+              onOpenAddTaskDialog={() => {}} // Dummy for overlay
             />
           ) : null}
         </DragOverlay>,
