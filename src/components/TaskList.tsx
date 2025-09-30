@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+// Removed: import { cn } from '@/lib/utils';
 
 // DND imports
 import {
@@ -35,7 +35,7 @@ interface TaskListProps {
   processedTasks: Task[];
   filteredTasks: Task[];
   loading: boolean;
-  handleAddTask: (taskData: NewTaskData) => Promise<any>;
+  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Corrected type from NewTask to NewTaskData
   updateTask: (id: string, updates: Partial<Task>) => Promise<any>;
   deleteTask: (id: string) => Promise<any>;
   markAllTasksInSectionCompleted: (sectionId: string) => Promise<any>;
@@ -451,36 +451,32 @@ const TaskList: React.FC<TaskListProps> = ({
         <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
           {sections.map(section => {
             const tasksInThisSection = getTasksForSection(section.id);
-            // Always render section header, even if empty, unless in demo mode and explicitly no tasks
-            const showSectionContent = tasksInThisSection.length > 0 || isDemo || section.id === 'no-section';
-
             return (
-              <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
-                <SortableSectionItem
-                  section={section}
-                  tasksInThisSection={tasksInThisSection}
-                  expandedSections={expandedSections}
-                  toggleSection={toggleSection}
-                  editSectionId={editSectionId}
-                  editSectionName={editSectionName}
-                  handleUpdateSection={handleUpdateSection}
-                  handleEditSection={handleEditSection}
-                  onEditSectionNameChange={handleEditSectionNameChange}
-                  markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                  confirmDeleteSection={confirmDeleteSection}
-                  isDemo={isDemo}
-                  handleAddTask={handleAddTask}
-                  allCategories={allCategories}
-                  currentDate={currentDate}
-                  sections={sections}
-                  createSection={createSection}
-                  updateSection={updateSection}
-                  deleteSection={deleteSection}
-                  renderTask={renderTask}
-                  insertionIndicator={insertionIndicator}
-                />
-              </div>
+              <SortableSectionItem
+                key={section.id}
+                section={section}
+                tasksInThisSection={tasksInThisSection}
+                expandedSections={expandedSections}
+                toggleSection={toggleSection}
+                editSectionId={editSectionId}
+                editSectionName={editSectionName}
+                handleUpdateSection={handleUpdateSection}
+                handleEditSection={handleEditSection}
+                onEditSectionNameChange={handleEditSectionNameChange}
+                markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                confirmDeleteSection={confirmDeleteSection}
+                isDemo={isDemo}
+                handleAddTask={handleAddTask}
+                allCategories={allCategories}
+                currentDate={currentDate}
+                sections={sections}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                renderTask={renderTask}
+                insertionIndicator={insertionIndicator}
+              />
             );
           })}
         </SortableContext>
@@ -492,7 +488,7 @@ const TaskList: React.FC<TaskListProps> = ({
             value={newSectionName}
             onChange={(e) => setNewSectionName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreateSection()}
-            disabled={isCreatingSection || isDemo}
+            disabled={isCreatingSection || isDemo || !newSectionName.trim()}
             className="flex-1 h-9 text-base"
           />
           <Button onClick={handleCreateSection} disabled={isCreatingSection || !newSectionName.trim() || isDemo} className="h-9 px-4">

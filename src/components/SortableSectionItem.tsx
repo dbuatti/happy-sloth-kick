@@ -90,6 +90,9 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
   const showInsertionBefore = insertionIndicator?.id === section.id && insertionIndicator.position === 'before';
   const showInsertionAfter = insertionIndicator?.id === section.id && insertionIndicator.position === 'after';
 
+  // Always render section header, even if empty, unless in demo mode and explicitly no tasks
+  const showSectionContent = tasksInThisSection.length > 0 || isDemo || section.id === 'no-section';
+
   if (isDragging) {
     return <div ref={setNodeRef} style={style} className="h-16 bg-muted/50 border-2 border-dashed border-border rounded-lg" />;
   }
@@ -100,7 +103,8 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
       style={style}
       className={cn(
         "border rounded-lg bg-card shadow-sm relative",
-        insertionIndicator?.id === section.id && insertionIndicator.position === 'into' && "bg-primary/10 border-primary"
+        insertionIndicator?.id === section.id && insertionIndicator.position === 'into' && "bg-primary/10 border-primary",
+        !showSectionContent && "hidden" // Keep this for demo mode empty sections
       )}
       data-dnd-type="section"
       data-dnd-id={section.id}
