@@ -51,7 +51,7 @@ export interface Task {
   original_task_id: string | null;
   parent_task_id: string | null;
   link: string | null;
-  image_url: string | null;
+  image_url: string | null; // Added image_url
   isDoTodayOff?: boolean; // Added for UI styling
 }
 
@@ -87,7 +87,7 @@ export interface NewTaskData {
   original_task_id?: string | null;
   created_at?: string;
   link?: string | null;
-  image_url?: string | null;
+  image_url?: string | null; // Added image_url
   order?: number | null;
 }
 

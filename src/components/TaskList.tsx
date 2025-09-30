@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import SortableTaskItem from '@/components/SortableTaskItem';
 import { Task, TaskSection } from '@/hooks/useTasks';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext, DragOverEvent } from '@dnd-kit/core'; // Removed DragStartEvent
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -126,7 +126,7 @@ const TaskList: React.FC<TaskListProps> = ({
     return processedTasks.find(task => task.id === id);
   }, [processedTasks]);
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
+  const handleDragStart = useCallback(() => {
     setInsertionIndicator(null); // Clear any previous indicator on drag start
   }, []);
 
@@ -149,7 +149,6 @@ const TaskList: React.FC<TaskListProps> = ({
     const isOverSection = (item: any): item is TaskSection => 'name' in item && !('description' in item);
 
     const overId = String(over.id);
-    const overRect = event.activatorEvent.target.getBoundingClientRect(); // Use activatorEvent for initial rect
 
     // Determine if dragging into a section header (empty or not)
     if (isOverSection(overItem)) {
@@ -176,12 +175,12 @@ const TaskList: React.FC<TaskListProps> = ({
     const overElement = document.getElementById(`task-item-${overId}`);
     if (overElement) {
       const { top, height } = overElement.getBoundingClientRect();
-      const middle = top + height / 2;
-      const isDraggingDown = event.delta.y > 0; // Check if dragging downwards
+      // const middle = top + height / 2; // Removed unused middle variable
 
-      if (event.pointer.y < middle) {
+      // Use event.delta.y to determine if dragging upwards or downwards
+      if (event.delta.y < 0) { // Dragging upwards
         setInsertionIndicator({ id: overId, position: 'before' });
-      } else {
+      } else { // Dragging downwards
         setInsertionIndicator({ id: overId, position: 'after' });
       }
     } else {

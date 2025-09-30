@@ -39,7 +39,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all checkbox
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
-  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
+  const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false); // This state is used
 
   const {
     processedTasks,
@@ -250,7 +250,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onToggleAllSections={toggleAllSections}
         isManageCategoriesOpen={isManageCategoriesOpen}
         setIsManageCategoriesOpen={setIsManageCategoriesOpen}
-        isManageSectionsOpen={isManageSectionsOpen}
+        isManageSectionsOpen={isManageSectionsOpen} {/* Pass the boolean state */}
         setIsManageSectionsOpen={setIsManageSectionsOpen}
         isFilterPanelOpen={isFilterPanelOpen}
         toggleFilterPanel={toggleFilterPanel}
@@ -309,7 +309,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             isDemo={isDemo}
             selectedTaskIds={selectedTaskIds}
             onSelectTask={handleSelectTask}
-            onOpenAddTaskDialog={openAddTaskDialog} {/* Pass the function here */}
+            onOpenAddTaskDialog={openAddTaskDialog}
           />
         </div>
       </div>

@@ -103,7 +103,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     <li
       ref={setNodeRef}
       style={style}
-      id={`task-item-${task.id}`} {/* Added ID for easier DOM lookup in dragOver */}
+      id={`task-item-${task.id}`}
       className={cn(
         "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",

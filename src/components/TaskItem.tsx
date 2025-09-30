@@ -437,7 +437,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => onAddSubtask(task.id, task.section_id)}> {/* Added Add Subtask */}
+            <DropdownMenuItem onSelect={() => onAddSubtask(task.id, task.section_id)}>
               <PlusCircle className="mr-2 h-4 w-4" /> Add Subtask
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>

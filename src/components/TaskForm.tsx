@@ -253,6 +253,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     let imageUrlToSave = initialData?.image_url || null;
 
     if (imagePreview === null && initialData?.image_url) {
+      // Image was present initially but now cleared, so delete from storage
       imageUrlToSave = null;
       try {
         const imagePath = initialData.image_url.split('/taskimages/')[1];
@@ -298,7 +299,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       notes: data.notes,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: data.sectionId,
-      recurring_type: data.recurringType,
+      recurring_type: data.recurringType, // Corrected to recurring_type
       parent_task_id: data.parentTaskId,
       link: data.link,
       image_url: imageUrlToSave,
