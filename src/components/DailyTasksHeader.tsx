@@ -1,4 +1,4 @@
-import React, { SetStateAction } from 'react'; // Import SetStateAction
+import React, { SetStateAction } from 'react';
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
-import QuickAddTask from './QuickAddTask'; // Import QuickAddTask
+import QuickAddTask from './QuickAddTask';
+import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -50,7 +51,10 @@ interface DailyTasksHeaderProps {
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
   onOpenAddTaskDialog?: () => void;
-  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Add handleAddTask prop
+  handleAddTask: (taskData: NewTaskData) => Promise<any>;
+  selectedCount: number; // New prop for selected task count
+  isSelectAllChecked: boolean; // New prop for select all checkbox state
+  onSelectAll: () => void; // New prop for select all handler
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -80,12 +84,32 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   toggleFilterPanel,
   markAllTasksAsCompleted,
   onOpenAddTaskDialog,
-  handleAddTask, // Destructure handleAddTask
+  handleAddTask,
+  selectedCount,
+  isSelectAllChecked,
+  onSelectAll,
+  filteredTasks, // Destructure filteredTasks here
 }) => {
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
       <div className="flex items-center justify-between pt-4 pb-3">
-        <h1 className="text-3xl font-bold tracking-tight">Daily Tasks</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Daily Tasks</h1>
+          {filteredTasks.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="select-all-tasks"
+                checked={isSelectAllChecked}
+                onCheckedChange={onSelectAll}
+                disabled={isDemo}
+                className="h-4 w-4"
+              />
+              <label htmlFor="select-all-tasks" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Select All ({selectedCount} selected)
+              </label>
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

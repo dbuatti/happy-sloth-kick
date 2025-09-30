@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
@@ -37,6 +37,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -124,6 +125,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
   const handleClearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
+    setIsSelectAllChecked(false);
   }, []);
 
   const handleSelectTask = useCallback((taskId: string, isSelected: boolean) => {
@@ -137,6 +139,26 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       return newSet;
     });
   }, []);
+
+  const handleSelectAll = useCallback(() => {
+    if (isSelectAllChecked) {
+      setSelectedTaskIds(new Set());
+    } else {
+      const allFilteredTaskIds = new Set(filteredTasks.map(task => task.id));
+      setSelectedTaskIds(allFilteredTaskIds);
+    }
+    setIsSelectAllChecked(prev => !prev);
+  }, [isSelectAllChecked, filteredTasks]);
+
+  // Effect to update isSelectAllChecked when filteredTasks or selectedTaskIds change
+  useEffect(() => {
+    if (filteredTasks.length === 0) {
+      setIsSelectAllChecked(false);
+      return;
+    }
+    const allFilteredSelected = filteredTasks.every(task => selectedTaskIds.has(task.id));
+    setIsSelectAllChecked(allFilteredSelected);
+  }, [filteredTasks, selectedTaskIds]);
 
   const handleBulkComplete = useCallback(async () => {
     await bulkUpdateTasks({ status: 'completed' }, Array.from(selectedTaskIds));
@@ -232,7 +254,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         toggleFilterPanel={toggleFilterPanel}
         markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
         onOpenAddTaskDialog={openAddTaskDialog}
-        handleAddTask={handleAddTask} // Pass handleAddTask
+        handleAddTask={handleAddTask}
+        selectedCount={selectedTaskIds.size} // Pass selected count
+        isSelectAllChecked={isSelectAllChecked} // Pass select all state
+        onSelectAll={handleSelectAll} // Pass select all handler
       />
 
       <FilterPanel

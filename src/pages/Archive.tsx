@@ -60,6 +60,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         markAllTasksAsCompleted={dummyAsyncFunc}
         onOpenAddTaskDialog={() => {}}
         handleAddTask={handleAddTask}
+        selectedCount={0} // Dummy value for selectedCount
+        isSelectAllChecked={false} // Dummy value for isSelectAllChecked
+        onSelectAll={() => {}} // Dummy function for onSelectAll
       />
       {/* Content specific to the Archive page */}
       <div className="p-4">
