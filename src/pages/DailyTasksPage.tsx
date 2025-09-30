@@ -24,6 +24,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false); // State for AddTaskDialog
+  const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null); // New state for subtask parent
+  const [preselectedSectionIdForSubtask, setPreselectedSectionIdForSubtask] = useState<string | null>(null); // New state for subtask section
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -176,6 +178,18 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     staleTime: 5 * 60 * 1000,
   });
 
+  const openAddTaskDialog = useCallback((parentTaskId: string | null = null, sectionId: string | null = null) => {
+    setPreselectedParentTaskId(parentTaskId);
+    setPreselectedSectionIdForSubtask(sectionId);
+    setIsAddTaskDialogOpen(true);
+  }, []);
+
+  const closeAddTaskDialog = useCallback(() => {
+    setIsAddTaskDialogOpen(false);
+    setPreselectedParentTaskId(null);
+    setPreselectedSectionIdForSubtask(null);
+  }, []);
+
   return (
     <div className="flex flex-col h-full w-full">
       <DailyTasksHeader
@@ -264,7 +278,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         </div>
       </div>
 
-      <FloatingAddTaskButton onClick={() => setIsAddTaskDialogOpen(true)} isDemo={isDemo} />
+      <FloatingAddTaskButton onClick={() => openAddTaskDialog()} isDemo={isDemo} />
 
       {selectedTaskIds.size > 0 && (
         <BulkActionBar
@@ -291,6 +305,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
+          onAddSubtask={openAddTaskDialog} // Pass the new handler
         />
       )}
 
@@ -314,7 +329,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
       <AddTaskDialog
         isOpen={isAddTaskDialogOpen}
-        onClose={() => setIsAddTaskDialogOpen(false)}
+        onClose={closeAddTaskDialog}
         onSave={handleAddTask}
         sections={sections}
         allCategories={allCategories}
@@ -324,6 +339,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         allTasks={processedTasks}
+        preselectedParentTaskId={preselectedParentTaskId} // Pass preselected parent
+        preselectedSectionId={preselectedSectionIdForSubtask} // Pass preselected section
       />
     </div>
   );

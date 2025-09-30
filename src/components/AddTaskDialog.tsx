@@ -14,7 +14,8 @@ interface AddTaskDialogProps {
   sections: TaskSection[];
   allCategories: Category[];
   preselectedSectionId?: string | null;
-  parentTaskId?: string | null;
+  preselectedParentTaskId?: string | null; // New prop
+  parentTaskId?: string | null; // Keep existing for TaskForm compatibility if needed, but preselectedParentTaskId will override
   currentDate: Date;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
@@ -30,7 +31,8 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   sections,
   allCategories,
   preselectedSectionId,
-  parentTaskId,
+  preselectedParentTaskId, // Destructure new prop
+  parentTaskId, // Keep existing
   currentDate,
   createSection,
   updateSection,
@@ -48,7 +50,7 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
       allCategories={allCategories}
       autoFocus={true}
       preselectedSectionId={preselectedSectionId}
-      parentTaskId={parentTaskId}
+      parentTaskId={preselectedParentTaskId ?? parentTaskId} // Use preselectedParentTaskId if available
       currentDate={currentDate}
       createSection={createSection}
       updateSection={updateSection}
