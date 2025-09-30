@@ -93,8 +93,8 @@ serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
-    // IMPORTANT: Ensure GEMINI_API_KEY is set as a secret in your Supabase project dashboard
-    // Project -> Edge Functions -> Manage Secrets
+    console.log("Daily Briefing: GEMINI_API_KEY value:", GEMINI_API_KEY ? "Set" : "Not Set"); // Log the key's presence
+
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
       console.error("Daily Briefing: Missing environment variables. Ensure GEMINI_API_KEY is set as a secret.");
       return new Response(JSON.stringify({ error: 'Missing Supabase or Gemini API environment variables. Please ensure GEMINI_API_KEY is set as a secret in Supabase.' }), {
