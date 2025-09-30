@@ -412,7 +412,7 @@ const TaskList: React.FC<TaskListProps> = ({
         {showNoTasksMessage && (
           <div className="text-center py-12 text-muted-foreground">
             <p className="text-lg font-semibold mb-2">You're all caught up! 🎉</p>
-            <p className="mb-4">No tasks for today. Time to relax or add some new goals.</p>
+            <p className="mb-4">No tasks for today. Click "Add Task" above to get started!</p>
           </div>
         )}
 
@@ -438,13 +438,6 @@ const TaskList: React.FC<TaskListProps> = ({
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           confirmDeleteSection={confirmDeleteSection}
           isDemo={isDemo}
-          handleAddTask={handleAddTask}
-          allCategories={allCategories}
-          currentDate={currentDate}
-          sections={sections}
-          createSection={createSection}
-          updateSection={updateSection}
-          deleteSection={deleteSection}
           renderTask={renderTask}
           insertionIndicator={insertionIndicator}
           onOpenAddTaskDialog={onOpenAddTaskDialog} // Pass new prop
@@ -470,13 +463,6 @@ const TaskList: React.FC<TaskListProps> = ({
                 updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
                 confirmDeleteSection={confirmDeleteSection}
                 isDemo={isDemo}
-                handleAddTask={handleAddTask}
-                allCategories={allCategories}
-                currentDate={currentDate}
-                sections={sections}
-                createSection={createSection}
-                updateSection={updateSection}
-                deleteSection={deleteSection}
                 renderTask={renderTask}
                 insertionIndicator={insertionIndicator}
                 onOpenAddTaskDialog={onOpenAddTaskDialog} // Pass new prop
@@ -563,13 +549,6 @@ const TaskList: React.FC<TaskListProps> = ({
               updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
               confirmDeleteSection={confirmDeleteSection}
               isDemo={isDemo}
-              handleAddTask={handleAddTask}
-              allCategories={allCategories}
-              currentDate={currentDate}
-              sections={sections}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
               renderTask={renderTask}
               insertionIndicator={null}
               onOpenAddTaskDialog={() => {}} // Dummy for overlay

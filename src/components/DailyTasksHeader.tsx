@@ -51,8 +51,8 @@ interface DailyTasksHeaderProps {
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  onOpenAddTaskDialog?: (parentTaskId: string | null, sectionId: string | null) => void; // Updated prop signature
-  // Removed: handleAddTask: (taskData: NewTaskData) => Promise<any>;
+  onOpenAddTaskDialog?: (parentTaskId: string | null, sectionId: string | null) => void; // Updated signature
+  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Still needed for other components
   selectedCount: number;
   isSelectAllChecked: boolean;
   onSelectAll: () => void;
@@ -87,7 +87,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   isFilterPanelOpen,
   toggleFilterPanel,
   markAllTasksAsCompleted,
-  onOpenAddTaskDialog, // Destructure new prop
+  onOpenAddTaskDialog,
+  handleAddTask,
   selectedCount,
   isSelectAllChecked,
   onSelectAll,
@@ -133,7 +134,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onOpenAddTaskDialog(null, null)} // Call with null for global add
+              onClick={() => onOpenAddTaskDialog(null, null)} // Open dialog for global add
               className="flex items-center gap-2"
               disabled={isDemo}
             >
@@ -174,21 +175,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       />
 
       <Separator className="my-4" />
-
-      {/* Global Quick Add Task removed from here */}
-      {/* <QuickAddTask
-        onAddTask={handleAddTask}
-        defaultCategoryId={allCategories[0]?.id || ''}
-        isDemo={isDemo}
-        allCategories={allCategories}
-        currentDate={currentDate}
-        sections={sections}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-      />
-      <Separator className="my-4" /> */}
 
       {/* Daily Briefing Card */}
       <DailyBriefingCard

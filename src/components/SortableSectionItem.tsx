@@ -32,13 +32,13 @@ interface SortableSectionItemProps {
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<any>;
   confirmDeleteSection: (section: TaskSection) => void;
   isDemo?: boolean;
-  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Still needed for QuickAddTask in TaskList
-  allCategories: Category[];
-  currentDate: Date;
-  sections: TaskSection[]; // All sections for QuickAddTask
-  createSection: (name: string) => Promise<any>;
-  updateSection: (id: string, newName: string) => Promise<void>;
-  deleteSection: (id: string) => Promise<any>;
+  // Removed: handleAddTask: (taskData: NewTaskData) => Promise<any>; // No longer needed here
+  // Removed: allCategories: Category[]; // No longer needed here
+  // Removed: currentDate: Date; // No longer needed here
+  // Removed: sections: TaskSection[]; // No longer needed here
+  // Removed: createSection: (name: string) => Promise<any>; // No longer needed here
+  // Removed: updateSection: (id: string, newName: string) => Promise<void>; // No longer needed here
+  // Removed: deleteSection: (id: string) => Promise<any>; // No longer needed here
   renderTask: (task: Task, level: number) => React.ReactNode;
   insertionIndicator: { id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null;
   onOpenAddTaskDialog: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
@@ -58,13 +58,13 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
   updateSectionIncludeInFocusMode,
   confirmDeleteSection,
   isDemo,
-  handleAddTask, // Keep for now, might be removed if QuickAddTask is fully externalized
-  allCategories,
-  currentDate,
-  sections,
-  createSection,
-  updateSection,
-  deleteSection,
+  // Removed: handleAddTask,
+  // Removed: allCategories,
+  // Removed: currentDate,
+  // Removed: sections,
+  // Removed: createSection,
+  // Removed: updateSection,
+  // Removed: deleteSection,
   renderTask,
   insertionIndicator,
   onOpenAddTaskDialog, // Destructure new prop
@@ -202,7 +202,6 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
                 {section.id === 'no-section' ? "No tasks without a section. Click '+' above to add one, or drag a task here!" : `No tasks in "${section.name}". Click '+' above to add one!`}
               </p>
             )}
-            {/* Removed QuickAddTask from here */}
           </>
         )}
       </div>

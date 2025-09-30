@@ -36,7 +36,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [selectedTaskIds, setSelectedTaskIds] = new Set<string>(); // Initialize as empty Set
   const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
@@ -47,7 +47,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     nextAvailableTask,
     loading: tasksLoading,
     userId,
-    handleAddTask,
+    handleAddTask, // Keep handleAddTask here as it's passed to AddTaskDialog
     updateTask,
     deleteTask,
     bulkUpdateTasks,
@@ -254,7 +254,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         isFilterPanelOpen={isFilterPanelOpen}
         toggleFilterPanel={toggleFilterPanel}
         markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
-        onOpenAddTaskDialog={openAddTaskDialog} // Pass new prop
+        onOpenAddTaskDialog={openAddTaskDialog}
+        handleAddTask={handleAddTask}
         selectedCount={selectedTaskIds.size}
         isSelectAllChecked={isSelectAllChecked}
         onSelectAll={handleSelectAll}
