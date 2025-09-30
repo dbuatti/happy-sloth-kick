@@ -100,6 +100,7 @@ export interface MutationContext {
   invalidateSectionsQueries: () => void;
   invalidateCategoriesQueries: () => void;
   processedTasks: Task[];
+  rawTasks: Omit<Task, 'category_color' | 'isDoTodayOff'>[]; // Added rawTasks
   sections: TaskSection[];
   scheduleReminder: (id: string, message: string, date: Date) => void;
   cancelReminder: (id: string) => void;
@@ -318,11 +319,12 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     invalidateSectionsQueries,
     invalidateCategoriesQueries,
     processedTasks,
+    rawTasks, // Pass rawTasks here
     sections,
     scheduleReminder,
     cancelReminder,
     currentDate: effectiveCurrentDate, // Pass currentDate here
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, sections, scheduleReminder, cancelReminder, effectiveCurrentDate]);
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, rawTasks, sections, scheduleReminder, cancelReminder, effectiveCurrentDate]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }

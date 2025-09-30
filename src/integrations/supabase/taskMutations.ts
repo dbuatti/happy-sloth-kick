@@ -228,9 +228,10 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, rawTasks } = context; // Use rawTasks
 
-  const taskToDelete = processedTasks.find((t: Task) => t.id === taskId);
+  // Corrected type for 't' in the find predicate
+  const taskToDelete = rawTasks.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === taskId);
   if (!taskToDelete) {
     showError('Task not found for deletion.');
     return false;
@@ -244,13 +245,13 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
     // If it's a recurring template or an instance, delete the entire series
     originalTaskIdToDelete = taskToDelete.original_task_id || taskToDelete.id;
     
-    // Collect all tasks belonging to this series (template + all instances)
-    idsToDelete = processedTasks
+    // Collect all tasks belonging to this series (template + all instances) from rawTasks
+    idsToDelete = rawTasks
       .filter(t => t.id === originalTaskIdToDelete || t.original_task_id === originalTaskIdToDelete)
       .map(t => t.id);
   } else {
-    // It's a non-recurring task, delete it and its subtasks
-    idsToDelete = processedTasks
+    // It's a non-recurring task, delete it and its subtasks from rawTasks
+    idsToDelete = rawTasks
       .filter(t => t.id === taskId || t.parent_task_id === taskId)
       .map(t => t.id);
   }
@@ -362,7 +363,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
 };
 
 export const bulkDeleteTasksMutation = async (ids: string[], context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed rawTasks from destructuring
 
   // Filter out virtual IDs for DB operation
   const realTaskIds = ids.filter(id => !isVirtualId(id));
@@ -386,6 +387,23 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
         .eq('user_id', userId);
 
       if (error) throw error;
+    }
+
+    // Also delete from recurring_task_completion_log if any of the deleted tasks were recurring templates
+    const originalTaskIdsToDelete = tasksToDelete
+      .filter(t => t.recurring_type !== 'none' || t.original_task_id)
+      .map(t => t.original_task_id || t.id);
+
+    if (originalTaskIdsToDelete.length > 0) {
+      const { error: recurringLogError } = await supabase
+        .from('recurring_task_completion_log')
+        .delete()
+        .eq('user_id', userId)
+        .in('original_task_id', originalTaskIdsToDelete);
+      
+      if (recurringLogError) {
+        console.warn('Failed to delete recurring task completion logs during bulk delete:', recurringLogError.message);
+      }
     }
 
     showSuccess('Tasks deleted successfully!');
