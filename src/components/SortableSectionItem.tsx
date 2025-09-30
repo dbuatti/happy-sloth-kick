@@ -6,12 +6,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { TaskSection, Category, NewTaskData, Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, Settings, EyeOff, Eye } from 'lucide-react';
+import { ChevronDown, ChevronRight, Settings, EyeOff, Eye, GripVertical } from 'lucide-react'; // Import GripVertical
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  // Removed: DropdownMenuSeparator,
+  // Removed: DropdownMenuSeparator, // This line was causing the error
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
@@ -109,9 +109,7 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
         <div className="absolute -top-1 left-0 right-0 h-1 w-full bg-primary rounded-full z-10 animate-pulse" />
       )}
       <div
-        className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border cursor-grab"
-        {...attributes}
-        {...listeners}
+        className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border"
       >
         <div className="flex items-center gap-2">
           <Button
@@ -143,25 +141,38 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
             </h3>
           )}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onPointerDown={(e) => e.stopPropagation()}>
-              <Settings className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => handleEditSection(section)}>Rename Section</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>Mark All Completed</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
-              {section.include_in_focus_mode ? (
-                <span className="flex items-center"><EyeOff className="mr-2 h-4 w-4" /> Exclude from Focus Mode</span>
-              ) : (
-                <span className="flex items-center"><Eye className="mr-2 h-4 w-4" /> Include in Focus Mode</span>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onSelect={() => confirmDeleteSection(section)}>Delete Section</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-foreground cursor-grab"
+            onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}
+            {...listeners}
+            {...attributes}
+            aria-label="Drag to reorder section"
+          >
+            <GripVertical className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onPointerDown={(e) => e.stopPropagation()}>
+                <Settings className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => handleEditSection(section)}>Rename Section</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>Mark All Completed</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
+                {section.include_in_focus_mode ? (
+                  <span className="flex items-center"><EyeOff className="mr-2 h-4 w-4" /> Exclude from Focus Mode</span>
+                ) : (
+                  <span className="flex items-center"><Eye className="mr-2 h-4 w-4" /> Include in Focus Mode</span>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive" onSelect={() => confirmDeleteSection(section)}>Delete Section</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
       <div className="p-3 space-y-2">
         {isExpanded && (
@@ -171,7 +182,9 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({
                 {tasksInThisSection.map((task) => renderTask(task, 0))}
               </ul>
             ) : (
-              <p className="text-muted-foreground text-sm text-center py-4">No tasks in this section. Add one below!</p>
+              <p className="text-muted-foreground text-sm text-center py-4">
+                {section.id === 'no-section' ? "No tasks without a section. Add one above or drag a task here!" : `No tasks in "${section.name}". Add one below!`}
+              </p>
             )}
             <QuickAddTask
               sectionId={section.id}

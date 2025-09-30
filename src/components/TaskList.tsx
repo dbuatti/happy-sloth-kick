@@ -409,8 +409,8 @@ const TaskList: React.FC<TaskListProps> = ({
       <div className="space-y-6">
         {showNoTasksMessage && (
           <div className="text-center py-12 text-muted-foreground">
-            <p className="text-lg font-semibold mb-2">No tasks for today!</p>
-            <p className="mb-4">Start by adding a new task above, or create a new section.</p>
+            <p className="text-lg font-semibold mb-2">You're all caught up! 🎉</p>
+            <p className="mb-4">No tasks for today. Time to relax or add some new goals.</p>
           </div>
         )}
 
@@ -451,32 +451,36 @@ const TaskList: React.FC<TaskListProps> = ({
         <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
           {sections.map(section => {
             const tasksInThisSection = getTasksForSection(section.id);
+            // Always render section header, even if empty, unless in demo mode and explicitly no tasks
+            const showSectionContent = tasksInThisSection.length > 0 || isDemo || section.id === 'no-section';
+
             return (
-              <SortableSectionItem
-                key={section.id}
-                section={section}
-                tasksInThisSection={tasksInThisSection}
-                expandedSections={expandedSections}
-                toggleSection={toggleSection}
-                editSectionId={editSectionId}
-                editSectionName={editSectionName}
-                handleUpdateSection={handleUpdateSection}
-                handleEditSection={handleEditSection}
-                onEditSectionNameChange={handleEditSectionNameChange}
-                markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                confirmDeleteSection={confirmDeleteSection}
-                isDemo={isDemo}
-                handleAddTask={handleAddTask}
-                allCategories={allCategories}
-                currentDate={currentDate}
-                sections={sections}
-                createSection={createSection}
-                updateSection={updateSection}
-                deleteSection={deleteSection}
-                renderTask={renderTask}
-                insertionIndicator={insertionIndicator}
-              />
+              <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
+                <SortableSectionItem
+                  section={section}
+                  tasksInThisSection={tasksInThisSection}
+                  expandedSections={expandedSections}
+                  toggleSection={toggleSection}
+                  editSectionId={editSectionId}
+                  editSectionName={editSectionName}
+                  handleUpdateSection={handleUpdateSection}
+                  handleEditSection={handleEditSection}
+                  onEditSectionNameChange={handleEditSectionNameChange}
+                  markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                  confirmDeleteSection={confirmDeleteSection}
+                  isDemo={isDemo}
+                  handleAddTask={handleAddTask}
+                  allCategories={allCategories}
+                  currentDate={currentDate}
+                  sections={sections}
+                  createSection={createSection}
+                  updateSection={updateSection}
+                  deleteSection={deleteSection}
+                  renderTask={renderTask}
+                  insertionIndicator={insertionIndicator}
+                />
+              </div>
             );
           })}
         </SortableContext>
@@ -492,7 +496,11 @@ const TaskList: React.FC<TaskListProps> = ({
             className="flex-1 h-9 text-base"
           />
           <Button onClick={handleCreateSection} disabled={isCreatingSection || !newSectionName.trim() || isDemo} className="h-9 px-4">
-            {isCreatingSection ? 'Creating...' : <Plus className="h-4 w-4" />} Add Section
+            {isCreatingSection ? 'Creating...' : (
+              <>
+                <Plus className="h-4 w-4 mr-2" /> Add Section
+              </>
+            )}
           </Button>
         </div>
 
