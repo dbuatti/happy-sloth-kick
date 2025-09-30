@@ -309,6 +309,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             isDemo={isDemo}
             selectedTaskIds={selectedTaskIds}
             onSelectTask={handleSelectTask}
+            onOpenAddTaskDialog={openAddTaskDialog} {/* Pass the function here */}
           />
         </div>
       </div>

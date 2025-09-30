@@ -21,30 +21,26 @@ interface TaskListProps {
   processedTasks: Task[];
   filteredTasks: Task[];
   loading: boolean;
-  // handleAddTask: (taskData: NewTaskData) => Promise<any>; // Removed handleAddTask prop
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  deleteTask: (taskId: string) => Promise<boolean | undefined>; // Updated type based on error
+  deleteTask: (taskId: string) => Promise<boolean | undefined>;
   markAllTasksInSectionCompleted: (sectionId: string) => Promise<void>;
   sections: TaskSection[];
   createSection: (name: string) => Promise<void>;
-  // updateSection: (sectionId: string, newName: string) => Promise<void>; // Removed unused prop
-  // deleteSection: (sectionId: string) => Promise<void>; // Removed unused prop
-  // updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>; // Removed unused prop
-  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>; // Updated type based on error
-  // allCategories: Category[]; // Removed allCategories prop
+  updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   expandedSections: Record<string, boolean>;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
   toggleSection: (sectionId: string) => void;
-  setFocusTask: (taskId: string | null) => Promise<void>; // Updated type based on error
+  setFocusTask: (taskId: string | null) => Promise<void>;
   doTodayOffIds: Set<string>;
-  toggleDoToday: (task: Task) => Promise<void>; // Updated type based on error
+  toggleDoToday: (task: Task) => Promise<void>;
   scheduledTasksMap: Map<string, any>;
   isDemo?: boolean;
-  selectedTaskIds: Set<string>; // Keep this as Set<string>
+  selectedTaskIds: Set<string>;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  onOpenAddTaskDialog: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -70,6 +66,7 @@ const TaskList: React.FC<TaskListProps> = ({
   isDemo = false,
   selectedTaskIds,
   onSelectTask,
+  onOpenAddTaskDialog, // Destructure new prop
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -85,7 +82,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const [isNewSectionDialogOpen, setIsNewSectionDialogOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
-  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null); // Added state for insertion indicator
+  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null);
 
   const handleCreateSection = useCallback(async () => {
     if (newSectionName.trim()) {
@@ -177,19 +174,6 @@ const TaskList: React.FC<TaskListProps> = ({
     setInsertionIndicator(null); // Clear indicator after drag ends
   }, [filteredTasks, processedTasks, findTask, updateTaskParentAndOrder]);
 
-  // Placeholder for onDragOver to update insertionIndicator (full logic would be more complex)
-  // const handleDragOver = useCallback((event: DragOverEvent) => {
-  //   const { active, over } = event;
-  //   if (active && over) {
-  //     // Determine position (before, after, into) and set insertionIndicator
-  //     setInsertionIndicator({ id: over.id, position: 'after' }); // Simplified for compile fix
-  //   }
-  // }, []);
-
-  // const handleDragStart = useCallback(() => {
-  //   setInsertionIndicator(null); // Clear any previous indicator on drag start
-  // }, []);
-
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
   }
@@ -207,8 +191,6 @@ const TaskList: React.FC<TaskListProps> = ({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
-      // onDragOver={handleDragOver} // Uncomment for full drag indicator logic
-      // onDragStart={handleDragStart} // Uncomment for full drag indicator logic
     >
       <div className="space-y-6">
         {sectionsWithTasks.map(({ section, tasks }) => (
@@ -235,6 +217,15 @@ const TaskList: React.FC<TaskListProps> = ({
                     Mark All Completed
                   </Button>
                 )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onOpenAddTaskDialog(null, section?.id || null)} // Add task to this section
+                  disabled={isDemo}
+                  aria-label={`Add task to ${section?.name || 'Unsectioned Tasks'}`}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
             </div>
             {(!section || expandedSections[section.id] !== false) && (
