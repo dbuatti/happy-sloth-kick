@@ -66,32 +66,23 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
       localDayEndISO: localDayEnd.toISOString(),
     };
 
-    // Get the user's session to include the access token for authentication
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !session) {
-      console.error('API: Failed to get user session for Edge Function call:', sessionError?.message);
-      return null;
-    }
-
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/daily-briefing`;
-
-    const response = await fetch(EDGE_FUNCTION_URL, {
-      method: 'POST',
+    // Use supabase.functions.invoke instead of manual fetch
+    const { data, error } = await supabase.functions.invoke('daily-briefing', {
+      body: JSON.stringify(requestBody),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify(requestBody),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error invoking daily-briefing Edge Function (direct fetch):', response.status, errorText);
+    if (error) {
+      console.error('Error invoking daily-briefing Edge Function:', error.message);
+      // Log additional details if available from FunctionsHttpError
+      if ((error as any).details) {
+        console.error('Edge Function details:', (error as any).details);
+      }
       return null;
     }
 
-    const data = await response.json();
     // The data returned from the Edge Function is expected to have a 'briefing' property
     const briefingResult = data as { briefing: string };
     return briefingResult.briefing;
