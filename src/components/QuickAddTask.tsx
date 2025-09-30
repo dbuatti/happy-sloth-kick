@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Lightbulb } from 'lucide-react';
+import { Plus, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react'; // Added ChevronDown, ChevronUp
 import { Category, TaskSection, NewTaskData } from '@/hooks/useTasks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip components
+import { AnimatePresence, motion } from 'framer-motion'; // For animation
 
 interface QuickAddTaskProps {
   onAddTask: (taskData: NewTaskData) => Promise<any>;
@@ -42,6 +43,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [isAdding, setIsAdding] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false); // State for expandable options
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -101,6 +103,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
           setSelectedSection(null);
         }
         // Quick add doesn't support all fields, so we only apply relevant ones
+        setShowAdvancedOptions(true); // Show advanced options if AI suggests them
       }
     } catch (error) {
       console.error('Error getting AI suggestions:', error);
@@ -162,53 +165,72 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
         <Button onClick={handleAddTask} disabled={isAdding || isDemo || !description.trim()} className="h-9 text-base">
           {isAdding ? 'Adding...' : <Plus className="h-4 w-4" />}
         </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowAdvancedOptions(prev => !prev)}
+          aria-label={showAdvancedOptions ? "Hide advanced options" : "Show advanced options"}
+          className="h-9 w-9"
+        >
+          {showAdvancedOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
       </div>
-      <div className="flex items-center gap-2">
-        <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isAdding || isDemo || isSuggesting}>
-          <SelectTrigger className="h-9 text-base w-[180px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {allCategories.map(category => (
-              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={selectedSection ?? "no-section-selected"} onValueChange={handleSectionChange} disabled={isAdding || isDemo || isSuggesting}>
-          <SelectTrigger className="h-9 text-base w-[180px]">
-            <SelectValue placeholder="Section" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="no-section-selected">No Section</SelectItem>
-            {sections.map(section => (
-              <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-[180px] justify-start text-left font-normal h-9 text-base",
-                !dueDate && "text-muted-foreground"
-              )}
-              disabled={isAdding || isDemo || isSuggesting}
-            >
-              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-              {dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={dueDate}
-              onSelect={setDueDate}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+      <AnimatePresence>
+        {showAdvancedOptions && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex items-center gap-2 overflow-hidden"
+          >
+            <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isAdding || isDemo || isSuggesting}>
+              <SelectTrigger className="h-9 text-base w-[180px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                {allCategories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedSection ?? "no-section-selected"} onValueChange={handleSectionChange} disabled={isAdding || isDemo || isSuggesting}>
+              <SelectTrigger className="h-9 text-base w-[180px]">
+                <SelectValue placeholder="Section" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no-section-selected">No Section</SelectItem>
+                {sections.map(section => (
+                  <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal h-9 text-base",
+                    !dueDate && "text-muted-foreground"
+                  )}
+                  disabled={isAdding || isDemo || isSuggesting}
+                >
+                  <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                  {dueDate ? format(dueDate, "PPP") : <span>Due Date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={setDueDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

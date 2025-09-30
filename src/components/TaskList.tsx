@@ -4,7 +4,7 @@ import { Task, TaskSection } from '@/hooks/useTasks';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext, DragOverEvent } from '@dnd-kit/core'; // Removed DragStartEvent
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react'; // Added ChevronDown, ChevronUp
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { ListTodo } from 'lucide-react'; // Import ListTodo for empty state icon
+
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -323,8 +324,8 @@ const TaskList: React.FC<TaskListProps> = ({
                   {section ? section.name : 'Unsectioned Tasks'}
                 </h3>
                 {section && (
-                  <Button variant="ghost" size="sm" onClick={() => toggleSection(section.id)}>
-                    {expandedSections[section.id] === false ? 'Expand' : 'Collapse'}
+                  <Button variant="ghost" size="icon" onClick={() => toggleSection(section.id)} className="h-8 w-8">
+                    {expandedSections[section.id] === false ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
                   </Button>
                 )}
               </div>
@@ -340,13 +341,13 @@ const TaskList: React.FC<TaskListProps> = ({
                   </Button>
                 )}
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  variant="outline" // Changed to outline for better visibility
+                  size="sm" // Changed to sm for consistency
                   onClick={() => onOpenAddTaskDialog(null, section?.id || null)}
                   disabled={isDemo}
                   aria-label={`Add task to ${section?.name || 'Unsectioned Tasks'}`}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4 mr-2" /> Add Task
                 </Button>
               </div>
             </div>
@@ -381,6 +382,7 @@ const TaskList: React.FC<TaskListProps> = ({
                         insertionIndicator={insertionIndicator}
                         isSelected={selectedTaskIds.has(task.id)}
                         onAddSubtask={onOpenAddTaskDialog}
+                        showDragHandle={true} // Ensure drag handle is always shown for sortable items
                       />
                     ))}
                   </ul>

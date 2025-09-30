@@ -4,8 +4,11 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Target, ListTodo, Archive, ChevronsDownUp } from 'lucide-react';
+import { CheckCircle2, Target, ListTodo, Archive, ChevronsDownUp, Repeat, Link as LinkIcon, Calendar as CalendarIcon, FileText, Image } from 'lucide-react'; // Added icons for task display
 import { Task } from '@/hooks/useTasks';
+import { cn } from '@/lib/utils';
+import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -52,6 +55,37 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
     }
   };
 
+  const getPriorityDotColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'bg-priority-urgent';
+      case 'high': return 'bg-priority-high';
+      case 'medium': return 'bg-priority-medium';
+      case 'low': return 'bg-priority-low';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getDueDateDisplay = (dueDate: string | null) => {
+    if (!dueDate) return null;
+    const date = parseISO(dueDate);
+    if (!isValid(date)) return null;
+
+    const today = new Date();
+    if (isSameDay(date, today)) {
+      return 'Today';
+    } else if (isPast(date) && !isSameDay(date, today)) {
+      return format(date, 'MMM d');
+    } else {
+      return format(date, 'MMM d');
+    }
+  };
+
+  const isUrl = (path: string) => path.startsWith('http://') || path.startsWith('https://');
+
+  const isOverdue = nextAvailableTask?.due_date && nextAvailableTask.status === 'to-do' && isPast(parseISO(nextAvailableTask.due_date)) && !isSameDay(parseISO(nextAvailableTask.due_date), new Date());
+  const isDueToday = nextAvailableTask?.due_date && nextAvailableTask.status === 'to-do' && isSameDay(parseISO(nextAvailableTask.due_date), new Date());
+
+
   return (
     <Card className="relative overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -84,11 +118,108 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         ) : nextAvailableTask ? (
-          <div className="flex items-center justify-between gap-2 mt-4 p-3 bg-muted rounded-lg">
-            <span className="font-medium text-base flex-grow truncate">
-              {nextAvailableTask.description}
-            </span>
-            <div className="flex items-center gap-2">
+          <div className={cn(
+            "relative flex items-center justify-between gap-2 mt-4 p-3 rounded-lg border",
+            "bg-muted text-foreground border-border",
+            isOverdue && "bg-red-500/10 border-red-500/30",
+            isDueToday && !isOverdue && "bg-yellow-500/10 border-yellow-500/30"
+          )}>
+            <div className={cn(
+              "absolute left-0 top-0 h-full w-1.5 rounded-l-lg",
+              getPriorityDotColor(nextAvailableTask.priority)
+            )} />
+            <div className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 min-w-0 pl-2">
+              <span className="font-medium text-base flex-grow truncate">
+                {nextAvailableTask.description}
+              </span>
+              <div className="flex-shrink-0 flex items-center gap-2 mt-1 sm:mt-0">
+                {nextAvailableTask.link && (
+                  isUrl(nextAvailableTask.link) ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={nextAvailableTask.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center flex-shrink-0 text-muted-foreground hover:text-primary text-xs"
+                          onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                        >
+                          <LinkIcon className="h-3.5 w-3.5" />
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Open link: {nextAvailableTask.link}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
+                          <FileText className="h-3.5 w-3.5" />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Local path</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                )}
+                {nextAvailableTask.notes && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
+                        <FileText className="h-3.5 w-3.5" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Has notes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {nextAvailableTask.image_url && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
+                        <Image className="h-3.5 w-3.5" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Has image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {nextAvailableTask.recurring_type !== 'none' && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex items-center flex-shrink-0 text-muted-foreground">
+                        <Repeat className="h-3.5 w-3.5" />
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Recurring: {nextAvailableTask.recurring_type.charAt(0).toUpperCase() + nextAvailableTask.recurring_type.slice(1)}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {nextAvailableTask.due_date && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={cn(
+                        "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                        "text-foreground bg-muted",
+                        isOverdue && "text-red-700 bg-red-200 dark:text-red-200 dark:bg-red-700 font-bold",
+                        isDueToday && !isOverdue && "text-yellow-700 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-700 font-bold"
+                      )}>
+                        <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(nextAvailableTask.due_date)}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Due: {format(parseISO(nextAvailableTask.due_date), 'MMM d, yyyy')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="secondary" size="sm" onClick={handleMarkDone} disabled={isDemo}>Done</Button>
               <Button variant="outline" size="sm" onClick={handleDetailsClick} disabled={isDemo}>Details</Button>
             </div>
