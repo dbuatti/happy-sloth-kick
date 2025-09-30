@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import TaskListItem from '@/components/TaskListItem'; // Corrected import path
-import { Task, TaskSection } from '@/hooks/useTasks'; // Removed Category, NewTaskData
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, Coordinates, UniqueIdentifier, SensorContext } from '@dnd-kit/core';
+import SortableTaskItem from '@/components/SortableTaskItem';
+import { Task, TaskSection } from '@/hooks/useTasks';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -56,9 +56,6 @@ const TaskList: React.FC<TaskListProps> = ({
   markAllTasksInSectionCompleted,
   sections,
   createSection,
-  // updateSection, // Removed
-  // deleteSection, // Removed
-  // updateSectionIncludeInFocusMode, // Removed
   updateTaskParentAndOrder,
   onOpenOverview,
   currentDate,
@@ -77,11 +74,11 @@ const TaskList: React.FC<TaskListProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
-      coordinateGetter: (event: KeyboardEvent, { currentCoordinates }: { active: UniqueIdentifier; currentCoordinates: Coordinates; context: SensorContext; }) => {
+      coordinateGetter: (event: KeyboardEvent, { currentCoordinates }: { active: UniqueIdentifier; currentCoordinates: { x: number; y: number }; context: SensorContext; }) => {
         if (event.code === 'Space') {
           return currentCoordinates;
         }
-        return undefined; // Changed from null to undefined
+        return undefined;
       },
     })
   );
@@ -108,23 +105,21 @@ const TaskList: React.FC<TaskListProps> = ({
           tasksBySection.set(task.section_id, []);
         }
         tasksBySection.get(task.section_id)?.push(task);
-      } else if (task.parent_task_id === null) { // Only top-level unsectioned tasks
+      } else if (task.parent_task_id === null) {
         unsectionedTasks.push(task);
       }
     });
 
     const result: { section: TaskSection | null; tasks: Task[] }[] = [];
 
-    // Add unsectioned tasks first
     if (unsectionedTasks.length > 0) {
-      result.push({ section: null, tasks: unsectionedTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) }); // Added nullish coalescing
+      result.push({ section: null, tasks: unsectionedTasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) });
     }
 
-    // Add tasks for each section, sorted by section order
-    sections.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(section => { // Added nullish coalescing
+    sections.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).forEach(section => {
       const tasks = tasksBySection.get(section.id) || [];
       if (tasks.length > 0) {
-        result.push({ section, tasks: tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) }); // Added nullish coalescing
+        result.push({ section, tasks: tasks.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) });
       }
     });
 
@@ -150,17 +145,15 @@ const TaskList: React.FC<TaskListProps> = ({
 
     if (!activeTask || !overTask) return;
 
-    // Determine if dragging within the same section/parent or to a new one
     const activeSectionId = activeTask.section_id;
     const overSectionId = overTask.section_id;
     const activeParentId = activeTask.parent_task_id;
     const overParentId = overTask.parent_task_id;
 
     if (activeSectionId === overSectionId && activeParentId === overParentId) {
-      // Reordering within the same section/parent
       const tasksInContext = filteredTasks.filter(task =>
         task.section_id === activeSectionId && task.parent_task_id === activeParentId
-      ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)); // Added nullish coalescing
+      ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
       const oldIndex = tasksInContext.findIndex(task => task.id === activeId);
       const newIndex = tasksInContext.findIndex(task => task.id === overId);
@@ -172,30 +165,13 @@ const TaskList: React.FC<TaskListProps> = ({
         order: index,
       }));
 
-      // Update tasks in DB
       for (const task of newOrder) {
-        if (task.id === activeId) { // Only update the dragged task's order
-          // The updateTaskParentAndOrder prop type was updated to match the error message,
-          // but the actual call here still uses the original 4-argument signature.
-          // This implies the error message for updateTaskParentAndOrder was misleading about the *prop type*
-          // and was actually referring to a different function or a misinterpretation.
-          // For now, I'm keeping the call as it was, assuming the prop type update will resolve the error.
-          // If the error persists, the handleDragEnd logic or the useTasks hook's updateTaskParentAndOrder
-          // definition needs to be re-evaluated.
-          await updateTaskParentAndOrder(task.id, task.parent_task_id, task.section_id, overId, false); // Adjusted to match the 5-arg signature from error
+        if (task.id === activeId) {
+          await updateTaskParentAndOrder(task.id, task.parent_task_id, task.section_id, overId, false);
         }
       }
     } else {
-      // Moving to a new section/parent
-      // This is a more complex scenario and would require determining the new parent_task_id and section_id
-      // and then re-calculating order for both the old and new contexts.
-      // For simplicity, we'll just log for now or implement a basic move.
       console.log(`Task ${activeId} moved from section ${activeSectionId} (parent ${activeParentId}) to section ${overSectionId} (parent ${overParentId})`);
-      // A more robust implementation would involve:
-      // 1. Determine new parent_task_id and section_id for activeTask based on overTask's context.
-      // 2. Calculate a new order for activeTask within its new context.
-      // 3. Recalculate orders for tasks in the old context.
-      // 4. Call updateTaskParentAndOrder with the new values.
     }
   }, [filteredTasks, processedTasks, findTask, updateTaskParentAndOrder]);
 
@@ -242,20 +218,17 @@ const TaskList: React.FC<TaskListProps> = ({
                     Mark All Completed
                   </Button>
                 )}
-                {/* <Button variant="outline" size="sm" onClick={() => handleAddTask({ section_id: section?.id || null })}>
-                  <Plus className="h-4 w-4 mr-2" /> Add Task
-                </Button> */}
               </div>
             </div>
             {(!section || expandedSections[section.id] !== false) && (
               <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                 <ul className="divide-y divide-border">
                   {tasks.map(task => (
-                    <TaskListItem
+                    <SortableTaskItem
                       key={task.id}
                       task={task}
-                      updateTask={updateTask}
-                      deleteTask={deleteTask}
+                      onUpdate={updateTask}
+                      onDelete={deleteTask}
                       onOpenOverview={onOpenOverview}
                       currentDate={currentDate}
                       isExpanded={expandedTasks[task.id] === true}
@@ -263,10 +236,13 @@ const TaskList: React.FC<TaskListProps> = ({
                       setFocusTask={setFocusTask}
                       doTodayOffIds={doTodayOffIds}
                       toggleDoToday={toggleDoToday}
-                      scheduledTask={scheduledTasksMap.get(task.id)}
+                      scheduledAppointment={scheduledTasksMap.get(task.id)}
                       isDemo={isDemo}
                       selectedTaskIds={selectedTaskIds}
                       onSelectTask={onSelectTask}
+                      allTasks={processedTasks} // Pass allTasks for subtask rendering
+                      getSubtasksForTask={(parentTaskId) => processedTasks.filter(t => t.parent_task_id === parentTaskId)}
+                      sections={sections} // Pass sections for dropdowns
                     />
                   ))}
                 </ul>

@@ -30,7 +30,7 @@ interface DailyTasksHeaderProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>; // Keeping this as is, assuming error was misleading or cascade
+  toggleAllDoToday: () => Promise<void>;
   dailyProgress: {
     totalPendingCount: number;
     completedCount: number;
@@ -170,7 +170,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isDemo={isDemo}
         allCategories={allCategories}
         currentDate={currentDate}
-        sections={sections}
+        // sections={sections} // Removed sections prop
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
