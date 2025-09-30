@@ -117,6 +117,10 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
     }
   };
 
+  const handleSectionChange = useCallback((value: string) => {
+    setSelectedSection(value === "no-section-selected" ? null : value);
+  }, []);
+
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -160,12 +164,12 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
             ))}
           </SelectContent>
         </Select>
-        <Select value={selectedSection || ''} onValueChange={setSelectedSection} disabled={isAdding || isDemo || isSuggesting}>
+        <Select value={selectedSection ?? "no-section-selected"} onValueChange={handleSectionChange} disabled={isAdding || isDemo || isSuggesting}>
           <SelectTrigger className="h-9 text-base w-[180px]">
             <SelectValue placeholder="Section" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">No Section</SelectItem>
+            <SelectItem value="no-section-selected">No Section</SelectItem> {/* Changed value */}
             {sections.map(section => (
               <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
             ))}
