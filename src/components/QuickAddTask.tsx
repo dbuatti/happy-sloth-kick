@@ -4,12 +4,12 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Lightbulb } from 'lucide-react';
-import { Category, NewTaskData } from '@/hooks/useTasks'; // Removed TaskSection
+import { Category, TaskSection, NewTaskData } from '@/hooks/useTasks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar } from "@/components/ui/calendar";
-import { format, parseISO } from 'date-fns'; // Removed isValid
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { suggestTaskDetails, AICategory, AISuggestionResult } from '@/integrations/supabase/api';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
@@ -20,7 +20,7 @@ interface QuickAddTaskProps {
   isDemo?: boolean;
   allCategories: Category[];
   currentDate: Date;
-  // sections: TaskSection[]; // Removed sections prop
+  sections: TaskSection[]; // Added sections prop
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
@@ -33,10 +33,11 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   isDemo,
   allCategories,
   currentDate,
-  // sections, // Removed sections from destructuring
+  sections, // Destructure sections
 }) => {
   const [description, setDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(defaultCategoryId);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null); // New state for selected section
   const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
   const [isAdding, setIsAdding] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
@@ -56,17 +57,19 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       description: description.trim(),
       category: selectedCategory || null,
       due_date: dueDate ? format(dueDate, 'yyyy-MM-dd') : null,
+      section_id: selectedSection, // Include selected section
     };
     const success = await onAddTask(newTask);
     setIsAdding(false);
     if (success) {
       setDescription('');
       setSelectedCategory(defaultCategoryId);
+      setSelectedSection(null); // Reset selected section
       setDueDate(undefined);
       showSuccess('Task added!');
       inputRef.current?.focus();
     }
-  }, [description, selectedCategory, dueDate, onAddTask, defaultCategoryId]);
+  }, [description, selectedCategory, selectedSection, dueDate, onAddTask, defaultCategoryId]);
 
   const handleSuggest = useCallback(async () => {
     if (!description.trim()) {
@@ -89,6 +92,13 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
         } else {
           setDueDate(undefined);
         }
+
+        const suggestedSection = sections.find(s => s.name.toLowerCase() === (suggestions.section?.toLowerCase() || ''));
+        if (suggestedSection) {
+          setSelectedSection(suggestedSection.id);
+        } else {
+          setSelectedSection(null);
+        }
         // Quick add doesn't support all fields, so we only apply relevant ones
       }
     } catch (error) {
@@ -98,7 +108,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       setIsSuggesting(false);
       dismissToast(toastId);
     }
-  }, [description, allCategories, defaultCategoryId, currentDate]);
+  }, [description, allCategories, defaultCategoryId, currentDate, sections]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && description.trim()) {
@@ -147,6 +157,17 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
           <SelectContent>
             {allCategories.map(category => (
               <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedSection || ''} onValueChange={setSelectedSection} disabled={isAdding || isDemo || isSuggesting}>
+          <SelectTrigger className="h-9 text-base w-[180px]">
+            <SelectValue placeholder="Section" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">No Section</SelectItem>
+            {sections.map(section => (
+              <SelectItem key={section.id} value={section.id}>{section.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

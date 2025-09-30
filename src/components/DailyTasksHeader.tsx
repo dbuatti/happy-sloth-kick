@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
-import QuickAddTask from '@/components/QuickAddTask'; // Corrected import path for QuickAddTask
+import QuickAddTask from '@/components/QuickAddTask';
 import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 
 interface DailyTasksHeaderProps {
@@ -170,7 +170,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isDemo={isDemo}
         allCategories={allCategories}
         currentDate={currentDate}
-        // sections={sections} // Removed sections prop
+        sections={sections} // Pass sections prop
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
