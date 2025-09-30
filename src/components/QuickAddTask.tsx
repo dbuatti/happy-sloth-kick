@@ -50,7 +50,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   const [remindAtTime, setRemindAtTime] = useState<string>('');
   const [isAdding, setIsAdding] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(true); // Changed to true by default
+  const [showAdvanced, setShowAdvanced] = useState(false); // Changed to false by default
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(propSectionId ?? null); // State for section selection
 
   useEffect(() => {
@@ -93,8 +93,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       setDueDate(null);
       setRemindAtDate(null);
       setRemindAtTime('');
-      // Keep advanced options open after adding a task
-      // setShowAdvanced(false); 
+      setShowAdvanced(false); // Hide advanced options after successful add
       // Reset selectedSectionId only if it's a global quick add (propSectionId is undefined)
       if (propSectionId === undefined) {
         setSelectedSectionId(null);
