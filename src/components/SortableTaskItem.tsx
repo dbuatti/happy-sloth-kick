@@ -35,7 +35,7 @@ interface SortableTaskItemProps {
   // Removed toggleExpand as it was redundant with toggleTask
   scheduledAppointment?: Appointment;
   selectedTaskIds: Set<string>;
-  onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
+  onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void;
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -57,7 +57,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   sections,
   onOpenOverview,
   currentDate,
-  insertionIndicator,
+  insertionIndicator, // Destructure insertionIndicator
   isSelected,
   onSelectTask,
   hasSubtasks,
@@ -66,7 +66,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   // Removed toggleExpand from destructuring
   scheduledAppointment,
   selectedTaskIds,
-  onAddSubtask, // Destructure new prop
+  onAddSubtask,
 }) => {
   const {
     attributes,
@@ -103,6 +103,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
     <li
       ref={setNodeRef}
       style={style}
+      id={`task-item-${task.id}`} {/* Added ID for easier DOM lookup in dragOver */}
       className={cn(
         "relative last:border-b-0 group select-none",
         isOverlay ? "shadow-xl ring-2 ring-primary bg-card rounded-lg" : "",
@@ -141,7 +142,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           listeners={listeners}
           isSelected={isSelected}
           onSelectTask={onSelectTask}
-          onAddSubtask={onAddSubtask} {/* Pass down the prop */}
+          onAddSubtask={onAddSubtask}
         />
         {effectiveIsExpanded && directSubtasks.length > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
@@ -174,7 +175,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 getSubtasksForTask={getSubtasksForTask}
                 scheduledAppointment={scheduledTasksMap.get(subtask.id)}
                 selectedTaskIds={selectedTaskIds}
-                onAddSubtask={onAddSubtask} {/* Pass down the prop */}
+                onAddSubtask={onAddSubtask}
               />
             ))}
           </ul>

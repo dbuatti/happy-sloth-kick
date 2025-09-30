@@ -1,11 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import SortableTaskItem from '@/components/SortableTaskItem';
 import { Task, TaskSection } from '@/hooks/useTasks';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext, DragOverEvent, DragStartEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-// import { Separator } from '@/components/ui/separator'; // Removed Separator
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -15,7 +14,6 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-// import { cn } from '@/lib/utils'; // Removed cn import
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -40,7 +38,7 @@ interface TaskListProps {
   isDemo?: boolean;
   selectedTaskIds: Set<string>;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  onOpenAddTaskDialog: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
+  onOpenAddTaskDialog: (parentTaskId: string | null, sectionId: string | null) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -66,7 +64,7 @@ const TaskList: React.FC<TaskListProps> = ({
   isDemo = false,
   selectedTaskIds,
   onSelectTask,
-  onOpenAddTaskDialog, // Destructure new prop
+  onOpenAddTaskDialog,
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -128,51 +126,159 @@ const TaskList: React.FC<TaskListProps> = ({
     return processedTasks.find(task => task.id === id);
   }, [processedTasks]);
 
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setInsertionIndicator(null); // Clear any previous indicator on drag start
+  }, []);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) {
+      setInsertionIndicator(null);
+      return;
+    }
+
+    const activeTask = findTask(String(active.id));
+    const overItem = findTask(String(over.id)) || sections.find(s => s.id === String(over.id));
+
+    if (!activeTask || !overItem) {
+      setInsertionIndicator(null);
+      return;
+    }
+
+    const isOverTask = (item: any): item is Task => 'description' in item;
+    const isOverSection = (item: any): item is TaskSection => 'name' in item && !('description' in item);
+
+    const overId = String(over.id);
+    const overRect = event.activatorEvent.target.getBoundingClientRect(); // Use activatorEvent for initial rect
+
+    // Determine if dragging into a section header (empty or not)
+    if (isOverSection(overItem)) {
+      setInsertionIndicator({ id: overId, position: 'into' });
+      return;
+    }
+
+    // Determine if dragging into a task (as a subtask)
+    // This is a simplified check. A more advanced one would check horizontal position.
+    if (isOverTask(overItem) && activeTask.id !== overItem.id && activeTask.parent_task_id !== overItem.id) {
+      const overElement = document.getElementById(`task-item-${overId}`);
+      if (overElement) {
+        const { left, width } = overElement.getBoundingClientRect();
+        const mouseX = event.delta.x + left; // Approximate mouse X relative to viewport
+        // If mouse is significantly to the right, suggest 'into'
+        if (mouseX > left + width * 0.75) { // Adjust threshold as needed
+          setInsertionIndicator({ id: overId, position: 'into' });
+          return;
+        }
+      }
+    }
+
+    // Determine if dragging before or after a task
+    const overElement = document.getElementById(`task-item-${overId}`);
+    if (overElement) {
+      const { top, height } = overElement.getBoundingClientRect();
+      const middle = top + height / 2;
+      const isDraggingDown = event.delta.y > 0; // Check if dragging downwards
+
+      if (event.pointer.y < middle) {
+        setInsertionIndicator({ id: overId, position: 'before' });
+      } else {
+        setInsertionIndicator({ id: overId, position: 'after' });
+      }
+    } else {
+      setInsertionIndicator(null);
+    }
+  }, [findTask, sections]);
+
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) return;
+    if (!over) {
+      setInsertionIndicator(null);
+      return;
+    }
 
     const activeId = String(active.id);
     const overId = String(over.id);
+    const indicator = insertionIndicator;
 
-    if (activeId === overId) return;
+    setInsertionIndicator(null); // Clear indicator immediately
+
+    if (activeId === overId && indicator?.position !== 'into') return; // No change if dropped on self without 'into'
 
     const activeTask = findTask(activeId);
-    const overTask = findTask(overId);
+    if (!activeTask) return;
 
-    if (!activeTask || !overTask) return;
+    let newParentId: string | null = null;
+    let newSectionId: string | null = null;
+    let targetOverId: string | null = null;
+    let isDraggingDown = false; // This will be determined by the indicator position
 
-    const activeSectionId = activeTask.section_id;
-    const overSectionId = overTask.section_id;
-    const activeParentId = activeTask.parent_task_id;
-    const overParentId = overTask.parent_task_id;
+    const overItem = findTask(overId) || sections.find(s => s.id === overId);
 
-    if (activeSectionId === overSectionId && activeParentId === overParentId) {
+    if (!overItem) return;
+
+    const isOverTask = (item: any): item is Task => 'description' in item;
+    const isOverSection = (item: any): item is TaskSection => 'name' in item && !('description' in item);
+
+    if (indicator?.position === 'into') {
+      if (isOverTask(overItem)) {
+        // Make activeTask a subtask of overItem
+        newParentId = overItem.id;
+        newSectionId = overItem.section_id; // Inherit section from parent
+        targetOverId = null; // No specific sibling to order against, will be appended
+      } else if (isOverSection(overItem)) {
+        // Make activeTask a top-level task in this section
+        newParentId = null;
+        newSectionId = overItem.id;
+        targetOverId = null; // No specific sibling to order against, will be appended
+      }
+    } else {
+      // Dropped before/after another task
+      if (isOverTask(overItem)) {
+        newParentId = overItem.parent_task_id;
+        newSectionId = overItem.section_id;
+        targetOverId = overItem.id;
+        isDraggingDown = indicator?.position === 'after';
+      } else if (isOverSection(overItem)) {
+        // Dropped before/after a section header (treat as appending to section)
+        newParentId = null;
+        newSectionId = overItem.id;
+        targetOverId = null;
+        isDraggingDown = true; // Append to end of section
+      }
+    }
+
+    // Prevent a task from becoming a subtask of itself or its own subtask
+    if (newParentId === activeTask.id || (newParentId && findTask(newParentId)?.parent_task_id === activeTask.id)) {
+      console.warn("Cannot make a task a subtask of itself or its direct subtask.");
+      return;
+    }
+
+    // If no change in parent/section and just reordering within the same list
+    if (activeTask.parent_task_id === newParentId && activeTask.section_id === newSectionId) {
       const tasksInContext = filteredTasks.filter(task =>
-        task.section_id === activeSectionId && task.parent_task_id === activeParentId
+        task.section_id === activeTask.section_id && task.parent_task_id === activeTask.parent_task_id
       ).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
       const oldIndex = tasksInContext.findIndex(task => task.id === activeId);
-      const newIndex = tasksInContext.findIndex(task => task.id === overId);
+      const newIndex = tasksInContext.findIndex(task => task.id === targetOverId);
 
-      if (oldIndex === -1 || newIndex === -1) return;
+      if (oldIndex === -1 || newIndex === -1) { // If targetOverId is null, it means append
+        await updateTaskParentAndOrder(activeId, newParentId, newSectionId, null, true); // Append to end
+      } else {
+        const movedTasks = arrayMove(tasksInContext, oldIndex, newIndex);
+        const overTaskIndex = movedTasks.findIndex(t => t.id === activeId);
+        const newOverId = overTaskIndex > 0 ? movedTasks[overTaskIndex - 1].id : null;
+        const newIsDraggingDown = overTaskIndex > oldIndex; // If moved down, isDraggingDown is true
 
-      const newOrder = arrayMove(tasksInContext, oldIndex, newIndex).map((task, index) => ({
-        ...task,
-        order: index,
-      }));
-
-      for (const task of newOrder) {
-        if (task.id === activeId) {
-          await updateTaskParentAndOrder(task.id, task.parent_task_id, task.section_id, overId, false);
-        }
+        await updateTaskParentAndOrder(activeId, newParentId, newSectionId, newOverId, newIsDraggingDown);
       }
     } else {
-      console.log(`Task ${activeId} moved from section ${activeSectionId} (parent ${activeParentId}) to section ${overSectionId} (parent ${overParentId})`);
+      // Moving to a new parent/section
+      await updateTaskParentAndOrder(activeId, newParentId, newSectionId, targetOverId, isDraggingDown);
     }
-    setInsertionIndicator(null); // Clear indicator after drag ends
-  }, [filteredTasks, processedTasks, findTask, updateTaskParentAndOrder]);
+
+  }, [findTask, filteredTasks, insertionIndicator, sections, updateTaskParentAndOrder]);
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
@@ -191,6 +297,8 @@ const TaskList: React.FC<TaskListProps> = ({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDragStart={handleDragStart}
     >
       <div className="space-y-6">
         {sectionsWithTasks.map(({ section, tasks }) => (
@@ -220,7 +328,7 @@ const TaskList: React.FC<TaskListProps> = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onOpenAddTaskDialog(null, section?.id || null)} // Add task to this section
+                  onClick={() => onOpenAddTaskDialog(null, section?.id || null)}
                   disabled={isDemo}
                   aria-label={`Add task to ${section?.name || 'Unsectioned Tasks'}`}
                 >
@@ -248,16 +356,16 @@ const TaskList: React.FC<TaskListProps> = ({
                       isDemo={isDemo}
                       selectedTaskIds={selectedTaskIds}
                       onSelectTask={onSelectTask}
-                      allTasks={processedTasks} // Pass allTasks for subtask rendering
+                      allTasks={processedTasks}
                       getSubtasksForTask={(parentTaskId) => processedTasks.filter(t => t.parent_task_id === parentTaskId)}
-                      sections={sections} // Pass sections for dropdowns
-                      level={0} // Top-level tasks start at level 0
-                      expandedTasks={expandedTasks} // Pass expandedTasks
-                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)} // Derive isDoToday
-                      scheduledTasksMap={scheduledTasksMap} // Pass scheduledTasksMap
-                      insertionIndicator={insertionIndicator} // Pass insertion indicator
-                      isSelected={selectedTaskIds.has(task.id)} // Pass isSelected
-                      onAddSubtask={onOpenAddTaskDialog} {/* Pass the function here */}
+                      sections={sections}
+                      level={0}
+                      expandedTasks={expandedTasks}
+                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)}
+                      scheduledTasksMap={scheduledTasksMap}
+                      insertionIndicator={insertionIndicator}
+                      isSelected={selectedTaskIds.has(task.id)}
+                      onAddSubtask={onOpenAddTaskDialog}
                     />
                   ))}
                 </ul>
