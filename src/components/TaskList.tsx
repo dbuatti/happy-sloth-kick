@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-// import { cn } from '@/lib/utils'; // Removed cn import
+// import { cn } => '@/lib/utils'; // Removed cn import
 
 interface TaskListProps {
   processedTasks: Task[];
@@ -85,6 +85,7 @@ const TaskList: React.FC<TaskListProps> = ({
 
   const [isNewSectionDialogOpen, setIsNewSectionDialogOpen] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
+  const [insertionIndicator, setInsertionIndicator] = useState<{ id: UniqueIdentifier; position: 'before' | 'after' | 'into' } | null>(null); // Added state for insertion indicator
 
   const handleCreateSection = useCallback(async () => {
     if (newSectionName.trim()) {
@@ -173,7 +174,21 @@ const TaskList: React.FC<TaskListProps> = ({
     } else {
       console.log(`Task ${activeId} moved from section ${activeSectionId} (parent ${activeParentId}) to section ${overSectionId} (parent ${overParentId})`);
     }
+    setInsertionIndicator(null); // Clear indicator after drag ends
   }, [filteredTasks, processedTasks, findTask, updateTaskParentAndOrder]);
+
+  // Placeholder for onDragOver to update insertionIndicator (full logic would be more complex)
+  // const handleDragOver = useCallback((event: DragOverEvent) => {
+  //   const { active, over } = event;
+  //   if (active && over) {
+  //     // Determine position (before, after, into) and set insertionIndicator
+  //     setInsertionIndicator({ id: over.id, position: 'after' }); // Simplified for compile fix
+  //   }
+  // }, []);
+
+  // const handleDragStart = useCallback(() => {
+  //   setInsertionIndicator(null); // Clear any previous indicator on drag start
+  // }, []);
 
   if (loading) {
     return <div className="text-center py-8 text-muted-foreground">Loading tasks...</div>;
@@ -192,6 +207,8 @@ const TaskList: React.FC<TaskListProps> = ({
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
+      // onDragOver={handleDragOver} // Uncomment for full drag indicator logic
+      // onDragStart={handleDragStart} // Uncomment for full drag indicator logic
     >
       <div className="space-y-6">
         {sectionsWithTasks.map(({ section, tasks }) => (
@@ -247,6 +264,8 @@ const TaskList: React.FC<TaskListProps> = ({
                       expandedTasks={expandedTasks} // Pass expandedTasks
                       isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)} // Derive isDoToday
                       scheduledTasksMap={scheduledTasksMap} // Pass scheduledTasksMap
+                      insertionIndicator={insertionIndicator} // Pass insertion indicator
+                      isSelected={selectedTaskIds.has(task.id)} // Pass isSelected
                     />
                   ))}
                 </ul>
