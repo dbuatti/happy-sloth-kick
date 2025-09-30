@@ -12,6 +12,7 @@ import FilterPanel from '@/components/FilterPanel';
 import DailyBriefingCard from '@/components/DailyBriefingCard';
 import { getDailyBriefing } from '@/integrations/supabase/api';
 import { useQuery } from '@tanstack/react-query';
+import AddTaskDialog from '@/components/AddTaskDialog'; // Import the new dialog
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -22,6 +23,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false); // State for AddTaskDialog
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -32,7 +34,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set()); // Corrected to use useState
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -262,7 +264,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         </div>
       </div>
 
-      <FloatingAddTaskButton onClick={() => handleAddTask({ description: '', category: allCategories[0]?.id || '', priority: 'medium' })} isDemo={isDemo} />
+      <FloatingAddTaskButton onClick={() => setIsAddTaskDialogOpen(true)} isDemo={isDemo} />
 
       {selectedTaskIds.size > 0 && (
         <BulkActionBar
@@ -308,6 +310,20 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setFocusTask={setFocusTask}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
+      />
+
+      <AddTaskDialog
+        isOpen={isAddTaskDialogOpen}
+        onClose={() => setIsAddTaskDialogOpen(false)}
+        onSave={handleAddTask}
+        sections={sections}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        allTasks={processedTasks}
       />
     </div>
   );

@@ -6,7 +6,7 @@ import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FloatingAddTaskButtonProps {
-  onClick: () => void;
+  onClick: () => void; // Now triggers opening a dialog
   isDemo?: boolean;
   className?: string;
 }
