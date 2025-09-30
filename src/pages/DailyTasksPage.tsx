@@ -46,7 +46,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     filteredTasks,
     nextAvailableTask,
     loading: tasksLoading,
-    userId,
+    userId, // Ensure userId is correctly destructured from useTasks
     handleAddTask,
     updateTask,
     deleteTask,
@@ -194,7 +194,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const { data: dailyBriefing, isLoading: isBriefingLoading, isError: isBriefingError } = useQuery<string | null, Error>({
     queryKey: ['dailyBriefing', userId, currentDate.toISOString().split('T')[0]],
     queryFn: () => getDailyBriefing(userId as string, currentDate),
-    enabled: !!userId && !isDemo,
+    enabled: !!userId && !isDemo, // Only enable query if userId is available and not in demo mode
     staleTime: 5 * 60 * 1000,
   });
 
