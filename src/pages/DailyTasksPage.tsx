@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import TaskList from '@/components/TaskList';
 import FloatingAddTaskButton from '@/components/FloatingAddTaskButton';
@@ -9,7 +9,7 @@ import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FilterPanel from '@/components/FilterPanel';
-// Removed: import DailyBriefingCard from '@/components/DailyBriefingCard';
+import DailyBriefingCard from '@/components/DailyBriefingCard';
 import { getDailyBriefing } from '@/integrations/supabase/api';
 import { useQuery } from '@tanstack/react-query';
 import AddTaskDialog from '@/components/AddTaskDialog'; // Import the new dialog
@@ -36,8 +36,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  const [selectedTaskIds, setSelectedTaskIds] = new Set<string>(); // Initialize as empty Set
-  const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all checkbox
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -47,24 +47,23 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     nextAvailableTask,
     loading: tasksLoading,
     userId,
-    handleAddTask, // Keep handleAddTask here as it's passed to AddTaskDialog
+    handleAddTask,
     updateTask,
-    deleteTask,
+    deleteTask, // This now returns Promise<boolean | undefined>
     bulkUpdateTasks,
     bulkDeleteTasks,
     sections,
     allCategories,
-    updateTaskParentAndOrder,
+    updateTaskParentAndOrder, // This now has a different signature
     archiveAllCompletedTasks,
-    markAllTasksInSectionCompleted, // This is for a specific section, we need a general one
+    markAllTasksInSectionCompleted,
     createSection,
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
-    reorderSections, // Destructure reorderSections
-    setFocusTask,
+    setFocusTask, // This now has a different signature
     doTodayOffIds,
-    toggleDoToday,
+    toggleDoToday, // This now has a different signature
     toggleAllDoToday,
     dailyProgress,
   } = useTasks({
@@ -125,12 +124,12 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, []);
 
   const handleClearSelection = useCallback(() => {
-    setSelectedTaskIds(new Set());
-    setIsSelectAllChecked(false);
+    setSelectedTaskIds(new Set<string>()); // Explicitly type new Set
+    setIsSelectAllChecked(false); // Clear select all state
   }, []);
 
   const handleSelectTask = useCallback((taskId: string, isSelected: boolean) => {
-    setSelectedTaskIds(prev => {
+    setSelectedTaskIds((prev: Set<string>) => { // Explicitly type prev
       const newSet = new Set(prev);
       if (isSelected) {
         newSet.add(taskId);
@@ -141,9 +140,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     });
   }, []);
 
-  const handleSelectAll = useCallback(() => {
+  const handleToggleSelectAll = useCallback(() => {
     if (isSelectAllChecked) {
-      setSelectedTaskIds(new Set());
+      setSelectedTaskIds(new Set<string>()); // Explicitly type new Set
     } else {
       const allFilteredTaskIds = new Set(filteredTasks.map(task => task.id));
       setSelectedTaskIds(allFilteredTaskIds);
@@ -152,7 +151,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [isSelectAllChecked, filteredTasks]);
 
   // Effect to update isSelectAllChecked when filteredTasks or selectedTaskIds change
-  useEffect(() => {
+  React.useEffect(() => {
     if (filteredTasks.length === 0) {
       setIsSelectAllChecked(false);
       return;
@@ -238,7 +237,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={() => toggleAllDoToday(filteredTasks)} // Pass filteredTasks here
+        toggleAllDoToday={toggleAllDoToday}
         dailyProgress={dailyProgress}
         isDemo={isDemo}
         nextAvailableTask={nextAvailableTask}
@@ -258,10 +257,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         handleAddTask={handleAddTask}
         selectedCount={selectedTaskIds.size}
         isSelectAllChecked={isSelectAllChecked}
-        onSelectAll={handleSelectAll}
-        dailyBriefing={dailyBriefing ?? null} // Pass dailyBriefing with nullish coalescing
-        isBriefingLoading={isBriefingLoading} // Pass briefing loading state
-        isBriefingError={isBriefingError} // Pass briefing error state
+        onToggleSelectAll={handleToggleSelectAll}
       />
 
       <FilterPanel
@@ -282,38 +278,38 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-        {/* DailyBriefingCard is now in DailyTasksHeader */}
+        <DailyBriefingCard
+          briefing={dailyBriefing ?? null}
+          isLoading={isBriefingLoading}
+          isError={isBriefingError}
+        />
         <div className="mt-6">
           <TaskList
             processedTasks={processedTasks}
             filteredTasks={filteredTasks}
             loading={tasksLoading}
-            handleAddTask={handleAddTask}
             updateTask={updateTask}
-            deleteTask={deleteTask}
+            deleteTask={deleteTask} // Passed with updated type
             markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
             sections={sections}
             createSection={createSection}
-            updateSection={updateSection}
-            deleteSection={deleteSection}
-            updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            updateTaskParentAndOrder={updateTaskParentAndOrder}
-            reorderSections={reorderSections}
-            allCategories={allCategories}
+            // updateSection={updateSection} // Removed from TaskList props
+            // deleteSection={deleteSection} // Removed from TaskList props
+            // updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode} // Removed from TaskList props
+            updateTaskParentAndOrder={updateTaskParentAndOrder} // Passed with updated type
             onOpenOverview={handleOpenOverview}
             currentDate={currentDate}
             expandedSections={expandedSections}
             expandedTasks={expandedTasks}
             toggleTask={toggleTask}
             toggleSection={toggleSection}
-            setFocusTask={setFocusTask}
+            setFocusTask={setFocusTask} // Passed with updated type
             doTodayOffIds={doTodayOffIds}
-            toggleDoToday={toggleDoToday}
+            toggleDoToday={toggleDoToday} // Passed with updated type
             scheduledTasksMap={scheduledTasksMap}
             isDemo={isDemo}
             selectedTaskIds={selectedTaskIds}
             onSelectTask={handleSelectTask}
-            onOpenAddTaskDialog={openAddTaskDialog} // Pass new prop
           />
         </div>
       </div>

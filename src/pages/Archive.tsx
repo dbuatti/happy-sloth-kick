@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
-import { NewTaskData } from '@/hooks/useTasks'; // Only NewTaskData is needed for handleAddTask
+import { NewTaskData } from '@/hooks/useTasks';
 
 interface ArchivePageProps {
-  isDemo?: boolean; // Add isDemo prop
-  demoUserId?: string; // Add demoUserId prop
+  isDemo?: boolean;
+  demoUserId?: string;
 }
 
 const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
@@ -58,14 +58,12 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         isFilterPanelOpen={false}
         toggleFilterPanel={() => {}}
         markAllTasksAsCompleted={dummyAsyncFunc}
-        onOpenAddTaskDialog={() => {}} // Pass dummy function for consistency
-        // Removed: handleAddTask={handleAddTask}
-        selectedCount={0} // Dummy value for selectedCount
-        isSelectAllChecked={false} // Dummy value for isSelectAllChecked
-        onSelectAll={() => {}} // Dummy function for onSelectAll
-        dailyBriefing={null} // Dummy value for dailyBriefing
-        isBriefingLoading={false} // Dummy value for isBriefingLoading
-        isBriefingError={false} // Dummy value for isBriefingError
+        onOpenAddTaskDialog={() => {}}
+        handleAddTask={handleAddTask}
+        // New props for bulk selection - provide dummy values
+        selectedCount={0}
+        isSelectAllChecked={false}
+        onToggleSelectAll={dummyAsyncFunc}
       />
       {/* Content specific to the Archive page */}
       <div className="p-4">

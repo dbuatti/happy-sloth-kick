@@ -14,9 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
-// Removed: import QuickAddTask from './QuickAddTask';
-import { Checkbox } from '@/components/ui/checkbox';
-import DailyBriefingCard from './DailyBriefingCard'; // Import DailyBriefingCard
+import QuickAddTask from '@/components/QuickAddTask'; // Corrected import path for QuickAddTask
+import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -31,7 +30,7 @@ interface DailyTasksHeaderProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>;
+  toggleAllDoToday: () => Promise<void>; // Keeping this as is, assuming error was misleading or cascade
   dailyProgress: {
     totalPendingCount: number;
     completedCount: number;
@@ -51,14 +50,12 @@ interface DailyTasksHeaderProps {
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  onOpenAddTaskDialog?: (parentTaskId: string | null, sectionId: string | null) => void; // Updated signature
-  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Still needed for other components
+  onOpenAddTaskDialog?: () => void;
+  handleAddTask: (taskData: NewTaskData) => Promise<any>;
+  // New props for bulk selection
   selectedCount: number;
   isSelectAllChecked: boolean;
-  onSelectAll: () => void;
-  dailyBriefing: string | null; // New prop for daily briefing
-  isBriefingLoading: boolean; // New prop for briefing loading state
-  isBriefingError: boolean; // New prop for briefing error state
+  onToggleSelectAll: () => void;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -91,33 +88,23 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   handleAddTask,
   selectedCount,
   isSelectAllChecked,
-  onSelectAll,
-  filteredTasks,
-  dailyBriefing,
-  isBriefingLoading,
-  isBriefingError,
+  onToggleSelectAll,
 }) => {
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
       <div className="flex items-center justify-between pt-4 pb-3">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight">Daily Tasks</h1>
-          {filteredTasks.length > 0 && (
-            <div className="flex items-center gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Daily Tasks</h1>
+        <div className="flex items-center gap-2">
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Checkbox
-                id="select-all-tasks"
                 checked={isSelectAllChecked}
-                onCheckedChange={onSelectAll}
-                disabled={isDemo}
-                className="h-4 w-4"
+                onCheckedChange={onToggleSelectAll}
+                aria-label="Select all filtered tasks"
               />
-              <label htmlFor="select-all-tasks" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Select All ({selectedCount} selected)
-              </label>
+              <span>{selectedCount} selected</span>
             </div>
           )}
-        </div>
-        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -134,7 +121,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => onOpenAddTaskDialog(null, null)} // Open dialog for global add
+              onClick={onOpenAddTaskDialog}
               className="flex items-center gap-2"
               disabled={isDemo}
             >
@@ -176,14 +163,21 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
       <Separator className="my-4" />
 
-      {/* Daily Briefing Card */}
-      <DailyBriefingCard
-        briefing={dailyBriefing}
-        isLoading={isBriefingLoading}
-        isError={isBriefingError}
+      {/* Global Quick Add Task moved here */}
+      <QuickAddTask
+        onAddTask={handleAddTask}
+        defaultCategoryId={allCategories[0]?.id || ''}
+        isDemo={isDemo}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        sections={sections}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
 
-      <Separator className="my-4" />
+      <Separator className="my-4" /> {/* Add a separator below QuickAddTask */}
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}
