@@ -29,7 +29,6 @@ import {
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
-// Removed: import { useIsMobile } from '@/hooks/use-mobile';
 import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
 
 interface TaskListProps {
@@ -320,9 +319,9 @@ const TaskList: React.FC<TaskListProps> = ({
         showDragHandle={true}
         insertionIndicator={insertionIndicator}
         getSubtasksForTask={getSubtasksForTask}
-        expandedTasks={expandedTasks} // Pass down
-        scheduledTasksMap={scheduledTasksMap} // Pass down
-        doTodayOffIds={doTodayOffIds} // Pass down
+        expandedTasks={expandedTasks}
+        scheduledTasksMap={scheduledTasksMap}
+        doTodayOffIds={doTodayOffIds}
       />
     );
   }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate, doTodayOffIds, getSubtasksForTask, insertionIndicator]);
@@ -436,11 +435,26 @@ const TaskList: React.FC<TaskListProps> = ({
           {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
           <div className="p-3 space-y-2">
             {expandedSections['no-section'] !== false && (
-              <SortableContext items={tasksWithoutSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                <ul className="space-y-2">
-                  {tasksWithoutSection.map((task) => renderTask(task, 0))}
-                </ul>
-              </SortableContext>
+              <>
+                <SortableContext items={tasksWithoutSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                  <ul className="space-y-2">
+                    {tasksWithoutSection.map((task) => renderTask(task, 0))}
+                  </ul>
+                </SortableContext>
+                <QuickAddTask
+                  sectionId={null} // For 'No Section'
+                  onAddTask={handleAddTask}
+                  defaultCategoryId={allCategories[0]?.id || ''}
+                  isDemo={isDemo}
+                  allCategories={allCategories}
+                  currentDate={currentDate}
+                  sections={sections}
+                  createSection={createSection}
+                  updateSection={updateSection}
+                  deleteSection={deleteSection}
+                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                />
+              </>
             )}
           </div>
         </div>
@@ -455,11 +469,26 @@ const TaskList: React.FC<TaskListProps> = ({
               {renderSectionHeader(section, tasksInThisSection)}
               <div className="p-3 space-y-2">
                 {expandedSections[section.id] !== false && (
-                  <SortableContext items={tasksInThisSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                    <ul className="space-y-2">
-                      {tasksInThisSection.map((task) => renderTask(task, 0))}
-                    </ul>
-                  </SortableContext>
+                  <>
+                    <SortableContext items={tasksInThisSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                      <ul className="space-y-2">
+                        {tasksInThisSection.map((task) => renderTask(task, 0))}
+                      </ul>
+                    </SortableContext>
+                    <QuickAddTask
+                      sectionId={section.id}
+                      onAddTask={handleAddTask}
+                      defaultCategoryId={allCategories[0]?.id || ''}
+                      isDemo={isDemo}
+                      allCategories={allCategories}
+                      currentDate={currentDate}
+                      sections={sections}
+                      createSection={createSection}
+                      updateSection={updateSection}
+                      deleteSection={deleteSection}
+                      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                    />
+                  </>
                 )}
               </div>
             </div>
@@ -523,7 +552,7 @@ const TaskList: React.FC<TaskListProps> = ({
               toggleTask={toggleTask}
               insertionIndicator={null}
               getSubtasksForTask={getSubtasksForTask}
-              scheduledTasksMap={scheduledTasksMap} // Pass down
+              scheduledTasksMap={scheduledTasksMap}
             />
           ) : null}
         </DragOverlay>,
