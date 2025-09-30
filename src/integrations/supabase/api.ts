@@ -68,7 +68,7 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
 
     // Use supabase.functions.invoke instead of manual fetch
     const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: JSON.stringify(requestBody),
+      body: requestBody, // Changed: Pass the object directly, Supabase client will stringify
       headers: {
         'Content-Type': 'application/json',
       },
