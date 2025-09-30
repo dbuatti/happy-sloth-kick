@@ -56,7 +56,6 @@ export const suggestTaskDetails = async (
 
 export const getDailyBriefing = async (userId: string, date: Date): Promise<string | null> => {
   try {
-    // Get local day start and end in ISO format for accurate filtering in the Edge Function
     const localDayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
     const localDayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
@@ -66,26 +65,26 @@ export const getDailyBriefing = async (userId: string, date: Date): Promise<stri
       localDayEndISO: localDayEnd.toISOString(),
     };
 
-    // Explicitly stringify the body before sending
-    const { data, error } = await supabase.functions.invoke('daily-briefing', {
-      body: JSON.stringify(requestBody), // Changed: Explicitly stringify the requestBody
+    const SUPABASE_PROJECT_ID = 'gdmjttmjjhadltaihpgr'; // Your Supabase Project ID
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkbWp0dG1qamhhZGx0YWlocGdyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MTE5MjYsImV4cCI6MjA2OTA4NzkyNn0.5E7CR-pTkz1ri3sW4p289Gjzzm8BUtFNkZWwwvVmfYE'; // Your Supabase Anon Key
+
+    const response = await fetch(`https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/daily-briefing`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, // Include Authorization header
       },
+      body: JSON.stringify(requestBody),
     });
 
-    if (error) {
-      console.error('Error invoking daily-briefing Edge Function:', error.message);
-      // Log additional details if available from FunctionsHttpError
-      if ((error as any).details) {
-        console.error('Edge Function details:', (error as any).details);
-      }
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error fetching daily-briefing Edge Function:', response.status, errorData);
       return null;
     }
 
-    // The data returned from the Edge Function is expected to have a 'briefing' property
-    const briefingResult = data as { briefing: string };
-    return briefingResult.briefing;
+    const data = await response.json();
+    return data.briefing;
 
   } catch (error) {
     console.error('API: Error in getDailyBriefing (outer catch):', error);
