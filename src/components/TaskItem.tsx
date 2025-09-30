@@ -185,8 +185,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
     toggleDoToday(task);
   };
 
-  const isOverdue = task.due_date && task.status !== 'completed' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
-  const isDueToday = task.due_date && task.status !== 'completed' && isSameDay(parseISO(task.due_date), currentDate);
+  const isOverdue = task.due_date && task.status === 'to-do' && isPast(parseISO(task.due_date)) && !isSameDay(parseISO(task.due_date), currentDate);
+  const isDueToday = task.due_date && task.status === 'to-do' && isSameDay(parseISO(task.due_date), currentDate);
 
   return (
     <div
@@ -195,7 +195,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
         task.status === 'completed'
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20"
           : "bg-card text-foreground border-border",
-        isOverdue && task.status === 'to-do' && "bg-red-500/10 border-red-500/30",
+        isOverdue && "bg-red-500/10 border-red-500/30", // Stronger overdue styling
+        isDueToday && !isOverdue && "bg-yellow-500/10 border-yellow-500/30", // Distinct due today styling
         !isDoToday && "opacity-60",
         isSelected && "ring-2 ring-primary ring-offset-2",
         "group",
@@ -383,8 +384,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 <span className={cn(
                   "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
                   "text-foreground bg-muted",
-                  isOverdue && "text-status-overdue bg-status-overdue/10",
-                  isDueToday && "text-status-due-today bg-status-due-today/10"
+                  isOverdue && "text-red-700 bg-red-200 dark:text-red-200 dark:bg-red-700", // More prominent overdue
+                  isDueToday && !isOverdue && "text-yellow-700 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-700" // More prominent due today
                 )}>
                   <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date)}
                 </span>

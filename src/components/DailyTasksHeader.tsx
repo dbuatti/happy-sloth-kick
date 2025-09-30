@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
 import QuickAddTask from './QuickAddTask';
-import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
+import { Checkbox } from '@/components/ui/checkbox';
+import DailyBriefingCard from './DailyBriefingCard'; // Import DailyBriefingCard
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -52,9 +53,12 @@ interface DailyTasksHeaderProps {
   markAllTasksAsCompleted: () => Promise<void>;
   onOpenAddTaskDialog?: () => void;
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
-  selectedCount: number; // New prop for selected task count
-  isSelectAllChecked: boolean; // New prop for select all checkbox state
-  onSelectAll: () => void; // New prop for select all handler
+  selectedCount: number;
+  isSelectAllChecked: boolean;
+  onSelectAll: () => void;
+  dailyBriefing: string | null; // New prop for daily briefing
+  isBriefingLoading: boolean; // New prop for briefing loading state
+  isBriefingError: boolean; // New prop for briefing error state
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -88,7 +92,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   selectedCount,
   isSelectAllChecked,
   onSelectAll,
-  filteredTasks, // Destructure filteredTasks here
+  filteredTasks,
+  dailyBriefing, // Destructure new prop
+  isBriefingLoading, // Destructure new prop
+  isBriefingError, // Destructure new prop
 }) => {
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -184,6 +191,14 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       />
 
       <Separator className="my-4" /> {/* Add a separator below QuickAddTask */}
+
+      <DailyBriefingCard
+        briefing={dailyBriefing}
+        isLoading={isBriefingLoading}
+        isError={isBriefingError}
+      />
+
+      <Separator className="my-4" /> {/* Add a separator below DailyBriefingCard */}
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}

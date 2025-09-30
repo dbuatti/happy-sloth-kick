@@ -9,7 +9,7 @@ import BulkActionBar from '@/components/BulkActionBar';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
 import { Appointment } from '@/hooks/useAppointments';
 import FilterPanel from '@/components/FilterPanel';
-import DailyBriefingCard from '@/components/DailyBriefingCard';
+// Removed: import DailyBriefingCard from '@/components/DailyBriefingCard';
 import { getDailyBriefing } from '@/integrations/supabase/api';
 import { useQuery } from '@tanstack/react-query';
 import AddTaskDialog from '@/components/AddTaskDialog'; // Import the new dialog
@@ -255,9 +255,12 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
         onOpenAddTaskDialog={openAddTaskDialog}
         handleAddTask={handleAddTask}
-        selectedCount={selectedTaskIds.size} // Pass selected count
-        isSelectAllChecked={isSelectAllChecked} // Pass select all state
-        onSelectAll={handleSelectAll} // Pass select all handler
+        selectedCount={selectedTaskIds.size}
+        isSelectAllChecked={isSelectAllChecked}
+        onSelectAll={handleSelectAll}
+        dailyBriefing={dailyBriefing ?? null} // Pass dailyBriefing with nullish coalescing
+        isBriefingLoading={isBriefingLoading} // Pass briefing loading state
+        isBriefingError={isBriefingError} // Pass briefing error state
       />
 
       <FilterPanel
@@ -278,11 +281,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       />
 
       <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-        <DailyBriefingCard
-          briefing={dailyBriefing ?? null}
-          isLoading={isBriefingLoading}
-          isError={isBriefingError}
-        />
+        {/* DailyBriefingCard is now in DailyTasksHeader */}
         <div className="mt-6">
           <TaskList
             processedTasks={processedTasks}

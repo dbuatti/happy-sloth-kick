@@ -63,6 +63,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         selectedCount={0} // Dummy value for selectedCount
         isSelectAllChecked={false} // Dummy value for isSelectAllChecked
         onSelectAll={() => {}} // Dummy function for onSelectAll
+        dailyBriefing={null} // Dummy value for dailyBriefing
+        isBriefingLoading={false} // Dummy value for isBriefingLoading
+        isBriefingError={false} // Dummy value for isBriefingError
       />
       {/* Content specific to the Archive page */}
       <div className="p-4">
