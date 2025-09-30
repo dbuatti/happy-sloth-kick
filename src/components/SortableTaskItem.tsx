@@ -21,7 +21,7 @@ interface SortableTaskItemProps {
   toggleTask: (taskId: string) => void;
   setFocusTask: (taskId: string | null) => Promise<void>;
   isDoToday: boolean;
-  toggleDoToday: (task: Task) => void;
+  toggleDoToday: (task: Task) => Promise<void>;
   doTodayOffIds: Set<string>;
   scheduledTasksMap: Map<string, Appointment>;
   isDemo?: boolean;
@@ -34,6 +34,7 @@ interface SortableTaskItemProps {
   getSubtasksForTask: (parentTaskId: string) => Task[];
   // Removed toggleExpand as it was redundant with toggleTask
   scheduledAppointment?: Appointment;
+  selectedTaskIds: Set<string>; // Added this prop
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -63,6 +64,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   getSubtasksForTask,
   // Removed toggleExpand from destructuring
   scheduledAppointment,
+  selectedTaskIds, // Destructure the new prop
 }) => {
   const {
     attributes,
@@ -168,6 +170,7 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
                 isExpanded={expandedTasks[subtask.id] !== false}
                 getSubtasksForTask={getSubtasksForTask}
                 scheduledAppointment={scheduledTasksMap.get(subtask.id)}
+                selectedTaskIds={selectedTaskIds} // Pass down the prop
               />
             ))}
           </ul>

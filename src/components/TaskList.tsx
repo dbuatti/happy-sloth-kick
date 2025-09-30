@@ -243,6 +243,10 @@ const TaskList: React.FC<TaskListProps> = ({
                       allTasks={processedTasks} // Pass allTasks for subtask rendering
                       getSubtasksForTask={(parentTaskId) => processedTasks.filter(t => t.parent_task_id === parentTaskId)}
                       sections={sections} // Pass sections for dropdowns
+                      level={0} // Top-level tasks start at level 0
+                      expandedTasks={expandedTasks} // Pass expandedTasks
+                      isDoToday={!doTodayOffIds.has(task.original_task_id || task.id)} // Derive isDoToday
+                      scheduledTasksMap={scheduledTasksMap} // Pass scheduledTasksMap
                     />
                   ))}
                 </ul>
