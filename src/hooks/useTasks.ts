@@ -326,7 +326,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
-    const dataWithDefaults: Omit<Task, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'completed_at' | 'category_color' | 'isDoTodayOff'> & { order: number | null } = {
+    const dataWithDefaults: NewTaskData = { // Corrected type here
       ...newTaskData,
       description: newTaskData.description || '',
       status: newTaskData.status || 'to-do',
