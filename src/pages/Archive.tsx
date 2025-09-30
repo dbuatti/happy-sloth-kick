@@ -146,6 +146,12 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
     setSectionFilter('all');
   }, []);
 
+  // Placeholder for markAllTasksAsCompleted in ArchivePage
+  const markAllTasksAsCompletedPlaceholder = useCallback(async () => {
+    console.log("Mark All Tasks As Completed (Archive Page): This action is not typically performed on archived tasks.");
+    // Optionally, you could implement logic here to unarchive and complete, or just show a toast.
+  }, []);
+
   return (
     <div className="flex flex-col h-full w-full">
       <DailyTasksHeader
@@ -176,6 +182,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         updateTask={updateTask}
         onOpenOverview={handleOpenOverview}
         onOpenFocusView={() => {}}
+        markAllTasksAsCompleted={markAllTasksAsCompletedPlaceholder} // Pass the placeholder
       />
 
       <FilterPanel

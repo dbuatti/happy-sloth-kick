@@ -5,7 +5,7 @@ import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
 import { Button } from '@/components/ui/button';
-import { Filter as FilterIcon, Settings as SettingsIcon, Archive as ArchiveIcon, ListTodo, ChevronsDownUp } from 'lucide-react';
+import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
