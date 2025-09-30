@@ -164,6 +164,14 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     staleTime: 60 * 1000,
   });
 
+  // --- NEW LOGGING ADDED HERE ---
+  useEffect(() => {
+    console.log("[useTasks] Query userId:", userId);
+    console.log("[useTasks] Raw tasks fetched:", rawTasks);
+    console.log("[useTasks] Raw tasks contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042:", rawTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042'));
+  }, [userId, rawTasks]);
+  // --- END NEW LOGGING ---
+
   const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || recurringCompletionsLoading || tasksLoading;
 
   const categoriesMap = useMemo(() => {
