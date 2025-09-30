@@ -165,18 +165,18 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     staleTime: 60 * 1000,
   });
 
-  // --- NEW LOGGING ADDED HERE ---
-  useEffect(() => {
-    const targetTaskId = '6cd9980b-8151-4699-a789-1ed0443a552c'; // ID of "Sit in the sun"
-    const targetOriginalTaskId = 'ce692f51-a1d7-4b00-bb26-2b30b0042f19'; // Original ID if it's an instance
+  // --- Removed verbose logging from here ---
+  // useEffect(() => {
+  //   const targetTaskId = '6cd9980b-8151-4699-a789-1ed0443a552c'; // ID of "Sit in the sun"
+  //   const targetOriginalTaskId = 'ce692f51-a1d7-4b00-bb26-2b30b0042f19'; // Original ID if it's an instance
 
-    console.log("[useTasks] Query userId:", userId);
-    console.log("[useTasks] Raw tasks fetched (count):", rawTasks.length);
-    console.log("[useTasks] Raw tasks contains target task (Sit in the sun) ID:", rawTasks.some(t => t.id === targetTaskId));
-    console.log("[useTasks] Raw tasks contains target task (Sit in the sun) original_task_id:", rawTasks.some(t => t.original_task_id === targetOriginalTaskId));
-    // console.log("[useTasks] Full raw tasks array:", rawTasks); // Uncomment this if you need to inspect the full array
-  }, [userId, rawTasks]);
-  // --- END NEW LOGGING ---
+  //   console.log("[useTasks] Query userId:", userId);
+  //   console.log("[useTasks] Raw tasks fetched (count):", rawTasks.length);
+  //   console.log("[useTasks] Raw tasks contains target task (Sit in the sun) ID:", rawTasks.some(t => t.id === targetTaskId));
+  //   console.log("[useTasks] Raw tasks contains target task (Sit in the sun) original_task_id:", rawTasks.some(t => t.original_task_id === targetOriginalTaskId));
+  //   // console.log("[useTasks] Full raw tasks array:", rawTasks); // Uncomment this if you need to inspect the full array
+  // }, [userId, rawTasks]);
+  // --- END Removed verbose logging ---
 
   const loading = authLoading || sectionsLoading || categoriesLoading || doTodayOffLoading || recurringCompletionsLoading || tasksLoading;
 

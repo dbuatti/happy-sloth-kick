@@ -39,7 +39,7 @@ export const useTaskProcessing = ({
 }: UseTaskProcessingProps) => {
   const todayStart = startOfDay(effectiveCurrentDate);
 
-  console.log("[useTaskProcessing] Effective Current Date:", effectiveCurrentDate.toISOString());
+  // console.log("[useTaskProcessing] Effective Current Date:", effectiveCurrentDate.toISOString()); // Removed log
 
   const processedTasks = useMemo(() => {
     const allProcessedTasks: Task[] = [];
@@ -166,8 +166,8 @@ export const useTaskProcessing = ({
         }
       }
     });
-    console.log("[useTaskProcessing] Processed Tasks (count):", allProcessedTasks.length);
-    console.log("[useTaskProcessing] Processed Tasks (contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042):", allProcessedTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042'));
+    // console.log("[useTaskProcessing] Processed Tasks (count):", allProcessedTasks.length); // Removed log
+    // console.log("[useTaskProcessing] Processed Tasks (contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042):", allProcessedTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042')); // Removed log
     return allProcessedTasks;
   }, [rawTasks, todayStart, categoriesMap, doTodayOffIds, recurringTaskCompletions]);
 
@@ -245,8 +245,8 @@ export const useTaskProcessing = ({
         return isWithinFutureLimit;
       });
     }
-    console.log("[useTaskProcessing] Filtered Tasks (count):", filteredTasks.length);
-    console.log("[useTaskProcessing] Filtered Tasks (contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042):", filteredTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042'));
+    // console.log("[useTaskProcessing] Filtered Tasks (count):", filteredTasks.length); // Removed log
+    // console.log("[useTaskProcessing] Filtered Tasks (contains target task 5eb0dd41-2957-44c9-bec2-d1c906296042):", filteredTasks.some(t => t.id === '5eb0dd41-2957-44c9-bec2-d1c906296042')); // Removed log
     return filteredTasks;
   }, [
     processedTasks,

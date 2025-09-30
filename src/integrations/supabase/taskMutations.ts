@@ -228,38 +228,53 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, rawTasks } = context; // Use rawTasks
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, rawTasks } = context;
 
-  // Corrected type for 't' in the find predicate
+  console.log('--- deleteTaskMutation START ---');
+  console.log('Attempting to delete taskId:', taskId);
+  console.log('Current rawTasks count:', rawTasks.length);
+  // console.log('Full rawTasks:', rawTasks); // Uncomment for very detailed debugging if needed
+
   const taskToDelete = rawTasks.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === taskId);
   if (!taskToDelete) {
     showError('Task not found for deletion.');
+    console.error('Error: Task not found in rawTasks for taskId:', taskId);
+    console.log('--- deleteTaskMutation END (Failed) ---');
     return false;
   }
+
+  console.log('Found taskToDelete:', taskToDelete);
 
   let idsToDelete: string[] = [];
   let originalTaskIdToDelete: string | null = null;
 
   // Determine if it's a recurring task or an instance of one
   if (taskToDelete.recurring_type !== 'none' || taskToDelete.original_task_id) {
-    // If it's a recurring template or an instance, delete the entire series
+    console.log('Task is part of a recurring series.');
     originalTaskIdToDelete = taskToDelete.original_task_id || taskToDelete.id;
+    console.log('Original Task ID for series deletion:', originalTaskIdToDelete);
     
     // Collect all tasks belonging to this series (template + all instances) from rawTasks
     idsToDelete = rawTasks
       .filter(t => t.id === originalTaskIdToDelete || t.original_task_id === originalTaskIdToDelete)
       .map(t => t.id);
+    console.log('Identified all series tasks to delete (idsToDelete):', idsToDelete);
   } else {
+    console.log('Task is a non-recurring task.');
     // It's a non-recurring task, delete it and its subtasks from rawTasks
     idsToDelete = rawTasks
       .filter(t => t.id === taskId || t.parent_task_id === taskId)
       .map(t => t.id);
+    console.log('Identified non-recurring task and its subtasks to delete (idsToDelete):', idsToDelete);
   }
 
   // Separate real and virtual IDs for DB operation
   const realTaskIdsToDelete = idsToDelete.filter(id => !isVirtualId(id));
   const virtualTaskIdsToDelete = idsToDelete.filter(id => isVirtualId(id));
   void virtualTaskIdsToDelete; // Explicitly mark as read to satisfy TS6133
+  console.log('Real task IDs to delete from DB:', realTaskIdsToDelete);
+  console.log('Virtual task IDs (will be removed from cache only):', virtualTaskIdsToDelete);
+
 
   // Optimistic update: remove all identified IDs (real and virtual) from cache
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
@@ -267,10 +282,12 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
     (old || []).filter(task => !idsToDelete.includes(task.id))
   );
   idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
+  console.log('Optimistically removed tasks from cache.');
 
   try {
     // Only delete real tasks from the 'tasks' table
     if (realTaskIdsToDelete.length > 0) {
+      console.log('Executing Supabase delete for real tasks:', realTaskIdsToDelete);
       const { error: tasksError } = await supabase
         .from('tasks')
         .delete()
@@ -278,10 +295,14 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
         .eq('user_id', userId); // Ensure RLS is respected
 
       if (tasksError) throw tasksError;
+      console.log('Supabase delete for real tasks successful.');
+    } else {
+      console.log('No real tasks to delete from DB.');
     }
 
     // If it was a recurring series, also delete from 'recurring_task_completion_log'
     if (originalTaskIdToDelete) {
+      console.log('Executing Supabase delete for recurring task completion logs for originalTaskId:', originalTaskIdToDelete);
       const { error: recurringLogError } = await supabase
         .from('recurring_task_completion_log')
         .delete()
@@ -291,21 +312,27 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
       if (recurringLogError) {
         console.warn('Failed to delete recurring task completion logs:', recurringLogError.message);
         // Don't throw, as task deletion is more critical
+      } else {
+        console.log('Supabase delete for recurring task completion logs successful.');
       }
     }
 
     showSuccess('Task(s) deleted successfully!');
     idsToDelete.forEach(id => context.cancelReminder(id)); // Cancel reminders for all deleted tasks
+    console.log('--- deleteTaskMutation END (Success) ---');
     return true;
   } catch (error: any) {
     showError('Failed to delete task(s).');
-    console.error('Error deleting task(s):', error.message);
+    console.error('Error deleting task(s) in catch block:', error.message);
     // Revert optimistic update
     queryClient.setQueryData(['tasks', userId], previousTasks);
+    console.log('Reverted optimistic update due to error.');
+    console.log('--- deleteTaskMutation END (Failed) ---');
     return false;
   } finally {
     idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
+    console.log('Cleared in-flight updates and invalidated queries.');
   }
 };
 
@@ -363,12 +390,18 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
 };
 
 export const bulkDeleteTasksMutation = async (ids: string[], context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context; // Removed rawTasks from destructuring
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, rawTasks } = context;
+
+  console.log('--- bulkDeleteTasksMutation START ---');
+  console.log('Attempting to bulk delete task IDs:', ids);
+  console.log('Current rawTasks count:', rawTasks.length);
 
   // Filter out virtual IDs for DB operation
   const realTaskIds = ids.filter(id => !isVirtualId(id));
   const virtualTaskIds = ids.filter(id => isVirtualId(id));
   void virtualTaskIds; // Explicitly mark as read to satisfy TS6133
+  console.log('Real task IDs to delete from DB (bulk):', realTaskIds);
+  console.log('Virtual task IDs (will be removed from cache only) (bulk):', virtualTaskIds);
 
   // Optimistic update
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
@@ -377,9 +410,11 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
     (old || []).filter(task => !ids.includes(task.id))
   );
   ids.forEach(id => inFlightUpdatesRef.current.add(id));
+  console.log('Optimistically removed tasks from cache (bulk).');
 
   try {
     if (realTaskIds.length > 0) {
+      console.log('Executing Supabase bulk delete for real tasks:', realTaskIds);
       const { error } = await supabase
         .from('tasks')
         .delete()
@@ -387,6 +422,9 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
         .eq('user_id', userId);
 
       if (error) throw error;
+      console.log('Supabase bulk delete for real tasks successful.');
+    } else {
+      console.log('No real tasks to delete from DB (bulk).');
     }
 
     // Also delete from recurring_task_completion_log if any of the deleted tasks were recurring templates
@@ -395,6 +433,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
       .map(t => t.original_task_id || t.id);
 
     if (originalTaskIdsToDelete.length > 0) {
+      console.log('Executing Supabase delete for recurring task completion logs for originalTaskIds (bulk):', originalTaskIdsToDelete);
       const { error: recurringLogError } = await supabase
         .from('recurring_task_completion_log')
         .delete()
@@ -403,21 +442,27 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
       
       if (recurringLogError) {
         console.warn('Failed to delete recurring task completion logs during bulk delete:', recurringLogError.message);
+      } else {
+        console.log('Supabase delete for recurring task completion logs successful (bulk).');
       }
     }
 
     showSuccess('Tasks deleted successfully!');
     tasksToDelete.forEach((task: Task) => context.cancelReminder(task.id));
+    console.log('--- bulkDeleteTasksMutation END (Success) ---');
     return true;
   } catch (error: any) {
     showError('Failed to bulk delete tasks.');
-    console.error('Error bulk deleting tasks:', error.message);
+    console.error('Error bulk deleting tasks in catch block:', error.message);
     // Revert optimistic update
     queryClient.setQueryData(['tasks', userId], previousTasks);
+    console.log('Reverted optimistic update due to error (bulk).');
+    console.log('--- bulkDeleteTasksMutation END (Failed) ---');
     return false;
   } finally {
     ids.forEach(id => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
+    console.log('Cleared in-flight updates and invalidated queries (bulk).');
   }
 };
 
