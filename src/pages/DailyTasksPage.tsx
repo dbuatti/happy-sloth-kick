@@ -230,7 +230,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setIsManageSectionsOpen={setIsManageSectionsOpen}
         isFilterPanelOpen={isFilterPanelOpen}
         toggleFilterPanel={toggleFilterPanel}
-        markAllTasksAsCompleted={markAllPendingTasksAsCompleted} // Pass to header for DailyOverviewCard
+        markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
+        onOpenAddTaskDialog={openAddTaskDialog} // Pass the handler
       />
 
       <FilterPanel
