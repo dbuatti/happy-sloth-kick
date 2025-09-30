@@ -176,7 +176,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
       <Separator className="my-4" />
 
-      {/* Global Quick Add Task moved here */}
+      {/* Global Quick Add Task */}
       <QuickAddTask
         onAddTask={handleAddTask}
         defaultCategoryId={allCategories[0]?.id || ''}
@@ -190,15 +190,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
 
-      <Separator className="my-4" /> {/* Add a separator below QuickAddTask */}
+      <Separator className="my-4" />
 
+      {/* Daily Briefing Card */}
       <DailyBriefingCard
         briefing={dailyBriefing}
         isLoading={isBriefingLoading}
         isError={isBriefingError}
       />
 
-      <Separator className="my-4" /> {/* Add a separator below DailyBriefingCard */}
+      <Separator className="my-4" />
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}
