@@ -4,9 +4,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Target, ListTodo } from 'lucide-react'; // Removed Archive as it's not used
+import { CheckCircle2, Target, ListTodo, Archive, ChevronsDownUp } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
-// import { cn } from '@/lib/utils'; // Removed unused import
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -20,15 +19,9 @@ interface DailyOverviewCardProps {
   onOpenFocusView: () => void;
   tasksLoading: boolean;
   isDemo?: boolean;
-  // Removed unused props:
-  // doTodayOffIds: Set<string>;
-  // toggleDoToday: (task: Task) => void;
-  // archiveAllCompletedTasks: () => Promise<void>;
-  // toggleAllDoToday: () => Promise<void>;
-  // setIsFocusPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  // setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  // setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  // onToggleAllSections: () => void;
+  archiveAllCompletedTasks: () => Promise<void>; // New prop
+  toggleAllDoToday: () => Promise<void>; // New prop
+  markAllTasksAsCompleted: () => Promise<void>; // New prop (for all pending tasks)
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -39,15 +32,9 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   onOpenFocusView,
   tasksLoading,
   isDemo,
-  // Removed unused props from destructuring:
-  // doTodayOffIds,
-  // toggleDoToday,
-  // archiveAllCompletedTasks,
-  // toggleAllDoToday,
-  // setIsFocusPanelOpen,
-  // setIsManageCategoriesOpen,
-  // setIsManageSectionsOpen,
-  // onToggleAllSections,
+  archiveAllCompletedTasks,
+  toggleAllDoToday,
+  markAllTasksAsCompleted,
 }) => {
   const progressPercentage = dailyProgress.totalPendingCount === 0
     ? 100
@@ -86,7 +73,6 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
           </p>
           {dailyProgress.overdueCount > 0 && (
             <p className="flex items-center gap-1 text-red-500">
-              {/* Removed Archive icon as it's not imported anymore */}
               {dailyProgress.overdueCount} Overdue
             </p>
           )}
@@ -110,6 +96,36 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
         ) : (
           <p className="text-center text-muted-foreground mt-4">No tasks currently in focus. Great job!</p>
         )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={markAllTasksAsCompleted}
+            disabled={isDemo || dailyProgress.totalPendingCount === 0}
+            className="flex items-center justify-center"
+          >
+            <CheckCircle2 className="h-4 w-4 mr-2" /> Mark All Done
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={archiveAllCompletedTasks}
+            disabled={isDemo || dailyProgress.completedCount === 0}
+            className="flex items-center justify-center"
+          >
+            <Archive className="h-4 w-4 mr-2" /> Archive Done
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleAllDoToday}
+            disabled={isDemo || dailyProgress.totalPendingCount === 0} // Disable if no pending tasks to toggle
+            className="flex items-center justify-center"
+          >
+            <ChevronsDownUp className="h-4 w-4 mr-2" /> Toggle Do Today
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

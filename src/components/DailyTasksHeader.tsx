@@ -47,6 +47,7 @@ interface DailyTasksHeaderProps {
   setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
+  markAllTasksAsCompleted: () => Promise<void>; // New prop for DailyOverviewCard
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -74,6 +75,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setIsManageSectionsOpen,
   isFilterPanelOpen,
   toggleFilterPanel,
+  markAllTasksAsCompleted, // Destructure new prop
 }) => {
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -107,13 +109,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
                 <ListTodo className="mr-2 h-4 w-4" /> Manage Sections
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={archiveAllCompletedTasks}>
-                <ArchiveIcon className="mr-2 h-4 w-4" /> Archive All Completed
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={toggleAllDoToday}>
-                <ChevronsDownUp className="mr-2 h-4 w-4" /> Toggle All "Do Today"
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              {/* Removed Archive All Completed and Toggle All Do Today from here */}
               <DropdownMenuItem onClick={onToggleAllSections}>
                 <ChevronsDownUp className="mr-2 h-4 w-4" /> Toggle All Sections
               </DropdownMenuItem>
@@ -140,6 +136,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         onOpenFocusView={onOpenFocusView}
         tasksLoading={tasksLoading}
         isDemo={isDemo}
+        archiveAllCompletedTasks={archiveAllCompletedTasks}
+        toggleAllDoToday={toggleAllDoToday}
+        markAllTasksAsCompleted={markAllTasksAsCompleted} // Pass down
       />
 
       <ManageCategoriesDialog

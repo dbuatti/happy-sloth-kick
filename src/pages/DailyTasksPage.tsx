@@ -55,7 +55,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     allCategories,
     updateTaskParentAndOrder,
     archiveAllCompletedTasks,
-    markAllTasksInSectionCompleted,
+    markAllTasksInSectionCompleted, // This is for a specific section, we need a general one
     createSection,
     updateSection,
     deleteSection,
@@ -190,6 +190,16 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setPreselectedSectionIdForSubtask(null);
   }, []);
 
+  // New function to mark all pending tasks as completed (across all sections)
+  const markAllPendingTasksAsCompleted = useCallback(async () => {
+    const pendingTaskIds = processedTasks
+      .filter(task => task.status === 'to-do' && task.parent_task_id === null) // Only top-level pending tasks
+      .map(task => task.id);
+    if (pendingTaskIds.length > 0) {
+      await bulkUpdateTasks({ status: 'completed' }, pendingTaskIds);
+    }
+  }, [processedTasks, bulkUpdateTasks]);
+
   return (
     <div className="flex flex-col h-full w-full">
       <DailyTasksHeader
@@ -216,10 +226,11 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         onToggleAllSections={toggleAllSections}
         isManageCategoriesOpen={isManageCategoriesOpen}
         setIsManageCategoriesOpen={setIsManageCategoriesOpen}
-        isManageSectionsOpen={isManageSectionsOpen}
+        isManageSectionsOpen={setIsManageSectionsOpen}
         setIsManageSectionsOpen={setIsManageSectionsOpen}
         isFilterPanelOpen={isFilterPanelOpen}
         toggleFilterPanel={toggleFilterPanel}
+        markAllTasksAsCompleted={markAllPendingTasksAsCompleted} // Pass to header for DailyOverviewCard
       />
 
       <FilterPanel
@@ -305,7 +316,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
-          onAddSubtask={openAddTaskDialog} // Pass the new handler
+          onAddSubtask={openAddTaskDialog}
         />
       )}
 
@@ -339,8 +350,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         allTasks={processedTasks}
-        preselectedParentTaskId={preselectedParentTaskId} // Pass preselected parent
-        preselectedSectionId={preselectedSectionIdForSubtask} // Pass preselected section
+        preselectedParentTaskId={preselectedParentTaskId}
+        preselectedSectionId={preselectedSectionIdForSubtask}
       />
     </div>
   );
