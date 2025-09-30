@@ -97,6 +97,8 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
     return null;
   }
 
+  let actualActiveId: string | null = taskId; // Declare actualActiveId here
+
   const isVirtual = isVirtualId(taskId);
   const isRecurringTemplate = previousTask.recurring_type !== 'none';
   const isStatusUpdate = updates.status !== undefined && updates.status !== previousTask.status;
@@ -108,7 +110,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
   inFlightUpdatesRef.current.add(taskId);
 
   try {
-    let resultId: string | null = null;
+    let resultId: string | null = null; // Initialize resultId here
 
     if (isVirtual && isRecurringTemplate && isStatusUpdate) {
       // This is a virtual instance of a recurring task, and its status is changing.
@@ -163,7 +165,8 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
         .single();
 
       if (error) throw error;
-      resultId = data.id;
+      actualActiveId = data.id; // Assign to the already declared variable
+      resultId = actualActiveId; // Assign actualActiveId to resultId
 
       // After creating the new task, we need to remove the virtual task from the cache
       // and add the new concrete task.
@@ -185,7 +188,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
         .single();
 
       if (error) throw error;
-      resultId = data.id;
+      resultId = data.id; // Assign data.id to resultId
       showSuccess('Task updated successfully!');
     }
 
@@ -233,39 +236,58 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
   console.log('--- deleteTaskMutation START ---');
   console.log('Attempting to delete taskId:', taskId);
   console.log('Current rawTasks count:', rawTasks.length);
-  // console.log('Full rawTasks:', rawTasks); // Uncomment for very detailed debugging if needed
 
-  const taskToDelete = rawTasks.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === taskId);
-  if (!taskToDelete) {
-    showError('Task not found for deletion.');
-    console.error('Error: Task not found in rawTasks for taskId:', taskId);
+  let originalTaskIdForSeriesDeletion: string | null = null;
+  let isTargetingVirtualInstance = false;
+
+  if (isVirtualId(taskId)) {
+    isTargetingVirtualInstance = true;
+    const parts = taskId.split('-');
+    // Expected format: virtual-originalTaskId-YYYY-MM-DD
+    if (parts.length >= 3) {
+      originalTaskIdForSeriesDeletion = parts[1]; // This should be the original task ID
+    } else {
+      console.error('Unexpected virtual task ID format:', taskId);
+      showError('Failed to parse virtual task ID for deletion.');
+      console.log('--- deleteTaskMutation END (Failed) ---');
+      return false;
+    }
+    console.log('Identified virtual task. Extracted originalTaskIdForSeriesDeletion:', originalTaskIdForSeriesDeletion);
+  } else {
+    // If it's a real task ID, find it in rawTasks
+    const realTask = rawTasks.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === taskId);
+    if (!realTask) {
+      showError('Task not found for deletion.');
+      console.error('Error: Real task not found in rawTasks for taskId:', taskId);
+      console.log('--- deleteTaskMutation END (Failed) ---');
+      return false;
+    }
+    console.log('Found real task:', realTask);
+    originalTaskIdForSeriesDeletion = realTask.original_task_id || realTask.id;
+  }
+
+  let idsToDelete: string[] = [];
+  if (originalTaskIdForSeriesDeletion) {
+    // Filter rawTasks to find all tasks belonging to this series (template + all instances)
+    idsToDelete = rawTasks
+      .filter(t => t.id === originalTaskIdForSeriesDeletion || t.original_task_id === originalTaskIdForSeriesDeletion)
+      .map(t => t.id);
+    console.log('Identified all series tasks to delete (idsToDelete):', idsToDelete);
+  } else {
+    // This case should ideally not be hit if originalTaskIdForSeriesDeletion is correctly derived.
+    // If it's a non-recurring task, its original_task_id would be null, and originalTaskIdForSeriesDeletion would be its own ID.
+    // So, if originalTaskIdForSeriesDeletion is null here, it indicates an error in logic.
+    console.error('Logic error: originalTaskIdForSeriesDeletion is null after identification.');
+    showError('An internal error occurred during task identification for deletion.');
     console.log('--- deleteTaskMutation END (Failed) ---');
     return false;
   }
 
-  console.log('Found taskToDelete:', taskToDelete);
-
-  let idsToDelete: string[] = [];
-  let originalTaskIdToDelete: string | null = null;
-
-  // Determine if it's a recurring task or an instance of one
-  if (taskToDelete.recurring_type !== 'none' || taskToDelete.original_task_id) {
-    console.log('Task is part of a recurring series.');
-    originalTaskIdToDelete = taskToDelete.original_task_id || taskToDelete.id;
-    console.log('Original Task ID for series deletion:', originalTaskIdToDelete);
-    
-    // Collect all tasks belonging to this series (template + all instances) from rawTasks
-    idsToDelete = rawTasks
-      .filter(t => t.id === originalTaskIdToDelete || t.original_task_id === originalTaskIdToDelete)
-      .map(t => t.id);
-    console.log('Identified all series tasks to delete (idsToDelete):', idsToDelete);
-  } else {
-    console.log('Task is a non-recurring task.');
-    // It's a non-recurring task, delete it and its subtasks from rawTasks
-    idsToDelete = rawTasks
-      .filter(t => t.id === taskId || t.parent_task_id === taskId)
-      .map(t => t.id);
-    console.log('Identified non-recurring task and its subtasks to delete (idsToDelete):', idsToDelete);
+  // Add the virtual task ID itself to idsToDelete if it was the target,
+  // so it's removed from the cache. This is important for optimistic UI update.
+  if (isTargetingVirtualInstance && !idsToDelete.includes(taskId)) {
+    idsToDelete.push(taskId);
+    console.log('Added virtual taskId to idsToDelete for cache removal:', taskId);
   }
 
   // Separate real and virtual IDs for DB operation
@@ -301,13 +323,13 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
     }
 
     // If it was a recurring series, also delete from 'recurring_task_completion_log'
-    if (originalTaskIdToDelete) {
-      console.log('Executing Supabase delete for recurring task completion logs for originalTaskId:', originalTaskIdToDelete);
+    if (originalTaskIdForSeriesDeletion) {
+      console.log('Executing Supabase delete for recurring task completion logs for originalTaskId:', originalTaskIdForSeriesDeletion);
       const { error: recurringLogError } = await supabase
         .from('recurring_task_completion_log')
         .delete()
         .eq('user_id', userId)
-        .eq('original_task_id', originalTaskIdToDelete);
+        .eq('original_task_id', originalTaskIdForSeriesDeletion);
       
       if (recurringLogError) {
         console.warn('Failed to delete recurring task completion logs:', recurringLogError.message);
@@ -396,29 +418,63 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
   console.log('Attempting to bulk delete task IDs:', ids);
   console.log('Current rawTasks count:', rawTasks.length);
 
-  // Filter out virtual IDs for DB operation
-  const realTaskIds = ids.filter(id => !isVirtualId(id));
-  const virtualTaskIds = ids.filter(id => isVirtualId(id));
-  void virtualTaskIds; // Explicitly mark as read to satisfy TS6133
-  console.log('Real task IDs to delete from DB (bulk):', realTaskIds);
-  console.log('Virtual task IDs (will be removed from cache only) (bulk):', virtualTaskIds);
+  // Collect all unique original_task_ids from the tasks being targeted for deletion
+  // This ensures we delete all instances and the template if any of the selected tasks are recurring.
+  const originalTaskIdsToConsider = new Set<string>();
+  const tasksToProcessForDeletion = rawTasks.filter(t => ids.includes(t.id)); // Only consider real tasks from rawTasks
+
+  ids.forEach(id => {
+    if (isVirtualId(id)) {
+      const parts = id.split('-');
+      if (parts.length >= 3) {
+        originalTaskIdsToConsider.add(parts[1]);
+      }
+    } else {
+      const realTask = tasksToProcessForDeletion.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === id);
+      if (realTask) {
+        originalTaskIdsToConsider.add(realTask.original_task_id || realTask.id);
+      }
+    }
+  });
+  console.log('Original Task IDs to consider for bulk deletion:', Array.from(originalTaskIdsToConsider));
+
+  let allIdsToDelete: string[] = [];
+  originalTaskIdsToConsider.forEach(originalId => {
+    const relatedTasks = rawTasks.filter(t => t.id === originalId || t.original_task_id === originalId);
+    relatedTasks.forEach(t => allIdsToDelete.push(t.id));
+  });
+
+  // Add any virtual IDs from the original 'ids' array that weren't covered by real tasks
+  ids.filter(id => isVirtualId(id)).forEach(virtualId => {
+    if (!allIdsToDelete.includes(virtualId)) {
+      allIdsToDelete.push(virtualId);
+    }
+  });
+
+  allIdsToDelete = Array.from(new Set(allIdsToDelete)); // Ensure uniqueness
+  console.log('Final consolidated IDs to delete (including virtual for cache):', allIdsToDelete);
+
+  const realTaskIdsToDelete = allIdsToDelete.filter(id => !isVirtualId(id));
+  const virtualTaskIdsToDelete = allIdsToDelete.filter(id => isVirtualId(id));
+  void virtualTaskIdsToDelete; // Explicitly mark as read to satisfy TS6133
+  console.log('Real task IDs to delete from DB (bulk):', realTaskIdsToDelete);
+  console.log('Virtual task IDs (will be removed from cache only) (bulk):', virtualTaskIdsToDelete);
 
   // Optimistic update
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
-  const tasksToDelete: Task[] = previousTasks.filter((t: Task) => ids.includes(t.id));
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
-    (old || []).filter(task => !ids.includes(task.id))
+    (old || []).filter(task => !allIdsToDelete.includes(task.id))
   );
-  ids.forEach(id => inFlightUpdatesRef.current.add(id));
+  allIdsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
   console.log('Optimistically removed tasks from cache (bulk).');
 
   try {
-    if (realTaskIds.length > 0) {
-      console.log('Executing Supabase bulk delete for real tasks:', realTaskIds);
+    if (realTaskIdsToDelete.length > 0) {
+      console.log('Executing Supabase bulk delete for real tasks:', realTaskIdsToDelete);
       const { error } = await supabase
         .from('tasks')
         .delete()
-        .in('id', realTaskIds)
+        .in('id', realTaskIdsToDelete)
         .eq('user_id', userId);
 
       if (error) throw error;
@@ -428,17 +484,13 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
     }
 
     // Also delete from recurring_task_completion_log if any of the deleted tasks were recurring templates
-    const originalTaskIdsToDelete = tasksToDelete
-      .filter(t => t.recurring_type !== 'none' || t.original_task_id)
-      .map(t => t.original_task_id || t.id);
-
-    if (originalTaskIdsToDelete.length > 0) {
-      console.log('Executing Supabase delete for recurring task completion logs for originalTaskIds (bulk):', originalTaskIdsToDelete);
+    if (originalTaskIdsToConsider.size > 0) {
+      console.log('Executing Supabase delete for recurring task completion logs for originalTaskIds (bulk):', Array.from(originalTaskIdsToConsider));
       const { error: recurringLogError } = await supabase
         .from('recurring_task_completion_log')
         .delete()
         .eq('user_id', userId)
-        .in('original_task_id', originalTaskIdsToDelete);
+        .in('original_task_id', Array.from(originalTaskIdsToConsider));
       
       if (recurringLogError) {
         console.warn('Failed to delete recurring task completion logs during bulk delete:', recurringLogError.message);
@@ -448,7 +500,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
     }
 
     showSuccess('Tasks deleted successfully!');
-    tasksToDelete.forEach((task: Task) => context.cancelReminder(task.id));
+    allIdsToDelete.forEach((id: string) => context.cancelReminder(id));
     console.log('--- bulkDeleteTasksMutation END (Success) ---');
     return true;
   } catch (error: any) {
@@ -460,7 +512,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
     console.log('--- bulkDeleteTasksMutation END (Failed) ---');
     return false;
   } finally {
-    ids.forEach(id => inFlightUpdatesRef.current.delete(id));
+    allIdsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
     console.log('Cleared in-flight updates and invalidated queries (bulk).');
   }
