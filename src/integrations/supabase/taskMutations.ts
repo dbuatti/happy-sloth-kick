@@ -255,7 +255,12 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
       .map(t => t.id);
   }
 
-  // Optimistic update
+  // Separate real and virtual IDs for DB operation
+  const realTaskIdsToDelete = idsToDelete.filter(id => !isVirtualId(id));
+  const virtualTaskIdsToDelete = idsToDelete.filter(id => isVirtualId(id));
+  void virtualTaskIdsToDelete; // Explicitly mark as read to satisfy TS6133
+
+  // Optimistic update: remove all identified IDs (real and virtual) from cache
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).filter(task => !idsToDelete.includes(task.id))
@@ -263,14 +268,16 @@ export const deleteTaskMutation = async (taskId: string, context: MutationContex
   idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
 
   try {
-    // Delete from 'tasks' table
-    const { error: tasksError } = await supabase
-      .from('tasks')
-      .delete()
-      .in('id', idsToDelete)
-      .eq('user_id', userId); // Ensure RLS is respected
+    // Only delete real tasks from the 'tasks' table
+    if (realTaskIdsToDelete.length > 0) {
+      const { error: tasksError } = await supabase
+        .from('tasks')
+        .delete()
+        .in('id', realTaskIdsToDelete)
+        .eq('user_id', userId); // Ensure RLS is respected
 
-    if (tasksError) throw tasksError;
+      if (tasksError) throw tasksError;
+    }
 
     // If it was a recurring series, also delete from 'recurring_task_completion_log'
     if (originalTaskIdToDelete) {
@@ -331,34 +338,14 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
     if (virtualTaskIds.length > 0 && updates.status !== undefined) {
       const completionDate = format(context.currentDate, 'yyyy-MM-dd');
       const virtualRecurringTasks = processedTasks.filter(t => virtualTaskIds.includes(t.id) && t.recurring_type !== 'none');
-
-      if (updates.status === 'completed') {
-        const payload = virtualRecurringTasks.map(task => ({
-          user_id: userId,
-          original_task_id: task.original_task_id || task.id,
-          completion_date: completionDate,
-        }));
-        if (payload.length > 0) {
-          const { error } = await supabase.from('recurring_task_completion_log').insert(payload);
-          if (error) throw error;
-        }
-        showSuccess('Recurring tasks completed in bulk for today!');
-      } else if (updates.status === 'to-do') {
-        const originalTaskIdsToUncomplete = virtualRecurringTasks.map(task => task.original_task_id || task.id);
-        if (originalTaskIdsToUncomplete.length > 0) {
-          const { error } = await supabase
-            .from('recurring_task_completion_log')
-            .delete()
-            .eq('user_id', userId)
-            .eq('completion_date', completionDate)
-            .in('original_task_id', originalTaskIdsToUncomplete);
-          if (error) throw error;
-        }
-        showSuccess('Recurring tasks marked as to-do in bulk for today.');
-      } else {
-        // For other updates to virtual tasks (not status change), they should ideally be converted to real tasks.
-        // For now, we'll just let the optimistic update stand in the cache.
-        console.warn('Bulk updating virtual tasks with non-completion status changes. Consider converting to real tasks.');
+      const payload = virtualRecurringTasks.map(task => ({
+        user_id: userId,
+        original_task_id: task.original_task_id || task.id,
+        completion_date: completionDate,
+      }));
+      if (payload.length > 0) {
+        const { error } = await supabase.from('recurring_task_completion_log').insert(payload);
+        if (error) throw error;
       }
     }
 
