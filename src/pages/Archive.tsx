@@ -140,7 +140,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
 
   const handleClearFilters = useCallback(() => {
     setSearchFilter('');
-    setStatusFilter('archived');
+    setStatusFilter('archived'); // Default status for archive page
     setCategoryFilter('all');
     setPriorityFilter('all');
     setSectionFilter('all');

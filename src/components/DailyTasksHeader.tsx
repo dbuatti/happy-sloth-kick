@@ -44,11 +44,11 @@ interface DailyTasksHeaderProps {
   isManageCategoriesOpen: boolean;
   setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isManageSectionsOpen: boolean;
-  setIsManageSectionsOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsManageSectionsOpen: React.Dispatch<SetStateAction<boolean>>;
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  onOpenAddTaskDialog: () => void; // New prop
+  onOpenAddTaskDialog?: () => void; // Made optional
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -96,16 +96,18 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             Filters
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onOpenAddTaskDialog} // Use new prop
-            className="flex items-center gap-2"
-            disabled={isDemo}
-          >
-            <Plus className="h-4 w-4" />
-            Add Task
-          </Button>
+          {onOpenAddTaskDialog && ( // Conditionally render button
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenAddTaskDialog}
+              className="flex items-center gap-2"
+              disabled={isDemo}
+            >
+              <Plus className="h-4 w-4" />
+              Add Task
+            </Button>
+          )}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
