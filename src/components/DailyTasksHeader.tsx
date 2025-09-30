@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { SetStateAction } from 'react'; // Import SetStateAction
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
@@ -43,7 +43,7 @@ interface DailyTasksHeaderProps {
   tasksLoading: boolean;
   onToggleAllSections: () => void;
   isManageCategoriesOpen: boolean;
-  setIsManageCategoriesOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsManageCategoriesOpen: React.Dispatch<SetStateAction<boolean>>;
   isManageSectionsOpen: boolean;
   setIsManageSectionsOpen: React.Dispatch<SetStateAction<boolean>>;
   isFilterPanelOpen: boolean;
