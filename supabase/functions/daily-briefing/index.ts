@@ -59,12 +59,16 @@ serve(async (req: Request) => {
   }
 
   try {
-    console.log("Edge Function: Incoming request headers:", req.headers); // Keep log for headers
+    console.log("Daily Briefing EF: --- Request Start ---");
+    console.log("Daily Briefing EF: Request Method:", req.method);
+    console.log("Daily Briefing EF: Content-Type header:", req.headers.get('Content-Type'));
+    console.log("Daily Briefing EF: Content-Length header:", req.headers.get('Content-Length'));
 
     const rawBody = await req.text();
+    console.log("Daily Briefing EF: Raw Request Body:", rawBody);
 
     if (!rawBody || rawBody.trim() === '') {
-      console.error("Daily Briefing: Request body is empty or whitespace after reading raw text.");
+      console.error("Daily Briefing EF: Request body is empty or whitespace after reading raw text.");
       return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -74,8 +78,9 @@ serve(async (req: Request) => {
     let requestBodyParsed;
     try {
       requestBodyParsed = JSON.parse(rawBody);
+      console.log("Daily Briefing EF: Parsed Request Body:", requestBodyParsed);
     } catch (jsonParseError: any) {
-      console.error("Daily Briefing: Failed to parse raw request body as JSON:", jsonParseError.message);
+      console.error("Daily Briefing EF: Failed to parse raw request body as JSON:", jsonParseError.message);
       return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${jsonParseError.message}` }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -85,6 +90,7 @@ serve(async (req: Request) => {
     const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
+      console.error("Daily Briefing EF: Missing required parameters in parsed request body.");
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -95,10 +101,10 @@ serve(async (req: Request) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
 
-    console.log("Daily Briefing: GEMINI_API_KEY value:", GEMINI_API_KEY ? "Set" : "Not Set"); // Log the key's presence
+    console.log("Daily Briefing EF: GEMINI_API_KEY value:", GEMINI_API_KEY ? "Set" : "Not Set");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !GEMINI_API_KEY) {
-      console.error("Daily Briefing: Missing environment variables. Ensure GEMINI_API_KEY is set as a secret.");
+      console.error("Daily Briefing EF: Missing environment variables. Ensure GEMINI_API_KEY is set as a secret.");
       return new Response(JSON.stringify({ error: 'Missing Supabase or Gemini API environment variables. Please ensure GEMINI_API_KEY is set as a secret in Supabase.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
@@ -209,13 +215,16 @@ serve(async (req: Request) => {
     const response = await result.response;
     const briefingText = response.text();
     
+    console.log("Daily Briefing EF: Briefing generated successfully.");
+    console.log("Daily Briefing EF: --- Request End ---");
+
     return new Response(JSON.stringify({ briefing: briefingText }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error: any) {
-    console.error("Error in Edge Function 'daily-briefing':", error);
+    console.error("Daily Briefing EF: Error in Edge Function 'daily-briefing':", error);
     const errorDetails = error instanceof Error ? { message: error.message, stack: error.stack } : error;
     return new Response(JSON.stringify({ error: errorDetails || 'An unexpected error occurred in the Edge Function.' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
