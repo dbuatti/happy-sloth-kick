@@ -59,30 +59,13 @@ serve(async (req: Request) => {
   }
 
   try {
-    const rawBody = await req.text();
-
-    if (!rawBody || rawBody.trim() === '') {
-      console.error("Daily Briefing: Request body is empty or whitespace after reading raw text.");
-      return new Response(JSON.stringify({ error: 'Request body is empty or contains invalid JSON.' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
-    let requestBodyParsed;
-    try {
-      requestBodyParsed = JSON.parse(rawBody);
-    } catch (jsonParseError: any) {
-      console.error("Daily Briefing: Failed to parse raw request body as JSON:", jsonParseError.message);
-      return new Response(JSON.stringify({ error: `Invalid JSON in request body: ${jsonParseError.message}` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
-
+    // Directly parse the JSON body
+    const requestBodyParsed = await req.json();
+    
     const { userId, localDayStartISO, localDayEndISO } = requestBodyParsed;
 
     if (!userId || !localDayStartISO || !localDayEndISO) {
+      console.error("Daily Briefing: Missing required parameters in request body.");
       return new Response(JSON.stringify({ error: 'User ID and local day boundaries are required.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
