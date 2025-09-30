@@ -25,6 +25,7 @@ import { useAuth } from '@/context/AuthContext'; // Import useAuth
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }).trim(),
+  status: z.enum(['to-do', 'completed', 'skipped', 'archived']), // Added status field
   category: z.string().min(1, { message: 'Category is required.' }),
   priority: z.string().min(1, { message: 'Priority is required.' }),
   dueDate: z.date().nullable().optional().transform(v => v ?? null),
@@ -122,6 +123,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
       description: '',
+      status: 'to-do', // Default status
       category: '',
       priority: 'medium',
       dueDate: null,
@@ -152,6 +154,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
     const defaultValues = {
       description: '',
+      status: 'to-do' as const, // Default status
       category: parentTask?.category || defaultCategoryId,
       priority: parentTask?.priority || 'medium',
       dueDate: null,
@@ -169,6 +172,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       reset({
         ...defaultValues,
         description: initialData.description || '',
+        status: initialData.status || 'to-do', // Initialize status from initialData
         category: initialData.category || defaultValues.category,
         priority: initialData.priority || 'medium',
         dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
@@ -287,6 +291,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     // Construct NewTaskData object
     const newTaskData: NewTaskData = {
       description: data.description.trim(),
+      status: data.status, // Pass status from form
       category: data.category,
       priority: data.priority,
       due_date: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
@@ -360,6 +365,28 @@ const TaskForm: React.FC<TaskFormProps> = ({
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <Controller
+          control={control}
+          name="status"
+          render={({ field }) => (
+            <div>
+              <Label>Status</Label>
+              <Select value={field.value} onValueChange={field.onChange} disabled={isSaving || isSuggesting}>
+                <SelectTrigger className="h-9 text-base">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="to-do">To-Do</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="skipped">Skipped</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.status && <p className="text-destructive text-sm mt-1">{errors.status.message}</p>}
+            </div>
+          )}
+        />
+
         <Controller
           control={control}
           name="category"
