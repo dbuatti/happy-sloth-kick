@@ -232,6 +232,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         toggleFilterPanel={toggleFilterPanel}
         markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
         onOpenAddTaskDialog={openAddTaskDialog}
+        handleAddTask={handleAddTask} {/* Pass handleAddTask */}
       />
 
       <FilterPanel

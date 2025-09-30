@@ -1,6 +1,6 @@
 import React from 'react';
 import DateNavigator from './DateNavigator';
-import { Task, TaskSection, Category } from '@/hooks/useTasks';
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
+import QuickAddTask from './QuickAddTask'; // Import QuickAddTask
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -48,7 +49,8 @@ interface DailyTasksHeaderProps {
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  onOpenAddTaskDialog?: () => void; // Made optional
+  onOpenAddTaskDialog?: () => void;
+  handleAddTask: (taskData: NewTaskData) => Promise<any>; // Add handleAddTask prop
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -77,7 +79,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   isFilterPanelOpen,
   toggleFilterPanel,
   markAllTasksAsCompleted,
-  onOpenAddTaskDialog, // Destructure new prop
+  onOpenAddTaskDialog,
+  handleAddTask, // Destructure handleAddTask
 }) => {
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -96,7 +99,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             Filters
           </Button>
 
-          {onOpenAddTaskDialog && ( // Conditionally render button
+          {onOpenAddTaskDialog && (
             <Button
               variant="outline"
               size="sm"
@@ -141,6 +144,22 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
       />
 
       <Separator className="my-4" />
+
+      {/* Global Quick Add Task moved here */}
+      <QuickAddTask
+        onAddTask={handleAddTask}
+        defaultCategoryId={allCategories[0]?.id || ''}
+        isDemo={isDemo}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        sections={sections}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
+
+      <Separator className="my-4" /> {/* Add a separator below QuickAddTask */}
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}

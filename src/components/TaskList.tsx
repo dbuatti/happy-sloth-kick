@@ -416,6 +416,8 @@ const TaskList: React.FC<TaskListProps> = ({
           </div>
         )}
 
+        {/* Removed: Global Quick Add Task component - now in DailyTasksHeader */}
+
         {/* "No Section" block */}
         <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
           {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
