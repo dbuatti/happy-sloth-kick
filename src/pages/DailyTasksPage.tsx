@@ -61,6 +61,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     updateSection,
     deleteSection,
     updateSectionIncludeInFocusMode,
+    reorderSections, // Destructure reorderSections
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
@@ -237,7 +238,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={toggleAllDoToday}
+        toggleAllDoToday={() => toggleAllDoToday(filteredTasks)} // Pass filteredTasks here
         dailyProgress={dailyProgress}
         isDemo={isDemo}
         nextAvailableTask={nextAvailableTask}
@@ -297,6 +298,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             deleteSection={deleteSection}
             updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
             updateTaskParentAndOrder={updateTaskParentAndOrder}
+            reorderSections={reorderSections} // Pass reorderSections here
             allCategories={allCategories}
             onOpenOverview={handleOpenOverview}
             currentDate={currentDate}

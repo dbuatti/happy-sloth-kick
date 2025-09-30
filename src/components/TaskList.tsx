@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronDown, ChevronRight, Settings, EyeOff, Eye } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+// Removed: import { Plus, ChevronDown, ChevronRight, Settings, EyeOff, Eye } from 'lucide-react';
+// Removed: import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import QuickAddTask from './QuickAddTask';
-import { cn } from '@/lib/utils';
+// Removed: import QuickAddTask from './QuickAddTask';
+// Removed: import { cn } from '@/lib/utils';
 
 // DND imports
 import {
@@ -29,6 +29,7 @@ import {
 } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
 import SortableTaskItem from './SortableTaskItem';
+import SortableSectionItem from './SortableSectionItem'; // Import new component
 import { Appointment } from '@/hooks/useAppointments'; // Import Appointment type
 
 interface TaskListProps {
@@ -59,6 +60,7 @@ interface TaskListProps {
   selectedTaskIds: Set<string>;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   updateTaskParentAndOrder: (activeId: string, newParentId: string | null, newSectionId: string | null, overId: string | null, isDraggingDown: boolean) => Promise<void>;
+  reorderSections: (activeId: string, overId: string) => Promise<void>; // New prop for section reordering
 }
 
 const TaskList: React.FC<TaskListProps> = ({
@@ -89,6 +91,7 @@ const TaskList: React.FC<TaskListProps> = ({
   selectedTaskIds,
   onSelectTask,
   updateTaskParentAndOrder,
+  reorderSections, // Destructure new prop
 }) => {
   const [newSectionName, setNewSectionName] = useState('');
   const [isCreatingSection, setIsCreatingSection] = useState(false);
@@ -129,6 +132,10 @@ const TaskList: React.FC<TaskListProps> = ({
     return processedTasks.find(task => task.id === id);
   }, [processedTasks]);
 
+  const findSection = useCallback((id: UniqueIdentifier) => {
+    return sections.find(section => section.id === id);
+  }, [sections]);
+
   const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id);
     setInsertionIndicator(null);
@@ -141,51 +148,86 @@ const TaskList: React.FC<TaskListProps> = ({
       return;
     }
 
-    const activeTask = findTask(active.id);
-    const overItem = over.data.current;
-    const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
-    const overSection = overItem?.type === 'section' ? (overItem.item as TaskSection) : null; // Corrected type for section
+    const activeItemData = active.data.current;
+    const overItemData = over.data.current;
 
-    if (!activeTask) {
+    if (!activeItemData || !overItemData) {
       setInsertionIndicator(null);
       return;
     }
 
-    // Safely get clientY from activatorEvent
-    let pointerY: number | undefined;
-    if (event.activatorEvent instanceof MouseEvent) {
-      pointerY = event.activatorEvent.clientY;
-    } else if (event.activatorEvent instanceof TouchEvent && event.activatorEvent.touches.length > 0) {
-      pointerY = event.activatorEvent.touches[0].clientY;
-    } else {
-      pointerY = undefined;
-    }
+    const activeType = activeItemData.type;
+    const overType = overItemData.type;
 
-    // Logic for dropping into a task (to make it a subtask)
-    if (overTask && overTask.id !== activeTask.id && overTask.parent_task_id !== activeTask.id) {
-      const overRect = event.over?.rect;
-      if (overRect && pointerY !== undefined) {
-        const middleY = overRect.top + overRect.height / 2;
-        const quarterHeight = overRect.height / 4;
+    // Logic for dragging tasks
+    if (activeType === 'task') {
+      const activeTask = activeItemData.task as Task;
+      const overTask = overType === 'task' ? (overItemData.task as Task) : null;
+      const overSection = overType === 'section' ? (overItemData.item as TaskSection) : null;
 
-        if (pointerY > middleY - quarterHeight && pointerY < middleY + quarterHeight) {
-          setInsertionIndicator({ id: overTask.id, position: 'into' });
-          return;
-        }
-      }
-    }
-
-    // Logic for dropping before/after a task or into a section
-    if (overTask) {
-      const overRect = event.over?.rect;
-      if (overRect && pointerY !== undefined) {
-        const middleY = overRect.top + overRect.height / 2;
-        setInsertionIndicator({ id: overTask.id, position: pointerY < middleY ? 'before' : 'after' });
+      if (!activeTask) {
+        setInsertionIndicator(null);
         return;
       }
-    } else if (overSection) {
-      setInsertionIndicator({ id: overSection.id, position: 'into' });
-      return;
+
+      let pointerY: number | undefined;
+      if (event.activatorEvent instanceof MouseEvent) {
+        pointerY = event.activatorEvent.clientY;
+      } else if (event.activatorEvent instanceof TouchEvent && event.activatorEvent.touches.length > 0) {
+        pointerY = event.activatorEvent.touches[0].clientY;
+      } else {
+        pointerY = undefined;
+      }
+
+      // Dropping into a task (to make it a subtask)
+      if (overTask && overTask.id !== activeTask.id && overTask.parent_task_id !== activeTask.id) {
+        const overRect = event.over?.rect;
+        if (overRect && pointerY !== undefined) {
+          const middleY = overRect.top + overRect.height / 2;
+          const quarterHeight = overRect.height / 4;
+
+          if (pointerY > middleY - quarterHeight && pointerY < middleY + quarterHeight) {
+            setInsertionIndicator({ id: overTask.id, position: 'into' });
+            return;
+          }
+        }
+      }
+
+      // Dropping before/after a task or into a section
+      if (overTask) {
+        const overRect = event.over?.rect;
+        if (overRect && pointerY !== undefined) {
+          const middleY = overRect.top + overRect.height / 2;
+          setInsertionIndicator({ id: overTask.id, position: pointerY < middleY ? 'before' : 'after' });
+          return;
+        }
+      } else if (overSection) {
+        setInsertionIndicator({ id: overSection.id, position: 'into' });
+        return;
+      }
+    }
+    // Logic for dragging sections
+    else if (activeType === 'section') {
+      const overSection = overType === 'section' ? (overItemData.item as TaskSection) : null;
+      if (overSection) {
+        const overRect = event.over?.rect;
+        if (overRect) {
+          const middleY = overRect.top + overRect.height / 2;
+          let pointerY: number | undefined;
+          if (event.activatorEvent instanceof MouseEvent) {
+            pointerY = event.activatorEvent.clientY;
+          } else if (event.activatorEvent instanceof TouchEvent && event.activatorEvent.touches.length > 0) {
+            pointerY = event.activatorEvent.touches[0].clientY;
+          } else {
+            pointerY = undefined;
+          }
+
+          if (pointerY !== undefined) {
+            setInsertionIndicator({ id: overSection.id, position: pointerY < middleY ? 'before' : 'after' });
+            return;
+          }
+        }
+      }
     }
 
     setInsertionIndicator(null);
@@ -200,28 +242,46 @@ const TaskList: React.FC<TaskListProps> = ({
       return;
     }
 
-    const activeTask = findTask(active.id);
-    if (!activeTask) return;
+    const activeItemData = active.data.current;
+    const overItemData = over.data.current;
 
-    const overItem = over.data.current;
-    const overTask = overItem?.type === 'task' ? (overItem.task as Task) : null;
-    const overSection = overItem?.type === 'section' ? (overItem.item as TaskSection) : null; // Corrected type for section
+    if (!activeItemData || !overItemData) return;
 
-    let newParentId: string | null = null;
-    let newSectionId: string | null = null;
-    let targetOverId: string | null = null;
-    let isDraggingDown = false;
+    const activeType = activeItemData.type;
+    const overType = overItemData.type;
 
-    if (insertionIndicator) {
-      if (insertionIndicator.position === 'into' && overTask) {
-        newParentId = overTask.id;
-        newSectionId = overTask.section_id;
-        targetOverId = null;
-      } else if (insertionIndicator.position === 'into' && overSection) {
-        newParentId = null;
-        newSectionId = overSection.id;
-        targetOverId = null;
-      } else if (overTask) {
+    if (activeType === 'task') {
+      const activeTask = activeItemData.task as Task;
+      const overTask = overType === 'task' ? (overItemData.task as Task) : null;
+      const overSection = overType === 'section' ? (overItemData.item as TaskSection) : null;
+
+      if (!activeTask) return;
+
+      let newParentId: string | null = null;
+      let newSectionId: string | null = null;
+      let targetOverId: string | null = null;
+      let isDraggingDown = false;
+
+      if (insertionIndicator) {
+        if (insertionIndicator.position === 'into' && overTask) {
+          newParentId = overTask.id;
+          newSectionId = overTask.section_id;
+          targetOverId = null;
+        } else if (insertionIndicator.position === 'into' && overSection) {
+          newParentId = null;
+          newSectionId = overSection.id;
+          targetOverId = null;
+        } else if (overTask) {
+          newParentId = overTask.parent_task_id;
+          newSectionId = overTask.section_id;
+          targetOverId = overTask.id;
+          const activeIndex = processedTasks.findIndex(t => t.id === active.id);
+          const overIndex = processedTasks.findIndex(t => t.id === over.id);
+          isDraggingDown = activeIndex < overIndex;
+        }
+      }
+
+      if (!insertionIndicator && overTask) {
         newParentId = overTask.parent_task_id;
         newSectionId = overTask.section_id;
         targetOverId = overTask.id;
@@ -229,31 +289,29 @@ const TaskList: React.FC<TaskListProps> = ({
         const overIndex = processedTasks.findIndex(t => t.id === over.id);
         isDraggingDown = activeIndex < overIndex;
       }
-    }
 
-    if (!insertionIndicator && overTask) {
-      newParentId = overTask.parent_task_id;
-      newSectionId = overTask.section_id;
-      targetOverId = overTask.id;
-      const activeIndex = processedTasks.findIndex(t => t.id === active.id);
-      const overIndex = processedTasks.findIndex(t => t.id === over.id);
-      isDraggingDown = activeIndex < overIndex;
-    }
+      if (overSection && !overTask && insertionIndicator?.position === 'into') {
+        newParentId = null;
+        newSectionId = overSection.id;
+        targetOverId = null;
+      }
 
-    if (overSection && !overTask && insertionIndicator?.position === 'into') {
-      newParentId = null;
-      newSectionId = overSection.id;
-      targetOverId = null;
-    }
+      if (
+        activeTask.parent_task_id !== newParentId ||
+        activeTask.section_id !== newSectionId ||
+        targetOverId !== null
+      ) {
+        await updateTaskParentAndOrder(activeTask.id, newParentId, newSectionId, targetOverId, isDraggingDown);
+      }
+    } else if (activeType === 'section' && overType === 'section') {
+      const activeSection = activeItemData.item as TaskSection;
+      const overSection = overItemData.item as TaskSection;
 
-    if (
-      activeTask.parent_task_id !== newParentId ||
-      activeTask.section_id !== newSectionId ||
-      targetOverId !== null
-    ) {
-      await updateTaskParentAndOrder(activeTask.id, newParentId, newSectionId, targetOverId, isDraggingDown);
+      if (activeSection.id !== overSection.id) {
+        await reorderSections(activeSection.id, overSection.id);
+      }
     }
-  }, [findTask, processedTasks, updateTaskParentAndOrder, insertionIndicator]);
+  }, [findTask, processedTasks, updateTaskParentAndOrder, insertionIndicator, reorderSections]);
 
 
   const handleCreateSection = useCallback(async () => {
@@ -277,6 +335,10 @@ const TaskList: React.FC<TaskListProps> = ({
       setEditSectionName('');
     }
   }, [editSectionId, editSectionName, updateSection]);
+
+  const handleEditSectionNameChange = useCallback((name: string) => {
+    setEditSectionName(name);
+  }, []);
 
   const handleDeleteSection = useCallback(async () => {
     if (sectionToDelete) {
@@ -326,63 +388,6 @@ const TaskList: React.FC<TaskListProps> = ({
     );
   }, [updateTask, deleteTask, onOpenOverview, expandedTasks, toggleTask, setFocusTask, toggleDoToday, scheduledTasksMap, isDemo, selectedTaskIds, onSelectTask, processedTasks, sections, currentDate, doTodayOffIds, getSubtasksForTask, insertionIndicator]);
 
-  const renderSectionHeader = useCallback((section: TaskSection, tasksInThisSection: Task[]) => (
-    <div
-      className="flex items-center justify-between py-2 px-3 bg-secondary/50 rounded-t-lg border-b border-border"
-      data-dnd-type="section"
-      data-dnd-id={section.id}
-    >
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => toggleSection(section.id)}
-          className="h-7 w-7"
-        >
-          {expandedSections[section.id] === false ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </Button>
-        {editSectionId === section.id ? (
-          <Input
-            value={editSectionName}
-            onChange={(e) => setEditSectionName(e.target.value)}
-            onBlur={handleUpdateSection}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.currentTarget.blur();
-              }
-            }}
-            className="h-7 text-sm font-semibold"
-            autoFocus
-          />
-        ) : (
-          <h3 className="text-sm font-semibold text-foreground cursor-pointer" onClick={() => toggleSection(section.id)}>
-            {section.name} ({tasksInThisSection.length})
-          </h3>
-        )}
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-7 w-7">
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => handleEditSection(section)}>Rename Section</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => markAllTasksInSectionCompleted(section.id)}>Mark All Completed</DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => updateSectionIncludeInFocusMode(section.id, !section.include_in_focus_mode)}>
-            {section.include_in_focus_mode ? (
-              <span className="flex items-center"><EyeOff className="mr-2 h-4 w-4" /> Exclude from Focus Mode</span>
-            ) : (
-              <span className="flex items-center"><Eye className="mr-2 h-4 w-4" /> Include in Focus Mode</span>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem className="text-destructive" onSelect={() => confirmDeleteSection(section)}>Delete Section</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  ), [expandedSections, editSectionId, editSectionName, toggleSection, handleUpdateSection, markAllTasksInSectionCompleted, updateSectionIncludeInFocusMode, confirmDeleteSection, handleEditSection]);
-
-
   // Calculate these values directly
   const hasFiltersApplied = filteredTasks.length === 0 && processedTasks.length > 0;
   const showNoTasksMessage = filteredTasks.length === 0 && !loading && !hasFiltersApplied;
@@ -392,6 +397,7 @@ const TaskList: React.FC<TaskListProps> = ({
   }
 
   const activeTask = activeId ? findTask(activeId) : null;
+  const activeSection = activeId ? findSection(activeId) : null;
 
   return (
     <DndContext
@@ -405,7 +411,7 @@ const TaskList: React.FC<TaskListProps> = ({
         {showNoTasksMessage && (
           <div className="text-center py-12 text-muted-foreground">
             <p className="text-lg font-semibold mb-2">No tasks for today!</p>
-            <p className="mb-4">Time to relax or add some new tasks.</p>
+            <p className="mb-4">Start by adding a new task above, or create a new section.</p>
           </div>
         )}
 
@@ -416,72 +422,65 @@ const TaskList: React.FC<TaskListProps> = ({
           </div>
         )}
 
-        {/* Removed: Global Quick Add Task component - now in DailyTasksHeader */}
-
         {/* "No Section" block */}
-        <div className={cn("border rounded-lg bg-card shadow-sm", tasksWithoutSection.length === 0 && !isDemo && "hidden")}>
-          {renderSectionHeader({ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }, tasksWithoutSection)}
-          <div className="p-3 space-y-2">
-            {expandedSections['no-section'] !== false && (
-              <>
-                <SortableContext items={tasksWithoutSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                  <ul className="space-y-2">
-                    {tasksWithoutSection.map((task) => renderTask(task, 0))}
-                  </ul>
-                </SortableContext>
-                <QuickAddTask
-                  sectionId={null} // For 'No Section'
-                  onAddTask={handleAddTask}
-                  defaultCategoryId={allCategories[0]?.id || ''}
-                  isDemo={isDemo}
-                  allCategories={allCategories}
-                  currentDate={currentDate}
-                  sections={sections}
-                  createSection={createSection}
-                  updateSection={updateSection}
-                  deleteSection={deleteSection}
-                  updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                />
-              </>
-            )}
-          </div>
-        </div>
+        <SortableSectionItem
+          section={{ id: 'no-section', name: 'No Section', order: -1, include_in_focus_mode: true, user_id: 'synthetic' }}
+          tasksInThisSection={tasksWithoutSection}
+          expandedSections={expandedSections}
+          toggleSection={toggleSection}
+          editSectionId={editSectionId}
+          editSectionName={editSectionName}
+          handleUpdateSection={handleUpdateSection}
+          handleEditSection={handleEditSection}
+          onEditSectionNameChange={handleEditSectionNameChange} // Pass new prop
+          markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          confirmDeleteSection={confirmDeleteSection}
+          isDemo={isDemo}
+          handleAddTask={handleAddTask}
+          allCategories={allCategories}
+          currentDate={currentDate}
+          sections={sections}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          renderTask={renderTask}
+          insertionIndicator={insertionIndicator}
+        />
 
         {/* Mapped sections */}
-        {sections.map(section => {
-          const tasksInThisSection = getTasksForSection(section.id);
-          const showSectionContent = tasksInThisSection.length > 0 || isDemo;
-
-          return (
-            <div key={section.id} className={cn("border rounded-lg bg-card shadow-sm", !showSectionContent && "hidden")}>
-              {renderSectionHeader(section, tasksInThisSection)}
-              <div className="p-3 space-y-2">
-                {expandedSections[section.id] !== false && (
-                  <>
-                    <SortableContext items={tasksInThisSection.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                      <ul className="space-y-2">
-                        {tasksInThisSection.map((task) => renderTask(task, 0))}
-                      </ul>
-                    </SortableContext>
-                    <QuickAddTask
-                      sectionId={section.id}
-                      onAddTask={handleAddTask}
-                      defaultCategoryId={allCategories[0]?.id || ''}
-                      isDemo={isDemo}
-                      allCategories={allCategories}
-                      currentDate={currentDate}
-                      sections={sections}
-                      createSection={createSection}
-                      updateSection={updateSection}
-                      deleteSection={deleteSection}
-                      updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-                    />
-                  </>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        <SortableContext items={sections.map(s => s.id)} strategy={verticalListSortingStrategy}>
+          {sections.map(section => {
+            const tasksInThisSection = getTasksForSection(section.id);
+            return (
+              <SortableSectionItem
+                key={section.id}
+                section={section}
+                tasksInThisSection={tasksInThisSection}
+                expandedSections={expandedSections}
+                toggleSection={toggleSection}
+                editSectionId={editSectionId}
+                editSectionName={editSectionName}
+                handleUpdateSection={handleUpdateSection}
+                handleEditSection={handleEditSection}
+                onEditSectionNameChange={handleEditSectionNameChange} // Pass new prop
+                markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+                confirmDeleteSection={confirmDeleteSection}
+                isDemo={isDemo}
+                handleAddTask={handleAddTask}
+                allCategories={allCategories}
+                currentDate={currentDate}
+                sections={sections}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                renderTask={renderTask}
+                insertionIndicator={insertionIndicator}
+              />
+            );
+          })}
+        </SortableContext>
 
         <div className="flex items-center gap-2 mt-4 p-2 border rounded-lg bg-background shadow-sm">
           <Input
@@ -494,7 +493,7 @@ const TaskList: React.FC<TaskListProps> = ({
             className="flex-1 h-9 text-base"
           />
           <Button onClick={handleCreateSection} disabled={isCreatingSection || !newSectionName.trim() || isDemo} className="h-9 px-4">
-            {isCreatingSection ? 'Creating...' : <Plus className="h-4 w-4" />} Add Section
+            {isCreatingSection ? 'Creating...' : 'Add Section'}
           </Button>
         </div>
 
@@ -541,6 +540,31 @@ const TaskList: React.FC<TaskListProps> = ({
               insertionIndicator={null}
               getSubtasksForTask={getSubtasksForTask}
               scheduledTasksMap={scheduledTasksMap}
+            />
+          ) : activeSection ? (
+            <SortableSectionItem
+              section={activeSection}
+              tasksInThisSection={getTasksForSection(activeSection.id)}
+              expandedSections={expandedSections}
+              toggleSection={toggleSection}
+              editSectionId={null} // Not editing when dragging overlay
+              editSectionName={''}
+              handleUpdateSection={async () => {}}
+              handleEditSection={() => {}}
+              onEditSectionNameChange={() => {}} // Dummy for overlay
+              markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+              confirmDeleteSection={confirmDeleteSection}
+              isDemo={isDemo}
+              handleAddTask={handleAddTask}
+              allCategories={allCategories}
+              currentDate={currentDate}
+              sections={sections}
+              createSection={createSection}
+              updateSection={updateSection}
+              deleteSection={deleteSection}
+              renderTask={renderTask}
+              insertionIndicator={null}
             />
           ) : null}
         </DragOverlay>,

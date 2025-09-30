@@ -333,7 +333,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     return addTaskMutation(dataWithDefaults, mutationContext);
   }, [userId, mutationContext]);
 
-  const updateTask = useCallback(async (taskId: string, updates: TaskUpdate): Promise<string | null> => {
+  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>): Promise<string | null> => {
     if (!userId) { showError('User not authenticated.'); return null; }
     return updateTaskMutation(taskId, updates, mutationContext);
   }, [userId, mutationContext]);
@@ -469,10 +469,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     return toggleDoTodayMutation(task, effectiveCurrentDate, doTodayOffIds, mutationContext);
   }, [userId, effectiveCurrentDate, doTodayOffIds, mutationContext]);
 
-  const toggleAllDoToday = useCallback(async () => {
+  const toggleAllDoToday = useCallback(async (filteredTasks: Task[]) => { // Added filteredTasks as argument
     if (!userId) { showError('User not authenticated.'); return; }
-    return toggleAllDoTodayMutation(finalFilteredTasks, effectiveCurrentDate, doTodayOffIds, mutationContext);
-  }, [userId, finalFilteredTasks, effectiveCurrentDate, doTodayOffIds, mutationContext]);
+    return toggleAllDoTodayMutation(filteredTasks, effectiveCurrentDate, doTodayOffIds, mutationContext);
+  }, [userId, effectiveCurrentDate, doTodayOffIds, mutationContext]);
 
   const dailyProgress = useMemo(() => {
     if (viewMode !== 'daily') {
