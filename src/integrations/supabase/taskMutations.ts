@@ -228,40 +228,75 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
+
+  const taskToDelete = processedTasks.find((t: Task) => t.id === taskId);
+  if (!taskToDelete) {
+    showError('Task not found for deletion.');
+    return false;
+  }
+
+  let idsToDelete: string[] = [];
+  let originalTaskIdToDelete: string | null = null;
+
+  // Determine if it's a recurring task or an instance of one
+  if (taskToDelete.recurring_type !== 'none' || taskToDelete.original_task_id) {
+    // If it's a recurring template or an instance, delete the entire series
+    originalTaskIdToDelete = taskToDelete.original_task_id || taskToDelete.id;
+    
+    // Collect all tasks belonging to this series (template + all instances)
+    idsToDelete = processedTasks
+      .filter(t => t.id === originalTaskIdToDelete || t.original_task_id === originalTaskIdToDelete)
+      .map(t => t.id);
+  } else {
+    // It's a non-recurring task, delete it and its subtasks
+    idsToDelete = processedTasks
+      .filter(t => t.id === taskId || t.parent_task_id === taskId)
+      .map(t => t.id);
+  }
 
   // Optimistic update
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
-  const tasksToDelete: Task[] = previousTasks.filter((t: Task) => t.id === taskId || t.parent_task_id === taskId);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
-    (old || []).filter(task => task.id !== taskId && task.parent_task_id !== taskId)
+    (old || []).filter(task => !idsToDelete.includes(task.id))
   );
-  tasksToDelete.forEach((task: Task) => inFlightUpdatesRef.current.add(task.id));
+  idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
 
   try {
-    // If the task to delete is virtual, it doesn't exist in the DB, so we just remove it from the cache.
-    // If it's a real task, proceed with DB deletion.
-    if (!isVirtualId(taskId)) {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .or(`id.eq.${taskId},parent_task_id.eq.${taskId}`)
-        .eq('user_id', userId);
+    // Delete from 'tasks' table
+    const { error: tasksError } = await supabase
+      .from('tasks')
+      .delete()
+      .in('id', idsToDelete)
+      .eq('user_id', userId); // Ensure RLS is respected
 
-      if (error) throw error;
+    if (tasksError) throw tasksError;
+
+    // If it was a recurring series, also delete from 'recurring_task_completion_log'
+    if (originalTaskIdToDelete) {
+      const { error: recurringLogError } = await supabase
+        .from('recurring_task_completion_log')
+        .delete()
+        .eq('user_id', userId)
+        .eq('original_task_id', originalTaskIdToDelete);
+      
+      if (recurringLogError) {
+        console.warn('Failed to delete recurring task completion logs:', recurringLogError.message);
+        // Don't throw, as task deletion is more critical
+      }
     }
 
-    showSuccess('Task deleted successfully!');
-    tasksToDelete.forEach((task: Task) => context.cancelReminder(task.id));
+    showSuccess('Task(s) deleted successfully!');
+    idsToDelete.forEach(id => context.cancelReminder(id)); // Cancel reminders for all deleted tasks
     return true;
   } catch (error: any) {
-    showError('Failed to delete task.');
-    console.error('Error deleting task:', error.message);
+    showError('Failed to delete task(s).');
+    console.error('Error deleting task(s):', error.message);
     // Revert optimistic update
-    queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) => [...(old || []), ...previousTasks]);
+    queryClient.setQueryData(['tasks', userId], previousTasks);
     return false;
   } finally {
-    tasksToDelete.forEach((task: Task) => inFlightUpdatesRef.current.delete(task.id));
+    idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
   }
 };
