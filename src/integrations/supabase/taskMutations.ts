@@ -10,7 +10,8 @@ const isVirtualId = (id: string) => id.startsWith('virtual-');
 const prepareTaskForDb = (task: Partial<Task>): Partial<Task> => {
   const prepared = { ...task };
   // Ensure non-nullable fields have defaults if they are being inserted/updated
-  if (prepared.description === undefined) prepared.description = '';
+  // IMPORTANT: Do NOT set description to '' if it's undefined, as this clears it on status updates.
+  // The description should only be updated if explicitly provided.
   if (prepared.status === undefined) prepared.status = 'to-do';
   if (prepared.recurring_type === undefined) prepared.recurring_type = 'none';
   if (prepared.priority === undefined) prepared.priority = 'medium';
