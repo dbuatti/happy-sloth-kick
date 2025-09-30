@@ -1,11 +1,11 @@
-import React, { SetStateAction } from 'react';
+import React, { SetStateAction, useState } from 'react'; // Import useState
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
 import { Button } from '@/components/ui/button';
-import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus } from 'lucide-react';
+import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import QuickAddTask from '@/components/QuickAddTask';
 import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
+import ConfirmationDialog from './ConfirmationDialog'; // Import ConfirmationDialog
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -49,7 +50,7 @@ interface DailyTasksHeaderProps {
   setIsManageSectionsOpen: React.Dispatch<SetStateAction<boolean>>;
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
-  markAllTasksAsCompleted: () => Promise<void>;
+  markAllTasksAsCompleted: () => Promise<void>; // Keep this prop
   onOpenAddTaskDialog?: () => void;
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
   // New props for bulk selection
@@ -83,13 +84,15 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setIsManageSectionsOpen,
   isFilterPanelOpen,
   toggleFilterPanel,
-  markAllTasksAsCompleted,
+  markAllTasksAsCompleted, // Destructure this prop
   onOpenAddTaskDialog,
   handleAddTask,
   selectedCount,
   isSelectAllChecked,
   onToggleSelectAll,
 }) => {
+  const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false); // State for confirmation dialog
+
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
       <div className="flex items-center justify-between pt-4 pb-3">
@@ -148,6 +151,12 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               <DropdownMenuItem onClick={onToggleAllSections}>
                 <ChevronsDownUp className="mr-2 h-4 w-4" /> Toggle All Sections
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setIsConfirmMarkAllDoneOpen(true)} // Open confirmation dialog
+                disabled={isDemo || dailyProgress.totalPendingCount === 0}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" /> Mark All Pending as Completed
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -189,7 +198,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isDemo={isDemo}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
         toggleAllDoToday={toggleAllDoToday}
-        markAllTasksAsCompleted={markAllTasksAsCompleted}
+        // Removed markAllTasksAsCompleted prop
       />
 
       <ManageCategoriesDialog
@@ -208,6 +217,19 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
+
+      <ConfirmationDialog
+        isOpen={isConfirmMarkAllDoneOpen}
+        onClose={() => setIsConfirmMarkAllDoneOpen(false)}
+        onConfirm={() => {
+          markAllTasksAsCompleted();
+          setIsConfirmMarkAllDoneOpen(false);
+        }}
+        title="Confirm Mark All Pending as Completed"
+        description="Are you sure you want to mark all pending tasks as completed for today? This action cannot be undone easily."
+        confirmText="Mark All Done"
+        confirmVariant="default"
       />
     </div>
   );

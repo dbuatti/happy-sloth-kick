@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react'; // Import useState
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -9,7 +9,7 @@ import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import ConfirmationDialog from './ConfirmationDialog'; // Import the new dialog
+
 
 interface DailyOverviewCardProps {
   dailyProgress: {
@@ -25,7 +25,7 @@ interface DailyOverviewCardProps {
   isDemo?: boolean;
   archiveAllCompletedTasks: () => Promise<void>; // New prop
   toggleAllDoToday: () => Promise<void>; // New prop
-  markAllTasksAsCompleted: () => Promise<void>; // New prop (for all pending tasks)
+  // Removed markAllTasksAsCompleted prop
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -38,9 +38,9 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   isDemo,
   archiveAllCompletedTasks,
   toggleAllDoToday,
-  markAllTasksAsCompleted,
+  // Removed markAllTasksAsCompleted from destructuring
 }) => {
-  const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false); // State for confirmation dialog
+  // Removed isConfirmMarkAllDoneOpen state
 
   const progressPercentage = dailyProgress.totalPendingCount === 0
     ? 100
@@ -231,16 +231,8 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
           <p className="text-center text-muted-foreground mt-4">No tasks currently in focus. Great job!</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsConfirmMarkAllDoneOpen(true)} // Open confirmation dialog
-            disabled={isDemo || dailyProgress.totalPendingCount === 0}
-            className="flex items-center justify-center"
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" /> Mark All Done
-          </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4"> {/* Adjusted grid to 2 columns */}
+          {/* Removed Mark All Done button */}
           <Button
             variant="outline"
             size="sm"
@@ -262,18 +254,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
         </div>
       </CardContent>
 
-      <ConfirmationDialog
-        isOpen={isConfirmMarkAllDoneOpen}
-        onClose={() => setIsConfirmMarkAllDoneOpen(false)}
-        onConfirm={() => {
-          markAllTasksAsCompleted();
-          setIsConfirmMarkAllDoneOpen(false);
-        }}
-        title="Confirm Mark All Done"
-        description="Are you sure you want to mark all pending tasks as completed for today? This action cannot be undone easily."
-        confirmText="Mark All Done"
-        confirmVariant="default"
-      />
+      {/* Removed ConfirmationDialog */}
     </Card>
   );
 };
