@@ -13,6 +13,7 @@ import DailyBriefingCard from '@/components/DailyBriefingCard';
 import { getDailyBriefing } from '@/integrations/supabase/api';
 import { useQuery } from '@tanstack/react-query';
 import AddTaskDialog from '@/components/AddTaskDialog'; // Import the new dialog
+import { showSuccess } from '@/utils/toast'; // Import showSuccess
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -216,6 +217,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       .map(task => task.id);
     if (pendingTaskIds.length > 0) {
       await bulkUpdateTasks({ status: 'completed' }, pendingTaskIds);
+      showSuccess('All pending tasks marked as completed!'); // Added success toast
     }
   }, [processedTasks, bulkUpdateTasks]);
 
