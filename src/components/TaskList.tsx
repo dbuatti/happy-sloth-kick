@@ -15,7 +15,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-// import { cn } => '@/lib/utils'; // Removed cn import
+// import { cn } from '@/lib/utils'; // Removed cn import
 
 interface TaskListProps {
   processedTasks: Task[];
