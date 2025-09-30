@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image } from 'lucide-react';
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image, PlusCircle } from 'lucide-react'; // Added PlusCircle
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -49,6 +49,7 @@ export interface TaskItemProps {
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
+  onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -73,6 +74,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   listeners,
   isSelected,
   onSelectTask,
+  onAddSubtask, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -434,6 +436,9 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onSelect={() => onOpenOverview(task)}>
               <Edit className="mr-2 h-4 w-4" /> View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => onAddSubtask(task.id, task.section_id)}> {/* Added Add Subtask */}
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Subtask
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setFocusTask(task.id)}>
               <Target className="mr-2 h-4 w-4" /> Set as Focus

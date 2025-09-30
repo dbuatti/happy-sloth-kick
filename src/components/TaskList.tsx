@@ -257,6 +257,7 @@ const TaskList: React.FC<TaskListProps> = ({
                       scheduledTasksMap={scheduledTasksMap} // Pass scheduledTasksMap
                       insertionIndicator={insertionIndicator} // Pass insertion indicator
                       isSelected={selectedTaskIds.has(task.id)} // Pass isSelected
+                      onAddSubtask={onOpenAddTaskDialog} {/* Pass the function here */}
                     />
                   ))}
                 </ul>
