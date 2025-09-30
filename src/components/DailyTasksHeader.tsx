@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
-import QuickAddTask from './QuickAddTask';
+// Removed: import QuickAddTask from './QuickAddTask';
 import { Checkbox } from '@/components/ui/checkbox';
 import DailyBriefingCard from './DailyBriefingCard'; // Import DailyBriefingCard
 
@@ -51,8 +51,8 @@ interface DailyTasksHeaderProps {
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  onOpenAddTaskDialog?: () => void;
-  handleAddTask: (taskData: NewTaskData) => Promise<any>;
+  onOpenAddTaskDialog?: (parentTaskId: string | null, sectionId: string | null) => void; // Updated prop signature
+  // Removed: handleAddTask: (taskData: NewTaskData) => Promise<any>;
   selectedCount: number;
   isSelectAllChecked: boolean;
   onSelectAll: () => void;
@@ -87,15 +87,14 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   isFilterPanelOpen,
   toggleFilterPanel,
   markAllTasksAsCompleted,
-  onOpenAddTaskDialog,
-  handleAddTask,
+  onOpenAddTaskDialog, // Destructure new prop
   selectedCount,
   isSelectAllChecked,
   onSelectAll,
   filteredTasks,
-  dailyBriefing, // Destructure new prop
-  isBriefingLoading, // Destructure new prop
-  isBriefingError, // Destructure new prop
+  dailyBriefing,
+  isBriefingLoading,
+  isBriefingError,
 }) => {
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -134,7 +133,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={onOpenAddTaskDialog}
+              onClick={() => onOpenAddTaskDialog(null, null)} // Call with null for global add
               className="flex items-center gap-2"
               disabled={isDemo}
             >
@@ -176,8 +175,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
       <Separator className="my-4" />
 
-      {/* Global Quick Add Task */}
-      <QuickAddTask
+      {/* Global Quick Add Task removed from here */}
+      {/* <QuickAddTask
         onAddTask={handleAddTask}
         defaultCategoryId={allCategories[0]?.id || ''}
         isDemo={isDemo}
@@ -189,8 +188,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
-
-      <Separator className="my-4" />
+      <Separator className="my-4" /> */}
 
       {/* Daily Briefing Card */}
       <DailyBriefingCard

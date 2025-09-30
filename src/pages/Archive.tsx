@@ -58,8 +58,8 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         isFilterPanelOpen={false}
         toggleFilterPanel={() => {}}
         markAllTasksAsCompleted={dummyAsyncFunc}
-        onOpenAddTaskDialog={() => {}}
-        handleAddTask={handleAddTask}
+        onOpenAddTaskDialog={() => {}} // Pass dummy function for consistency
+        // Removed: handleAddTask={handleAddTask}
         selectedCount={0} // Dummy value for selectedCount
         isSelectAllChecked={false} // Dummy value for isSelectAllChecked
         onSelectAll={() => {}} // Dummy function for onSelectAll
