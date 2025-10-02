@@ -11,7 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogDescription, // Added DialogDescription
   DialogFooter
 } from '@/components/ui/dialog';
 import { ListTodo } from 'lucide-react'; // Corrected import syntax
@@ -410,7 +410,7 @@ const TaskList: React.FC<TaskListProps> = ({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Section</DialogTitle>
-            <DialogDescription>Enter a name for your new task section.</DialogDescription>
+            <DialogDescription>Enter a name for your new task section.</DialogDescription> {/* Added DialogDescription */}
           </DialogHeader>
           <Input
             placeholder="Section Name"

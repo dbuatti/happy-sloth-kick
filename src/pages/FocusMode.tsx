@@ -1,10 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
-// Removed: import { useAllAppointments } from '@/hooks/useAllAppointments'; // Unused import
 import FocusPanel from '@/components/FocusPanel';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-// Removed: import { Appointment } from '@/hooks/useAppointments'; // Unused import
 
 interface FocusModeProps {
   isDemo?: boolean;
@@ -47,8 +45,6 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     userId: userId,
   });
 
-  // Removed: const { appointments: allAppointments } = useAllAppointments(); // Unused variable
-
   const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
@@ -76,7 +72,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={handleToggleAllDoToday} // Use the wrapper function
+        toggleAllDoToday={handleToggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
         isDemo={isDemo}
         createCategory={createCategory}
@@ -102,6 +98,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onOpenOverview={handleOpenOverview}
         />
       )}
     </div>
