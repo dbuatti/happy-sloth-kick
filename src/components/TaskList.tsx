@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import SortableTaskItem from '@/components/SortableTaskItem';
 import { Task, TaskSection } from '@/hooks/useTasks';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext, DragOverEvent } from '@dnd-kit/core'; // Removed DragStartEvent
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, UniqueIdentifier, SensorContext, DragOverEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronDown, ChevronUp } from 'lucide-react'; // Added ChevronDown, ChevronUp
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { ListTodo } from 'lucide-react'; // Import ListTodo for empty state icon
+import { ListTodo } from 'lucide-react'; // Corrected import syntax
 
 
 interface TaskListProps {
@@ -390,9 +390,9 @@ const TaskList: React.FC<TaskListProps> = ({
               ) : (
                 <div className="p-6 text-center text-muted-foreground flex flex-col items-center justify-center">
                   <ListTodo className="h-10 w-10 mb-3 text-primary/40" />
-                  <p className="text-md font-medium mb-2">No tasks here!</p>
+                  <p className="text-md font-medium mb-2">No tasks in this section!</p>
                   <p className="text-sm max-w-xs">
-                    This section is empty. Click "Add Task" above to get started.
+                    Click "Add Task" above to add a new task to {section ? `"${section.name}"` : "this unsectioned area"}.
                   </p>
                 </div>
               )
