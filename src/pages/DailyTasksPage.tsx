@@ -180,6 +180,11 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
 
+  const handleBulkChangeSection = useCallback(async (sectionId: string | null) => {
+    await bulkUpdateTasks({ section_id: sectionId }, Array.from(selectedTaskIds));
+    handleClearSelection();
+  }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
+
   const toggleFilterPanel = useCallback(() => {
     setIsFilterPanelOpen(prev => !prev);
   }, []);
@@ -326,6 +331,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onArchive={handleBulkArchive}
           onDelete={handleBulkDelete}
           onChangePriority={handleBulkChangePriority}
+          onBulkChangeSection={handleBulkChangeSection} // Pass new handler
+          sections={sections} // Pass sections
         />
       )}
 

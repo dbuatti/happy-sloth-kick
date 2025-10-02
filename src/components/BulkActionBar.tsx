@@ -8,10 +8,12 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CheckCircle2, Archive, Trash2, XCircle, ChevronDown, ArrowUp, ArrowRight, ArrowDown } from 'lucide-react';
-import { Task } from '@/hooks/useTasks';
-import { cn } from '@/lib/utils';
+import { Archive, CheckCircle2, Trash2, XCircle, ChevronDown, FolderOpen } from 'lucide-react';
+import { Task, TaskSection } from '@/hooks/useTasks'; // Import TaskSection
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -20,6 +22,8 @@ interface BulkActionBarProps {
   onArchive: () => Promise<void>;
   onDelete: () => Promise<void>;
   onChangePriority: (priority: Task['priority']) => Promise<void>;
+  onBulkChangeSection: (sectionId: string | null) => Promise<void>; // New prop
+  sections: TaskSection[]; // New prop
 }
 
 const BulkActionBar: React.FC<BulkActionBarProps> = ({
@@ -29,58 +33,60 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
   onArchive,
   onDelete,
   onChangePriority,
+  onBulkChangeSection, // Destructure new prop
+  sections, // Destructure new prop
 }) => {
-  if (selectedCount === 0) return null;
-
   return (
-    <div className={cn(
-      "fixed bottom-0 left-0 right-0 z-50",
-      "bg-background border-t border-border shadow-lg",
-      "flex items-center justify-between p-3 sm:p-4"
-    )}>
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={onClearSelection} className="text-muted-foreground hover:text-foreground">
-          <XCircle className="h-4 w-4 mr-2" />
-          Clear ({selectedCount})
-        </Button>
-        <span className="text-sm text-muted-foreground hidden sm:inline">
-          {selectedCount} task{selectedCount > 1 ? 's' : ''} selected
-        </span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={onComplete}>
-          <CheckCircle2 className="h-4 w-4 mr-2" /> Complete
-        </Button>
-        <Button variant="secondary" size="sm" onClick={onArchive}>
-          <Archive className="h-4 w-4 mr-2" /> Archive
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="sm">
-              <ChevronDown className="h-4 w-4 mr-2" /> More
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => onChangePriority('urgent')}>
-              <ArrowUp className="mr-2 h-4 w-4 text-priority-urgent" /> Urgent
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onChangePriority('high')}>
-              <ArrowUp className="mr-2 h-4 w-4 text-priority-high" /> High
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onChangePriority('medium')}>
-              <ArrowRight className="mr-2 h-4 w-4 text-priority-medium" /> Medium
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onChangePriority('low')}>
-              <ArrowDown className="mr-2 h-4 w-4 text-priority-low" /> Low
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-card p-3 rounded-full shadow-2xl border border-border flex items-center gap-2 z-50">
+      <Button variant="ghost" size="sm" onClick={onClearSelection} className="rounded-full px-3">
+        <XCircle className="h-4 w-4 mr-1" /> Clear ({selectedCount})
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="secondary" size="sm" className="rounded-full px-3">
+            Actions <ChevronDown className="ml-1 h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-56">
+          <DropdownMenuItem onClick={onComplete}>
+            <CheckCircle2 className="mr-2 h-4 w-4" /> Mark Completed
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onArchive}>
+            <Archive className="mr-2 h-4 w-4" /> Archive
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <FolderOpen className="mr-2 h-4 w-4" /> Move to Section
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onClick={() => onBulkChangeSection(null)}>
+                No Section
+              </DropdownMenuItem>
+              {sections.map(section => (
+                <DropdownMenuItem key={section.id} onClick={() => onBulkChangeSection(section.id)}>
+                  {section.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <ChevronDown className="mr-2 h-4 w-4" /> Change Priority
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onClick={() => onChangePriority('urgent')}>Urgent</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangePriority('high')}>High</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangePriority('medium')}>Medium</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onChangePriority('low')}>Low</DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+            <Trash2 className="mr-2 h-4 w-4" /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 };
