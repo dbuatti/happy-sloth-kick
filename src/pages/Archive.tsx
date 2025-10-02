@@ -64,9 +64,8 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         selectedCount={0}
         isSelectAllChecked={false}
         onToggleSelectAll={dummyAsyncFunc}
-        markAllTasksAsSkipped={dummyAsyncFunc}
+        // Removed markAllTasksAsSkipped as it's not relevant for archive page
       />
-      {/* Fixed: Added markAllTasksAsSkipped prop */}
       {/* Content specific to the Archive page */}
       <div className="p-4">
         <h2 className="text-2xl font-bold mb-4">Archived Tasks</h2>

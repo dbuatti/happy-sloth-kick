@@ -2,7 +2,7 @@ import React, { SetStateAction, useState } from 'react';
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
-import ManageSectionsDialog from './ManageSectionsDialog';
+import ManageSectionsDialog from './ManageSectionsDialog'; // Corrected import path
 import DailyOverviewCard from './DailyOverviewCard';
 import { Button } from '@/components/ui/button';
 import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus, CheckCircle2, XSquare } from 'lucide-react';
@@ -51,7 +51,7 @@ interface DailyTasksHeaderProps {
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  markAllTasksAsSkipped: () => Promise<void>;
+  markAllTasksAsSkipped?: () => Promise<void>;
   onOpenAddTaskDialog?: () => void;
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
   selectedCount: number;
@@ -159,12 +159,14 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" /> Mark All Pending as Completed
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setIsConfirmMarkAllSkippedOpen(true)}
-                disabled={isDemo || dailyProgress.totalPendingCount === 0}
-              >
-                <XSquare className="h-4 w-4 mr-2" /> Mark All Pending as Skipped
-              </DropdownMenuItem>
+              {markAllTasksAsSkipped && (
+                <DropdownMenuItem
+                  onClick={() => setIsConfirmMarkAllSkippedOpen(true)}
+                  disabled={isDemo || dailyProgress.totalPendingCount === 0}
+                >
+                  <XSquare className="h-4 w-4 mr-2" /> Mark All Pending as Skipped
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -242,7 +244,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isOpen={isConfirmMarkAllSkippedOpen}
         onClose={() => setIsConfirmMarkAllSkippedOpen(false)}
         onConfirm={() => {
-          markAllTasksAsSkipped();
+          markAllTasksAsSkipped?.();
           setIsConfirmMarkAllSkippedOpen(false);
         }}
         title="Confirm Mark All Pending as Skipped"

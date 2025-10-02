@@ -207,10 +207,17 @@ const TaskItem: React.FC<TaskItemProps> = ({
       onClick={() => !isOverlay && !isEditing && onOpenOverview(task)} // Make entire item clickable
     >
       {/* Priority Pill */}
-      <div className={cn(
-        "absolute left-0 top-0 h-full w-1.5 rounded-l-xl",
-        getPriorityDotColor(task.priority)
-      )} />
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={cn(
+            "absolute left-0 top-0 h-full w-1.5 rounded-l-xl",
+            getPriorityDotColor(task.priority)
+          )} />
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Priority: {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</p>
+        </TooltipContent>
+      </Tooltip>
 
       {showDragHandle && (
         <Button

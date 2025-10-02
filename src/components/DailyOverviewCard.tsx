@@ -219,7 +219,14 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button variant="secondary" size="sm" onClick={handleMarkDone} disabled={isDemo}>Done</Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="secondary" size="sm" onClick={handleMarkDone} disabled={isDemo}>Done</Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark this task as completed</p>
+                </TooltipContent>
+              </Tooltip>
               <Button variant="outline" size="sm" onClick={handleDetailsClick} disabled={isDemo}>Details</Button>
             </div>
           </div>
