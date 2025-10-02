@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
-// Removed: import { useAllAppointments } from '@/hooks/useAllAppointments';
+// Removed: import { useAllAppointments } from '@/hooks/useAllAppointments'; // Unused import
 import FocusPanel from '@/components/FocusPanel';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-// Removed: import { Appointment } from '@/hooks/useAppointments';
+// Removed: import { Appointment } from '@/hooks/useAppointments'; // Unused import
 
 interface FocusModeProps {
   isDemo?: boolean;
@@ -44,17 +44,17 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     userId: userId,
   });
 
-  // Removed: const { appointments: allAppointments } = useAllAppointments();
+  // Removed: const { appointments: allAppointments } = useAllAppointments(); // Unused variable
 
   const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
-  // Wrapper function for toggleAllDoToday to match FocusPanelProps
+  // Wrapper function for toggleAllDoToday to match expected signature
   const handleToggleAllDoToday = useCallback(async () => {
-    await toggleAllDoTodayFromHook(filteredTasks);
-  }, [toggleAllDoTodayFromHook, filteredTasks]);
+    await toggleAllDoTodayFromHook(); // Call without arguments
+  }, [toggleAllDoTodayFromHook]);
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -93,6 +93,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
           onAddSubtask={() => {}} // FocusMode doesn't directly add subtasks from here
+          createCategory={async () => null} // Dummy for FocusMode
+          updateCategory={async () => false} // Dummy for FocusMode
+          deleteCategory={async () => false} // Dummy for FocusMode
         />
       )}
     </div>

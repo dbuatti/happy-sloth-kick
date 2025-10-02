@@ -740,11 +740,16 @@ export const toggleDoTodayMutation = async (task: Task, currentDate: Date, doTod
   }
 };
 
-export const toggleAllDoTodayMutation = async (filteredTasks: Task[], currentDate: Date, doTodayOffIds: Set<string>, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
+export const toggleAllDoTodayMutation = async (context: MutationContext) => { // Removed filteredTasks argument
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks, currentDate, doTodayOffIds } = context;
   const formattedDate = format(currentDate, 'yyyy-MM-dd');
 
-  const nonRecurringTopLevelTasks = filteredTasks.filter(t => t.recurring_type === 'none' && t.parent_task_id === null);
+  // Filter tasks based on the same logic as `dailyProgress` or `filteredTasks` in the UI
+  const nonRecurringTopLevelTasks = processedTasks.filter(t => 
+    t.recurring_type === 'none' && 
+    t.parent_task_id === null &&
+    t.status === 'to-do' // Only consider to-do tasks for toggling
+  );
   const allOriginalTaskIds = new Set(nonRecurringTopLevelTasks.map(t => t.original_task_id || t.id));
 
   const tasksToTurnOff = Array.from(allOriginalTaskIds).filter(id => !doTodayOffIds.has(id));
@@ -835,7 +840,7 @@ export const markAllTasksAsSkippedMutation = async (context: MutationContext) =>
       (old || []).map(task => (taskIdsToSkip.includes(task.id) ? { ...task, status: 'to-do' } : task))
     );
   } finally {
-    taskIdsToSkip.forEach((id: string) => inFlightUpdatesRef.current.delete(id));
+    taskIdsToSkip.forEach(id => inFlightUpdatesRef.current.delete(id));
     invalidateTasksQueries();
   }
 };

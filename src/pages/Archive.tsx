@@ -20,6 +20,10 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
   // Dummy functions/values for other required props of DailyTasksHeader
   const dummyAsyncFunc = useCallback(async () => {}, []);
   const dummySetState = useCallback(() => {}, []);
+  const dummyCreateCategory = useCallback(async (name: string, color: string) => { console.log('Dummy create category', name, color); return null; }, []);
+  const dummyUpdateCategory = useCallback(async (categoryId: string, updates: any) => { console.log('Dummy update category', categoryId, updates); return false; }, []);
+  const dummyDeleteCategory = useCallback(async (categoryId: string) => { console.log('Dummy delete category', categoryId); return false; }, []);
+
 
   const dummyDailyProgress = {
     totalPendingCount: 0,
@@ -41,6 +45,9 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         updateSection={dummyAsyncFunc}
         deleteSection={dummyAsyncFunc}
         updateSectionIncludeInFocusMode={dummyAsyncFunc}
+        createCategory={dummyCreateCategory}
+        updateCategory={dummyUpdateCategory}
+        deleteCategory={dummyDeleteCategory}
         archiveAllCompletedTasks={dummyAsyncFunc}
         toggleAllDoToday={dummyAsyncFunc}
         dailyProgress={dummyDailyProgress}

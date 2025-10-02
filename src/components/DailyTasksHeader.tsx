@@ -1,4 +1,4 @@
-import React, { SetStateAction, useState } from 'react';
+import React, { SetStateAction, useState, useCallback } from 'react';
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
@@ -30,11 +30,11 @@ interface DailyTasksHeaderProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  createCategory: (name: string, color: string) => Promise<string | null>; // Added
-  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
-  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
+  createCategory: (name: string, color: string) => Promise<string | null>;
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>;
+  deleteCategory: (categoryId: string) => Promise<boolean>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>;
+  toggleAllDoToday: () => Promise<void>; // Updated signature
   dailyProgress: {
     totalPendingCount: number;
     completedCount: number;
@@ -71,11 +71,11 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  createCategory, // Destructure new category functions
-  updateCategory, // Destructure new category functions
-  deleteCategory, // Destructure new category functions
+  createCategory,
+  updateCategory,
+  deleteCategory,
   archiveAllCompletedTasks,
-  toggleAllDoToday,
+  toggleAllDoToday, // Destructure updated toggleAllDoToday
   dailyProgress,
   isDemo = false,
   nextAvailableTask,
@@ -109,7 +109,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   // Wrapper for updateSection to match ManageSectionsDialogProps
   const updateSectionForDialog = useCallback(async (id: string, newName: string) => {
     const originalSection = sections.find(s => s.id === id);
-    await updateSection(id, newName); // Assuming updateSection handles include_in_focus_mode internally or it's not needed here
+    await updateSection(id, newName, originalSection?.include_in_focus_mode ?? true); // Use originalSection
   }, [updateSection, sections]);
 
   return (

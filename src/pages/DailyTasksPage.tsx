@@ -68,7 +68,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     toggleAllDoToday: toggleAllDoTodayFromHook,
     dailyProgress,
     markAllTasksAsSkipped,
-    createCategory, // Destructure new category functions
+    createCategory,
     updateCategory,
     deleteCategory,
   } = useTasks({
@@ -257,8 +257,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [processedTasks, bulkUpdateTasks]);
 
   const handleToggleAllDoToday = useCallback(async () => {
-    await toggleAllDoTodayFromHook(filteredTasks);
-  }, [toggleAllDoTodayFromHook, filteredTasks]);
+    await toggleAllDoTodayFromHook(); // Call without arguments
+  }, [toggleAllDoTodayFromHook]);
 
   return (
     <div className="flex flex-col h-full w-full">

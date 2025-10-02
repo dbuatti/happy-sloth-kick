@@ -1,11 +1,12 @@
-"use client";
-
-import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import React, { useCallback } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import TaskForm from './TaskForm';
-import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
-import { useIsMobile } from '@/hooks/use-mobile'; // Assuming useIsMobile is available
+import { Category, NewTaskData, TaskSection, Task } from '@/hooks/useTasks';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
@@ -13,15 +14,17 @@ interface AddTaskDialogProps {
   onSave: (taskData: NewTaskData) => Promise<any>;
   sections: TaskSection[];
   allCategories: Category[];
-  preselectedSectionId?: string | null;
-  preselectedParentTaskId?: string | null; // New prop
-  parentTaskId?: string | null; // Keep existing for TaskForm compatibility if needed, but preselectedParentTaskId will override
   currentDate: Date;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  allTasks: Task[]; // Pass allTasks for parent task context
+  allTasks: Task[];
+  preselectedParentTaskId?: string | null;
+  preselectedSectionId?: string | null;
+  createCategory: (name: string, color: string) => Promise<string | null>; // Added
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
+  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
 }
 
 const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
@@ -30,60 +33,54 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
   onSave,
   sections,
   allCategories,
-  preselectedSectionId,
-  preselectedParentTaskId, // Destructure new prop
-  parentTaskId, // Keep existing
   currentDate,
   createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
   allTasks,
+  preselectedParentTaskId,
+  preselectedSectionId,
+  createCategory, // Destructure
+  updateCategory, // Destructure
+  deleteCategory, // Destructure
 }) => {
-  const isMobile = useIsMobile();
+  const handleSave = useCallback(async (taskData: NewTaskData) => {
+    const success = await onSave(taskData);
+    if (success) {
+      onClose();
+    }
+    return success;
+  }, [onSave, onClose]);
 
   const content = (
     <TaskForm
-      onSave={onSave}
+      onSave={handleSave}
       onCancel={onClose}
       sections={sections}
       allCategories={allCategories}
       autoFocus={true}
-      preselectedSectionId={preselectedSectionId}
-      parentTaskId={preselectedParentTaskId ?? parentTaskId} // Use preselectedParentTaskId if available
       currentDate={currentDate}
       createSection={createSection}
       updateSection={updateSection}
       deleteSection={deleteSection}
       updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       allTasks={allTasks}
+      preselectedParentTaskId={preselectedParentTaskId}
+      preselectedSectionId={preselectedSectionId}
+      createCategory={createCategory} // Pass through
+      updateCategory={updateCategory} // Pass through
+      deleteCategory={deleteCategory} // Pass through
     />
   );
 
-  if (isMobile) {
-    return (
-      <Drawer open={isOpen} onOpenChange={onClose}>
-        <DrawerContent className="h-[90vh] flex flex-col">
-          <DrawerHeader className="text-left">
-            <DrawerTitle>Add New Task</DrawerTitle>
-          </DrawerHeader>
-          <div className="flex-1 overflow-y-auto px-4">
-            {content}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Task</DialogTitle>
+          <DialogTitle>{preselectedParentTaskId ? "Add Subtask" : "Add New Task"}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto">
-          {content}
-        </div>
+        {content}
       </DialogContent>
     </Dialog>
   );

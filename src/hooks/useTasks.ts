@@ -32,7 +32,7 @@ import {
   createCategoryMutation,
   updateCategoryMutation,
   deleteCategoryMutation,
-} from '@/integrations/supabase/categoryMutations'; // Import new category mutations
+} from '@/integrations/supabase/categoryMutations';
 import { useTaskProcessing } from './useTaskProcessing';
 import { useAuth } from '@/context/AuthContext';
 import { useReminders } from '@/context/ReminderContext';
@@ -111,6 +111,7 @@ export interface MutationContext {
   scheduleReminder: (id: string, message: string, date: Date) => void;
   cancelReminder: (id: string) => void;
   currentDate: Date;
+  doTodayOffIds: Set<string>; // Added for toggleAllDoTodayMutation
 }
 
 interface UseTasksProps {
@@ -317,7 +318,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     scheduleReminder,
     cancelReminder,
     currentDate: effectiveCurrentDate,
-  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, rawTasks, sections, scheduleReminder, cancelReminder, effectiveCurrentDate]);
+    doTodayOffIds, // Pass doTodayOffIds to context
+  }), [userId, queryClient, inFlightUpdatesRef, categoriesMap, invalidateTasksQueries, invalidateSectionsQueries, invalidateCategoriesQueries, processedTasks, rawTasks, sections, scheduleReminder, cancelReminder, effectiveCurrentDate, doTodayOffIds]);
 
   const handleAddTask = useCallback(async (newTaskData: NewTaskData) => {
     if (!userId) { showError('User not authenticated.'); return false; }
@@ -478,10 +480,10 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     return toggleDoTodayMutation(task, effectiveCurrentDate, doTodayOffIds, mutationContext);
   }, [userId, effectiveCurrentDate, doTodayOffIds, mutationContext]);
 
-  const toggleAllDoToday = useCallback(async (filteredTasks: Task[]) => {
+  const toggleAllDoToday = useCallback(async () => { // Removed filteredTasks argument
     if (!userId) { showError('User not authenticated.'); return; }
-    return toggleAllDoTodayMutation(filteredTasks, effectiveCurrentDate, doTodayOffIds, mutationContext);
-  }, [userId, effectiveCurrentDate, doTodayOffIds, mutationContext]);
+    return toggleAllDoTodayMutation(mutationContext);
+  }, [userId, mutationContext]);
 
   const dailyProgress = useMemo(() => {
     if (viewMode !== 'daily') {
@@ -598,7 +600,7 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     toggleAllDoToday,
     dailyProgress,
     markAllTasksAsSkipped,
-    createCategory, // Expose new category functions
+    createCategory,
     updateCategory,
     deleteCategory,
   };

@@ -92,6 +92,9 @@ interface TaskFormProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  createCategory: (name: string, color: string) => Promise<string | null>; // Added
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
+  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
   className?: string;
   allTasks?: Task[];
 }
@@ -110,6 +113,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  createCategory, // Destructure new category functions
+  updateCategory, // Destructure new category functions
+  deleteCategory, // Destructure new category functions
   className,
   allTasks,
 }) => {
@@ -390,7 +396,14 @@ const TaskForm: React.FC<TaskFormProps> = ({
           control={control}
           name="category"
           render={({ field }) => (
-            <CategorySelector value={field.value} onChange={field.onChange} categories={allCategories} />
+            <CategorySelector
+              value={field.value}
+              onChange={field.onChange}
+              categories={allCategories}
+              onCategoryCreated={createCategory}
+              onCategoryUpdated={updateCategory}
+              onCategoryDeleted={deleteCategory}
+            />
           )}
         />
         {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
