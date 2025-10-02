@@ -386,7 +386,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       <FocusPanelDrawer
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
-        nextAvailableTask={nextAvailableTask}
         allTasks={processedTasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}

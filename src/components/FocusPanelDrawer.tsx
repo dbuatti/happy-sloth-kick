@@ -19,7 +19,6 @@ import { Separator } from '@/components/ui/separator';
 interface FocusPanelDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  // nextAvailableTask: Task | null; // Removed: declared but never read
   allTasks: Task[];
   filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
@@ -34,13 +33,12 @@ interface FocusPanelDrawerProps {
   toggleDoToday: (task: Task) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
   toggleAllDoToday: (filteredTasks: Task[]) => Promise<void>;
-  markAllTasksAsSkipped: () => Promise<void>;
+  markAllTasksAsSkipped: () => Promise<void>; // New prop
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
   onClose,
-  // nextAvailableTask, // Removed: declared but never read
   allTasks,
   filteredTasks,
   updateTask,
@@ -55,7 +53,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   toggleDoToday,
   archiveAllCompletedTasks,
   toggleAllDoToday: toggleAllDoTodayFromHook,
-  markAllTasksAsSkipped,
+  markAllTasksAsSkipped, // Destructure new prop
 }) => {
   const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
 

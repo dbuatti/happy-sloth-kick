@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import { useAuth } from '@/context/AuthContext';
@@ -7,10 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Target, Plus } from 'lucide-react';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import AddTaskDialog from '@/components/AddTaskDialog';
-import { showSuccess } from '@/utils/toast';
-import { format, parseISO, isSameDay } from 'date-fns';
 import { useAllAppointments } from '@/hooks/useAllAppointments';
-import { Appointment } from '@/hooks/useAppointments';
 
 interface FocusModeProps {
   isDemo?: boolean;
@@ -19,7 +16,7 @@ interface FocusModeProps {
 
 const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const { settings: userSettings } = useSettings();
+  const { settings: userSettings } = useSettings(); // userSettings is used in useTasks hook via context
   const userId = isDemo ? demoUserId : user?.id;
 
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true); // Focus mode starts open
@@ -35,7 +32,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     processedTasks,
     filteredTasks,
     nextAvailableTask,
-    loading: tasksLoading,
+    // loading: tasksLoading, // Removed: declared but never read
     handleAddTask,
     updateTask,
     deleteTask,
@@ -59,15 +56,15 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
 
   const { appointments: allAppointments } = useAllAppointments();
 
-  const scheduledTasksMap = useMemo(() => {
-    const map = new Map<string, Appointment>();
-    allAppointments.forEach((app: Appointment) => {
-      if (app.task_id) {
-        map.set(app.task_id, app);
-      }
-    });
-    return map;
-  }, [allAppointments]);
+  // const scheduledTasksMap = useMemo(() => { // Removed: declared but never read
+  //   const map = new Map<string, Appointment>();
+  //   allAppointments.forEach((app: Appointment) => {
+  //     if (app.task_id) {
+  //       map.set(app.task_id, app);
+  //     }
+  //   });
+  //   return map;
+  // }, [allAppointments]);
 
   const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
@@ -106,7 +103,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
       <FocusPanelDrawer
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
-        nextAvailableTask={nextAvailableTask}
+        // nextAvailableTask={nextAvailableTask} // Removed: not used in FocusPanelDrawer
         allTasks={processedTasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
@@ -119,9 +116,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
         setFocusTask={setFocusTask}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
-        archiveAllCompletedTasks={archiveAllCompletedTasks} // Pass prop
-        toggleAllDoToday={toggleAllDoToday} // Pass prop
-        markAllTasksAsSkipped={markAllTasksAsSkipped} // Pass prop
+        archiveAllCompletedTasks={archiveAllCompletedTasks}
+        toggleAllDoToday={toggleAllDoToday}
+        markAllTasksAsSkipped={markAllTasksAsSkipped}
       />
 
       {taskToOverview && (
