@@ -1,10 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
-import FocusPanel from '@/components/FocusPanel';
+import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import { useAuth } from '@/context/AuthContext';
+// import { useSettings } from '@/context/SettingsContext'; // Removed: unused import
+import { Button } from '@/components/ui/button';
+import { Target, Plus } from 'lucide-react';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { Appointment } from '@/hooks/useAppointments';
+import AddTaskDialog from '@/components/AddTaskDialog';
+// import { useAllAppointments } from '@/hooks/useAllAppointments'; // Removed: not used
 
 interface FocusModeProps {
   isDemo?: boolean;
@@ -13,16 +16,23 @@ interface FocusModeProps {
 
 const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
+  // const { settings: userSettings } = useSettings(); // Removed: declared but never read
   const userId = isDemo ? demoUserId : user?.id;
 
-  const [currentDate] = useState(new Date()); // Focus mode always uses current date
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true); // Focus mode starts open
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
+  const [preselectedSectionIdForSubtask, setPreselectedSectionIdForSubtask] = useState<string | null>(null);
+
+  const currentDate = new Date(); // Focus mode always uses current date
 
   const {
     processedTasks,
     filteredTasks,
-    loading: tasksLoading,
+    // nextAvailableTask, // Removed: declared but never read
+    // loading: tasksLoading, // Removed: declared but never read
     handleAddTask,
     updateTask,
     deleteTask,
@@ -40,26 +50,61 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     markAllTasksAsSkipped,
   } = useTasks({
     currentDate,
+    userId,
     viewMode: 'focus',
-    userId: userId,
   });
 
-  const { appointments: allAppointments } = useAllAppointments();
+  // const { appointments: allAppointments } = useAllAppointments(); // Removed: declared but never read
 
-  // scheduledTasksMap is not directly used in FocusMode, but might be passed to sub-components if needed.
-  // For now, it's removed as it was declared but never read.
+  // const scheduledTasksMap = useMemo(() => { // Removed: declared but never read
+  //   const map = new Map<string, Appointment>();
+  //   allAppointments.forEach((app: Appointment) => {
+  //     if (app.task_id) {
+  //       map.set(app.task_id, app);
+  //     }
+  //   });
+  //   return map;
+  // }, [allAppointments]);
 
   const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
+  const openAddTaskDialog = useCallback((parentTaskId: string | null = null, sectionId: string | null = null) => {
+    setPreselectedParentTaskId(parentTaskId);
+    setPreselectedSectionIdForSubtask(sectionId);
+    setIsAddTaskDialogOpen(true);
+  }, []);
+
+  const closeAddTaskDialog = useCallback(() => {
+    setIsAddTaskDialogOpen(false);
+    setPreselectedParentTaskId(null);
+    setPreselectedSectionIdForSubtask(null);
+  }, []);
+
   return (
-    <div className="flex flex-col h-full w-full">
-      <FocusPanel
+    <div className="flex flex-col items-center justify-center h-full w-full p-4">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <Target className="h-7 w-7 text-primary" /> Focus Mode
+      </h1>
+      <p className="text-muted-foreground mb-8 text-center max-w-md">
+        Stay productive by focusing on one task at a time. Your next available task is highlighted.
+      </p>
+
+      <Button onClick={() => setIsFocusPanelOpen(true)} className="mb-4">
+        <Target className="h-4 w-4 mr-2" /> Open Focus Panel
+      </Button>
+
+      <Button variant="outline" onClick={() => openAddTaskDialog()} disabled={isDemo}>
+        <Plus className="h-4 w-4 mr-2" /> Add New Task
+      </Button>
+
+      <FocusPanelDrawer
+        isOpen={isFocusPanelOpen}
+        onClose={() => setIsFocusPanelOpen(false)}
         allTasks={processedTasks}
         filteredTasks={filteredTasks}
-        loading={tasksLoading}
         updateTask={updateTask}
         onOpenDetail={handleOpenOverview}
         onDeleteTask={deleteTask}
@@ -73,7 +118,6 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
         archiveAllCompletedTasks={archiveAllCompletedTasks}
         toggleAllDoToday={toggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
-        isDemo={isDemo}
       />
 
       {taskToOverview && (
@@ -90,9 +134,25 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
-          onAddSubtask={() => {}} // FocusMode doesn't directly add subtasks from here
+          onAddSubtask={openAddTaskDialog}
         />
       )}
+
+      <AddTaskDialog
+        isOpen={isAddTaskDialogOpen}
+        onClose={closeAddTaskDialog}
+        onSave={handleAddTask}
+        sections={sections}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        allTasks={processedTasks}
+        preselectedParentTaskId={preselectedParentTaskId}
+        preselectedSectionId={preselectedSectionIdForSubtask}
+      />
     </div>
   );
 };
