@@ -3,8 +3,8 @@
 import React, { useState, useCallback } from 'react';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ListTodo, Target, CheckCircle2, XSquare, Archive, ChevronsDownUp, Plus } from 'lucide-react';
+// Removed: import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Target, XSquare, Archive, ChevronsDownUp, Plus } from 'lucide-react'; // Removed ListTodo, CheckCircle2
 import TaskList from './TaskList';
 import AddTaskDialog from './AddTaskDialog';
 import { Separator } from '@/components/ui/separator';

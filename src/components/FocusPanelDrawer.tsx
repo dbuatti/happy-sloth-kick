@@ -2,14 +2,15 @@
 
 import React from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import FocusPanel from './FocusPanel'; // Import the new FocusPanel component
-import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import types
+import FocusPanel from './FocusPanel';
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   allTasks: Task[];
   filteredTasks: Task[];
+  loading: boolean; // Added loading prop
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => Promise<boolean | undefined>;
@@ -29,6 +30,7 @@ interface FocusPanelDrawerProps {
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
   onClose,
+  loading, // Destructure loading
   ...focusPanelProps // Collect all other props to pass to FocusPanel
 }) => {
   return (
@@ -38,7 +40,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
           <DrawerTitle>Focus Mode</DrawerTitle>
         </DrawerHeader>
         <div className="p-4 overflow-y-auto">
-          <FocusPanel {...focusPanelProps} />
+          <FocusPanel {...focusPanelProps} loading={loading} /> {/* Pass loading prop */}
         </div>
       </DrawerContent>
     </Drawer>

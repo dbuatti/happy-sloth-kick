@@ -1,30 +1,37 @@
-import React, { useState, useCallback } from 'react'; // Removed useMemo
-import { format, isSameDay } from 'date-fns';
-import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Plus, Filter, Settings, ChevronDown } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
+import React, { SetStateAction, useState, useCallback } from 'react';
+import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
-import DailyOverviewCard from './DailyOverviewCard';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
+import DailyOverviewCard from './DailyOverviewCard';
+import { Button } from '@/components/ui/button';
+import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus, CheckCircle2, XSquare } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from '@/components/ui/separator';
+import QuickAddTask from '@/components/QuickAddTask';
+import { Checkbox } from '@/components/ui/checkbox';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
-  setCurrentDate: (date: Date) => void;
+  setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
   tasks: Task[];
   filteredTasks: Task[];
   sections: TaskSection[];
   allCategories: Category[];
   userId: string | null;
-  createSection: (name: string, includeInFocusMode: boolean) => Promise<void>;
-  updateSection: (id: string, name: string, includeInFocusMode: boolean) => Promise<void>;
-  deleteSection: (id: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (id: string, includeInFocusMode: boolean) => Promise<void>;
+  createSection: (name: string) => Promise<void>;
+  updateSection: (sectionId: string, newName: string) => Promise<void>;
+  deleteSection: (sectionId: string) => Promise<void>;
+  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: (filteredTasks: Task[]) => Promise<void>;
+  toggleAllDoToday: () => Promise<void>;
   dailyProgress: {
     totalPendingCount: number;
     completedCount: number;
@@ -38,24 +45,23 @@ interface DailyTasksHeaderProps {
   tasksLoading: boolean;
   onToggleAllSections: () => void;
   isManageCategoriesOpen: boolean;
-  setIsManageCategoriesOpen: (isOpen: boolean) => void;
+  setIsManageCategoriesOpen: React.Dispatch<SetStateAction<boolean>>;
   isManageSectionsOpen: boolean;
-  setIsManageSectionsOpen: (isOpen: boolean) => void;
+  setIsManageSectionsOpen: React.Dispatch<SetStateAction<boolean>>;
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
   markAllTasksAsCompleted: () => Promise<void>;
-  onOpenAddTaskDialog: (parentTaskId?: string | null, sectionId?: string | null) => void;
+  markAllTasksAsSkipped?: () => Promise<void>;
+  onOpenAddTaskDialog?: () => void;
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
   selectedCount: number;
   isSelectAllChecked: boolean;
   onToggleSelectAll: () => void;
-  markAllTasksAsSkipped: () => Promise<void>;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   currentDate,
   setCurrentDate,
-  filteredTasks,
   sections,
   allCategories,
   createSection,
@@ -65,7 +71,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   archiveAllCompletedTasks,
   toggleAllDoToday,
   dailyProgress,
-  isDemo,
+  isDemo = false,
   nextAvailableTask,
   updateTask,
   onOpenOverview,
@@ -79,135 +85,127 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   isFilterPanelOpen,
   toggleFilterPanel,
   markAllTasksAsCompleted,
-  onOpenAddTaskDialog,
   markAllTasksAsSkipped,
+  onOpenAddTaskDialog,
+  handleAddTask,
+  selectedCount,
+  isSelectAllChecked,
+  onToggleSelectAll,
 }) => {
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false);
+  const [isConfirmMarkAllSkippedOpen, setIsConfirmMarkAllSkippedOpen] = useState(false);
 
-  const handleDateSelect = useCallback((date: Date | undefined) => {
-    if (date) {
-      setCurrentDate(date);
-      setIsCalendarOpen(false);
-    }
-  }, [setCurrentDate]);
+  const handleCategoryCreated = useCallback(async () => {
+    // This is a dummy function for now, actual logic would be in useTasks or similar hook
+    console.log("Category created (dummy)");
+  }, []);
 
-  const handlePreviousDay = useCallback(() => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() - 1);
-    setCurrentDate(newDate);
-  }, [currentDate, setCurrentDate]);
-
-  const handleNextDay = useCallback(() => {
-    const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + 1);
-    setCurrentDate(newDate);
-  }, [currentDate, setCurrentDate]);
-
-  const handleToday = useCallback(() => {
-    setCurrentDate(new Date());
-  }, [setCurrentDate]);
-
-  const formattedDate = format(currentDate, 'EEEE, MMM d, yyyy');
-  const isToday = isSameDay(currentDate, new Date());
-
-  const handleToggleAllDoToday = useCallback(async () => {
-    await toggleAllDoToday(filteredTasks);
-  }, [toggleAllDoToday, filteredTasks]);
-
-  // Wrapper for createSection to match ManageSectionsDialogProps
-  const createSectionForDialog = useCallback(async (name: string) => {
-    await createSection(name, true); // Default to include in focus mode
-  }, [createSection]);
-
-  // Wrapper for updateSection to match ManageSectionsDialogProps
-  const updateSectionForDialog = useCallback(async (id: string, newName: string) => {
-    // Find the original section to preserve its include_in_focus_mode status
-    const originalSection = sections.find(s => s.id === id);
-    await updateSection(id, newName, originalSection?.include_in_focus_mode ?? true);
-  }, [updateSection, sections]);
-
+  const handleCategoryDeleted = useCallback(async () => {
+    // This is a dummy function for now, actual logic would be in useTasks or similar hook
+    console.log("Category deleted (dummy)");
+  }, []);
 
   return (
-    <div className="bg-card border-b border-border p-4 lg:p-6 sticky top-0 z-40">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+    <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
+      <div className="flex items-center justify-between pt-4 pb-3">
+        <h1 className="text-3xl font-bold tracking-tight">Daily Tasks</h1>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handlePreviousDay} aria-label="Previous day">
-            <ChevronDown className="h-5 w-5 rotate-90" />
-          </Button>
-          <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-[200px] justify-start text-left font-normal",
-                  !currentDate && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {formattedDate}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                selected={currentDate}
-                onSelect={handleDateSelect}
-                initialFocus
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox
+                checked={isSelectAllChecked}
+                onCheckedChange={onToggleSelectAll}
+                aria-label="Select all filtered tasks"
               />
-            </PopoverContent>
-          </Popover>
-          <Button variant="ghost" size="icon" onClick={handleNextDay} aria-label="Next day">
-            <ChevronDown className="h-5 w-5 -rotate-90" />
-          </Button>
-          {!isToday && (
-            <Button variant="outline" size="sm" onClick={handleToday}>
-              Today
-            </Button>
+              <span>{selectedCount} selected</span>
+            </div>
           )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => onOpenAddTaskDialog()} disabled={isDemo}>
-            <Plus className="h-4 w-4 mr-2" /> Add Task
-          </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={toggleFilterPanel}
-            className={cn(isFilterPanelOpen && "bg-accent text-accent-foreground")}
+            className="flex items-center gap-2"
+            aria-expanded={isFilterPanelOpen}
+            aria-controls="filter-panel"
           >
-            <Filter className="h-4 w-4 mr-2" /> Filter
+            <FilterIcon className="h-4 w-4" />
+            Filters
           </Button>
+
+          {onOpenAddTaskDialog && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onOpenAddTaskDialog}
+              className="flex items-center gap-2"
+              disabled={isDemo}
+            >
+              <Plus className="h-4 w-4" />
+              Add Task
+            </Button>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" /> Manage <ChevronDown className="ml-1 h-4 w-4" />
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <SettingsIcon className="h-4 w-4" />
+                Manage
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => setIsManageCategoriesOpen(true)}>
-                Manage Categories
+                <ListTodo className="mr-2 h-4 w-4" /> Manage Categories
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsManageSectionsOpen(true)}>
-                Manage Sections
+                <ListTodo className="mr-2 h-4 w-4" /> Manage Sections
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onToggleAllSections}>
-                Toggle All Sections
+                <ChevronsDownUp className="mr-2 h-4 w-4" /> Toggle All Sections
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={markAllTasksAsCompleted}>
-                Mark All Pending Completed
+              <DropdownMenuItem
+                onClick={() => setIsConfirmMarkAllDoneOpen(true)}
+                disabled={isDemo || dailyProgress.totalPendingCount === 0}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" /> Mark All Pending as Completed
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleToggleAllDoToday}>
-                Toggle All Do Today
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={markAllTasksAsSkipped}>
-                Mark All Pending Skipped
-              </DropdownMenuItem>
+              {markAllTasksAsSkipped && (
+                <DropdownMenuItem
+                  onClick={() => setIsConfirmMarkAllSkippedOpen(true)}
+                  disabled={isDemo || dailyProgress.totalPendingCount === 0}
+                >
+                  <XSquare className="h-4 w-4 mr-2" /> Mark All Pending as Skipped
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
+
+      <DateNavigator
+        currentDate={currentDate}
+        onPreviousDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() - 1)))}
+        onNextDay={() => setCurrentDate(prevDate => new Date(prevDate.setDate(prevDate.getDate() + 1)))}
+        onGoToToday={() => setCurrentDate(new Date())}
+        setCurrentDate={setCurrentDate}
+      />
+
+      <Separator className="my-4" />
+
+      <QuickAddTask
+        onAddTask={handleAddTask}
+        defaultCategoryId={allCategories[0]?.id || ''}
+        isDemo={isDemo}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        sections={sections}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
+
+      <Separator className="my-4" />
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}
@@ -218,7 +216,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         tasksLoading={tasksLoading}
         isDemo={isDemo}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={handleToggleAllDoToday}
+        toggleAllDoToday={toggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
       />
 
@@ -226,15 +224,44 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
         categories={allCategories}
+        onCategoryCreated={handleCategoryCreated}
+        onCategoryDeleted={handleCategoryDeleted}
       />
+
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
         onClose={() => setIsManageSectionsOpen(false)}
         sections={sections}
-        createSection={createSectionForDialog}
-        updateSection={updateSectionForDialog}
+        createSection={createSection}
+        updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+      />
+
+      <ConfirmationDialog
+        isOpen={isConfirmMarkAllDoneOpen}
+        onClose={() => setIsConfirmMarkAllDoneOpen(false)}
+        onConfirm={() => {
+          markAllTasksAsCompleted();
+          setIsConfirmMarkAllDoneOpen(false);
+        }}
+        title="Confirm Mark All Pending as Completed"
+        description="Are you sure you want to mark all pending tasks as completed for today? This action cannot be undone easily."
+        confirmText="Mark All Done"
+        confirmVariant="default"
+      />
+
+      <ConfirmationDialog
+        isOpen={isConfirmMarkAllSkippedOpen}
+        onClose={() => setIsConfirmMarkAllSkippedOpen(false)}
+        onConfirm={() => {
+          markAllTasksAsSkipped?.();
+          setIsConfirmMarkAllSkippedOpen(false);
+        }}
+        title="Confirm Mark All Pending as Skipped"
+        description="Are you sure you want to mark all pending tasks as skipped for today? This action cannot be undone easily."
+        confirmText="Mark All Skipped"
+        confirmVariant="destructive"
       />
     </div>
   );
