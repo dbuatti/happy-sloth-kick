@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, BellRing, Lightbulb } from 'lucide-react';
+import { Calendar as CalendarIcon, BellRing, Lightbulb, X } from 'lucide-react'; // Added X icon
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -429,36 +429,52 @@ const TaskForm: React.FC<TaskFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <div>
           <Label>Due Date</Label>
-          <Controller
-            control={control}
-            name="dueDate"
-            render={({ field }) => (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-9 text-base",
-                      !field.value && "text-muted-foreground"
-                    )}
-                    disabled={isSaving || isSuggesting}
-                    aria-label="Select due date"
-                  >
-                    <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarUI
-                    mode="single"
-                    selected={field.value || undefined}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+          <div className="flex gap-1.5">
+            <Controller
+              control={control}
+              name="dueDate"
+              render={({ field }) => (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal h-9 text-base",
+                        !field.value && "text-muted-foreground"
+                      )}
+                      disabled={isSaving || isSuggesting}
+                      aria-label="Select due date"
+                    >
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <CalendarUI
+                      mode="single"
+                      selected={field.value || undefined}
+                      onSelect={field.onChange}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
+            />
+            {watch('dueDate') && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setValue('dueDate', null)}
+                disabled={isSaving || isSuggesting}
+                title="Clear due date"
+                aria-label="Clear due date"
+                className="h-9 w-9"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
             )}
-          />
+          </div>
           {errors.dueDate && <p className="text-destructive text-sm mt-1">{errors.dueDate.message}</p>}
         </div>
 
@@ -487,7 +503,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
       <div>
         <Label>Reminder</Label>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           <Controller
             control={control}
             name="remindAtDate"
@@ -518,6 +534,23 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </Popover>
             )}
           />
+            {watch('remindAtDate') && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setValue('remindAtDate', null);
+                  setValue('remindAtTime', '');
+                }}
+                disabled={isSaving || isSuggesting}
+                title="Clear reminder date and time"
+                aria-label="Clear reminder date and time"
+                className="h-9 w-9"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
           <Input
             type="time"
             {...register('remindAtTime')}

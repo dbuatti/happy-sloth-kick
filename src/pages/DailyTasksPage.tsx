@@ -13,7 +13,7 @@ import DailyBriefingCard from '@/components/DailyBriefingCard';
 import { getDailyBriefing } from '@/integrations/supabase/api';
 import { useQuery } from '@tanstack/react-query';
 import AddTaskDialog from '@/components/AddTaskDialog'; // Import the new dialog
-import { showSuccess } from '@/utils/toast'; // Import showSuccess
+import { showSuccess, showError } from '@/utils/toast'; // Import showSuccess and showError
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -185,6 +185,23 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleClearSelection();
   }, [bulkUpdateTasks, selectedTaskIds, handleClearSelection]);
 
+  const handleBulkToggleDoToday = useCallback(async () => {
+    if (selectedTaskIds.size === 0) {
+      showError('No tasks selected to toggle "Do Today" status.');
+      return;
+    }
+
+    const tasksToToggle = processedTasks.filter(task => selectedTaskIds.has(task.id));
+    for (const task of tasksToToggle) {
+      // Only toggle non-recurring top-level tasks
+      if (task.recurring_type === 'none' && task.parent_task_id === null) {
+        await toggleDoToday(task);
+      }
+    }
+    showSuccess('Toggled "Do Today" status for selected tasks.');
+    handleClearSelection();
+  }, [selectedTaskIds, processedTasks, toggleDoToday, handleClearSelection]);
+
   const toggleFilterPanel = useCallback(() => {
     setIsFilterPanelOpen(prev => !prev);
   }, []);
@@ -331,8 +348,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onArchive={handleBulkArchive}
           onDelete={handleBulkDelete}
           onChangePriority={handleBulkChangePriority}
-          onBulkChangeSection={handleBulkChangeSection} // Pass new handler
-          sections={sections} // Pass sections
+          onBulkChangeSection={handleBulkChangeSection}
+          sections={sections}
+          onBulkToggleDoToday={handleBulkToggleDoToday} // Pass new handler
         />
       )}
 
