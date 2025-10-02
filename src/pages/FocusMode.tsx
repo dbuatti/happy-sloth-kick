@@ -79,6 +79,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
         toggleAllDoToday={handleToggleAllDoToday} // Use the wrapper function
         markAllTasksAsSkipped={markAllTasksAsSkipped}
         isDemo={isDemo}
+        createCategory={createCategory} // Pass through
+        updateCategory={updateCategory} // Pass through
+        deleteCategory={deleteCategory} // Pass through
       />
 
       {taskToOverview && (

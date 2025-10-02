@@ -49,9 +49,9 @@ const FocusPanel: React.FC<FocusPanelProps> = ({
   toggleAllDoToday,
   markAllTasksAsSkipped,
   isDemo,
-  createCategory, // Destructure
-  updateCategory, // Destructure
-  deleteCategory, // Destructure
+  createCategory,
+  updateCategory,
+  deleteCategory,
 }) => {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
@@ -139,9 +139,9 @@ const FocusPanel: React.FC<FocusPanelProps> = ({
         allTasks={allTasks}
         preselectedParentTaskId={preselectedParentTaskId}
         preselectedSectionId={preselectedSectionIdForSubtask}
-        createCategory={createCategory} {/* Pass through */}
-        updateCategory={updateCategory} {/* Pass through */}
-        deleteCategory={deleteCategory} {/* Pass through */}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
     </div>
   );

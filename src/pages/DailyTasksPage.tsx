@@ -411,6 +411,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         toggleAllDoToday={handleToggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
         loading={tasksLoading}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
 
       <AddTaskDialog

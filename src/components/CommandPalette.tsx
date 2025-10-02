@@ -21,7 +21,6 @@ import { useDevIdeas } from '@/hooks/useDevIdeas';
 import { useMeals } from '@/hooks/useMeals';
 import { useGoals } from '@/hooks/useGoals';
 import { useNavigate } from 'react-router-dom';
-// Removed: import { format, isSameDay, parseISO, isValid } from 'date-fns'; // Unused imports
 import TaskForm from './TaskForm';
 import { showError, showSuccess } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +35,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
   const { user } = useAuth();
   const navigate = useNavigate();
   const { settings: userSettings } = useSettings();
-  // Removed: const { scheduleReminder, cancelReminder } = useReminders(); // Unused
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
@@ -59,16 +57,17 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     deleteCategory,
   } = useTasks({ currentDate, userId: user?.id });
 
-  const { projects } = useProjects({ userId: user?.id });
-  const { people } = usePeopleMemory({ userId: user?.id });
-  const { quickLinks } = useQuickLinks({ userId: user?.id });
-  const { habits } = useHabits({ userId: user?.id, currentDate }); // Added currentDate
-  const { weeklyFocus } = useWeeklyFocus({ userId: user?.id });
-  const { appointments } = useAppointments({ userId: user?.id, startDate: currentDate, endDate: currentDate }); // Added startDate, endDate
-  const { gratitudeEntries, worryEntries } = useJournalEntries({ userId: user?.id });
-  const { ideas } = useDevIdeas({ userId: user?.id });
-  const { upcomingMeals } = useMeals({ userId: user?.id });
-  const { goals } = useGoals({ userId: user?.id });
+  // Removed unused destructured variables from these hooks
+  useProjects({ userId: user?.id });
+  usePeopleMemory({ userId: user?.id });
+  useQuickLinks({ userId: user?.id });
+  useHabits({ userId: user?.id, currentDate });
+  useWeeklyFocus({ userId: user?.id });
+  useAppointments({ userId: user?.id, startDate: currentDate, endDate: currentDate });
+  useJournalEntries({ userId: user?.id });
+  useDevIdeas({ userId: user?.id });
+  useMeals({ userId: user?.id });
+  useGoals({ userId: user?.id });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -190,13 +189,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (isMac ? e.metaKey : e.ctrlKey)) {
         e.preventDefault();
-        setIsCommandPaletteOpen(!isCommandPaletteOpen); // Fixed: Direct boolean update
+        setIsCommandPaletteOpen(!isCommandPaletteOpen);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [setIsCommandPaletteOpen, isMac, isCommandPaletteOpen]); // Added isCommandPaletteOpen to dependencies
+  }, [setIsCommandPaletteOpen, isMac, isCommandPaletteOpen]);
 
   return (
     <>

@@ -2,15 +2,15 @@
 
 import React from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import FocusPanel from './FocusPanel'; // Import the new FocusPanel component
-import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import types
+import FocusPanel from './FocusPanel';
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   allTasks: Task[];
   filteredTasks: Task[];
-  loading: boolean; // Added loading prop
+  loading: boolean;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => Promise<boolean | undefined>;
@@ -25,12 +25,18 @@ interface FocusPanelDrawerProps {
   toggleAllDoToday: () => Promise<void>;
   markAllTasksAsSkipped?: () => Promise<void>;
   isDemo?: boolean;
+  createCategory: (name: string, color: string) => Promise<string | null>; // Added
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
+  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
   onClose,
-  loading, // Destructure loading
+  loading,
+  createCategory, // Destructure
+  updateCategory, // Destructure
+  deleteCategory, // Destructure
   ...focusPanelProps // Collect all other props to pass to FocusPanel
 }) => {
   return (
@@ -40,7 +46,13 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
           <DrawerTitle>Focus Mode</DrawerTitle>
         </DrawerHeader>
         <div className="p-4 overflow-y-auto">
-          <FocusPanel {...focusPanelProps} loading={loading} /> {/* Pass loading prop */}
+          <FocusPanel
+            {...focusPanelProps}
+            loading={loading}
+            createCategory={createCategory} // Pass through
+            updateCategory={updateCategory} // Pass through
+            deleteCategory={deleteCategory} // Pass through
+          />
         </div>
       </DrawerContent>
     </Drawer>
