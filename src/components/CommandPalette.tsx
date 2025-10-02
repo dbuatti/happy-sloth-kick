@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from 'react'; // Removed useMemo
+import React, { useState, useCallback, useEffect } from 'react';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-// Removed: import { Button } from "@/components/ui/button"; // Unused import
-import { Plus, Search, Target, Calendar as CalendarIcon, ListTodo, FolderOpen, Users, Link as LinkIcon, Moon, Sun, Laptop, Goal, Code, X, Repeat, LayoutGrid } from 'lucide-react'; // Removed Clock, Brain, BellRing, MessageSquare, Lightbulb, GitBranch, FileText, Image, BookOpen, Utensils, Archive, Settings as SettingsIcon
+import { Plus, Search, Target, Calendar as CalendarIcon, ListTodo, FolderOpen, Users, Link as LinkIcon, Moon, Sun, Laptop, Goal, Code, X, Repeat, LayoutGrid, Utensils, BookOpen, Archive, Settings as SettingsIcon, MessageSquare } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/context/AuthContext';
-import { useTasks, NewTaskData } from '@/hooks/useTasks'; // Removed Task, TaskSection, Category
+import { useTasks, NewTaskData } from '@/hooks/useTasks';
 import { useSettings } from '@/context/SettingsContext';
-import { useReminders } from '@/context/ReminderContext';
+// Removed: import { useReminders } from '@/context/ReminderContext'; // Unused import
 import { useProjects } from '@/hooks/useProjects';
 import { usePeopleMemory } from '@/hooks/usePeopleMemory';
 import { useQuickLinks } from '@/hooks/useQuickLinks';
@@ -33,10 +32,10 @@ interface CommandPaletteProps {
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen }) => {
-  const { setTheme } = useTheme(); // Removed theme
+  const { setTheme } = useTheme();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { settings: userSettings } = useSettings(); // Removed updateSettings
+  const { settings: userSettings } = useSettings();
   // Removed: const { scheduleReminder, cancelReminder } = useReminders(); // Unused
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
@@ -61,14 +60,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
   } = useTasks({ currentDate, userId: user?.id });
 
   const { projects } = useProjects({ userId: user?.id });
-  const { people } = usePeopleMemory({ userId: user?.id }); // Corrected destructuring
+  const { people } = usePeopleMemory({ userId: user?.id });
   const { quickLinks } = useQuickLinks({ userId: user?.id });
-  const { habits } = useHabits({ userId: user?.id }); // Added userId
+  const { habits } = useHabits({ userId: user?.id, currentDate }); // Added currentDate
   const { weeklyFocus } = useWeeklyFocus({ userId: user?.id });
-  const { appointments } = useAppointments({ userId: user?.id }); // Added userId
+  const { appointments } = useAppointments({ userId: user?.id, startDate: currentDate, endDate: currentDate }); // Added startDate, endDate
   const { gratitudeEntries, worryEntries } = useJournalEntries({ userId: user?.id });
-  const { ideas } = useDevIdeas({ userId: user?.id }); // Corrected destructuring
-  const { upcomingMeals } = useMeals({ userId: user?.id }); // Corrected destructuring
+  const { ideas } = useDevIdeas({ userId: user?.id });
+  const { upcomingMeals } = useMeals({ userId: user?.id });
   const { goals } = useGoals({ userId: user?.id });
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -142,8 +141,6 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     setIsCommandPaletteOpen(false);
   }, [setIsCommandPaletteOpen]);
 
-  // Removed: handleOpenLocalFile as it's unused and not directly supported in web
-
   const getIconForType = (type: string) => {
     switch (type) {
       case 'task': return <ListTodo className="mr-2 h-4 w-4" />;
@@ -193,13 +190,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (isMac ? e.metaKey : e.ctrlKey)) {
         e.preventDefault();
-        setIsCommandPaletteOpen(prev => !prev); // Fixed: Use functional update
+        setIsCommandPaletteOpen(!isCommandPaletteOpen); // Fixed: Direct boolean update
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [setIsCommandPaletteOpen, isMac]);
+  }, [setIsCommandPaletteOpen, isMac, isCommandPaletteOpen]); // Added isCommandPaletteOpen to dependencies
 
   return (
     <>
@@ -331,9 +328,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
             allTasks={processedTasks}
             preselectedParentTaskId={preselectedParentTaskId}
             preselectedSectionId={preselectedSectionIdForSubtask}
-            createCategory={createCategory} // Pass through
-            updateCategory={updateCategory} // Pass through
-            deleteCategory={deleteCategory} // Pass through
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
           />
         </SheetContent>
       </Sheet>
@@ -357,9 +354,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
             allTasks={processedTasks}
             preselectedParentTaskId={preselectedParentTaskId}
             preselectedSectionId={preselectedSectionIdForSubtask}
-            createCategory={createCategory} // Pass through
-            updateCategory={updateCategory} // Pass through
-            deleteCategory={deleteCategory} // Pass through
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
           />
         </DialogContent>
       </Dialog>

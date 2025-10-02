@@ -3,21 +3,16 @@
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// Removed: import { Label } from '@/components/ui/label'; // Unused import
-// Removed: import { Textarea } from '@/components/ui/textarea'; // Unused import
-// Removed: import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Unused import
-// Removed: import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Unused import
-import { Lightbulb, Settings, Trash2, Plus } from 'lucide-react'; // Removed CalendarIcon, imported Plus
-// Removed: import { Calendar } from '@/components/ui/calendar'; // Unused import
-import { format, parseISO } from 'date-fns'; // Removed isValid
+import { Lightbulb, Settings, Trash2, Plus } from 'lucide-react'; // Imported Plus
+import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useTasks, Category } from '@/hooks/useTasks'; // Removed Task, TaskSection
+import { useTasks, Category } from '@/hooks/useTasks';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import ManageCategoriesDialog from '@/components/ManageCategoriesDialog';
-import { Card } from '@/components/ui/card'; // Imported Card
+import { Card } from '@/components/ui/card';
 
 interface Goal {
   id: string;
@@ -90,7 +85,7 @@ const suggestGoalDetails = async (prompt: string, categories: Category[], curren
   try {
     const { data, error } = await supabase.functions.invoke('suggest-goal-details', {
       body: JSON.stringify({
-        text: prompt, // Changed from 'prompt' to 'text' to match the Edge Function
+        text: prompt,
         categories: categories.map(c => ({ name: c.name })),
         currentDate: format(currentDate, 'yyyy-MM-dd'),
       }),
@@ -115,7 +110,7 @@ const suggestGoalDetails = async (prompt: string, categories: Category[], curren
 
 const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false, demoUserId }) => {
   const { user } = useAuth();
-  const userId = isDemo ? demoUserId : user?.id; // Use demoUserId if in demo mode
+  const userId = isDemo ? demoUserId : user?.id;
   const currentDate = new Date();
 
   const { allCategories, createCategory, updateCategory, deleteCategory } = useTasks({ currentDate, userId });
@@ -135,7 +130,7 @@ const ResonanceGoalsPage: React.FC<ResonanceGoalsPageProps> = ({ isDemo = false,
     try {
       const newGoal: Partial<Goal> = {
         title: newGoalText.trim(),
-        type: 'monthly', // Default type
+        type: 'monthly',
         completed: false,
       };
       await createGoal(userId, newGoal);

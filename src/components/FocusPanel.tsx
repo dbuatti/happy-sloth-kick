@@ -3,8 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import { Button } from '@/components/ui/button';
-// Removed: import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Target, XSquare, Archive, ChevronsDownUp, Plus } from 'lucide-react'; // Removed ListTodo, CheckCircle2
+import { Target, XSquare, Archive, ChevronsDownUp, Plus } from 'lucide-react';
 import TaskList from './TaskList';
 import AddTaskDialog from './AddTaskDialog';
 import { Separator } from '@/components/ui/separator';
@@ -24,9 +23,12 @@ interface FocusPanelProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>; // Changed to no arguments
+  toggleAllDoToday: () => Promise<void>;
   markAllTasksAsSkipped?: () => Promise<void>;
   isDemo?: boolean;
+  createCategory: (name: string, color: string) => Promise<string | null>; // Added
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
+  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
 }
 
 const FocusPanel: React.FC<FocusPanelProps> = ({
@@ -47,6 +49,9 @@ const FocusPanel: React.FC<FocusPanelProps> = ({
   toggleAllDoToday,
   markAllTasksAsSkipped,
   isDemo,
+  createCategory, // Destructure
+  updateCategory, // Destructure
+  deleteCategory, // Destructure
 }) => {
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
@@ -134,6 +139,9 @@ const FocusPanel: React.FC<FocusPanelProps> = ({
         allTasks={allTasks}
         preselectedParentTaskId={preselectedParentTaskId}
         preselectedSectionId={preselectedSectionIdForSubtask}
+        createCategory={createCategory} {/* Pass through */}
+        updateCategory={updateCategory} {/* Pass through */}
+        deleteCategory={deleteCategory} {/* Pass through */}
       />
     </div>
   );
