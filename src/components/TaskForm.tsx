@@ -329,135 +329,210 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className={cn("space-y-3 py-3", className)}>
-      <div>
-        <Label htmlFor="task-description">Task Description</Label>
-        <div className="flex gap-1.5">
-          <Input
-            id="task-description"
-            placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority at 6pm personal')"
-            {...register('description')}
-            onKeyDown={handleKeyDown}
-            disabled={isSaving || isSuggesting}
-            autoFocus={autoFocus}
-            className="flex-1 h-9 text-base"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            onClick={handleSuggest}
-            disabled={isSaving || isSuggesting || !description.trim()}
-            title="Suggest details from description"
-            aria-label="Suggest task details"
-            className="h-9 w-9"
-          >
-            {isSuggesting ? (
-              <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
-            ) : (
-              <Lightbulb className="h-3.5 w-3.5" />
-            )}
-          </Button>
-        </div>
-        {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
-      </div>
-
-      <ImageUploadArea
-        imagePreview={imagePreview}
-        setImagePreview={setImagePreview}
-        setImageFile={setImageFile}
-        disabled={isSaving}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <Controller
-          control={control}
-          name="status"
-          render={({ field }) => (
-            <div>
-              <Label>Status</Label>
-              <Select value={field.value} onValueChange={field.onChange} disabled={isSaving || isSuggesting}>
-                <SelectTrigger className="h-9 text-base">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="to-do">To-Do</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="skipped">Skipped</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && <p className="text-destructive text-sm mt-1">{errors.status.message}</p>}
-            </div>
-          )}
-        />
-
-        <Controller
-          control={control}
-          name="category"
-          render={({ field }) => (
-            <CategorySelector
-              value={field.value}
-              onChange={field.onChange}
-              categories={allCategories}
-              onCategoryCreated={createCategory}
-              onCategoryUpdated={updateCategory}
-              onCategoryDeleted={deleteCategory}
-            />
-          )}
-        />
-        {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
-
-        <Controller
-          control={control}
-          name="priority"
-          render={({ field }) => (
-            <PrioritySelector value={field.value} onChange={field.onChange} />
-          )}
-        />
-        {errors.priority && <p className="text-destructive text-sm mt-1">{errors.priority.message}</p>}
-      </div>
-
-      <div>
-        <Controller
-          control={control}
-          name="sectionId"
-          render={({ field }) => (
-            <SectionSelector
-              value={field.value}
-              onChange={field.onChange}
-              sections={sections}
-              createSection={createSection}
-              updateSection={updateSection}
-              deleteSection={deleteSection}
-              updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-            />
-          )}
-        />
-        {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+    <form onSubmit={handleSubmit(onSubmit)} className={cn("space-y-3 py-3 flex flex-col h-full", className)}>
+      <div className="flex-1 overflow-y-auto pr-2 -mr-2"> {/* Scrollable content wrapper */}
         <div>
-          <Label>Due Date</Label>
+          <Label htmlFor="task-description">Task Description</Label>
+          <div className="flex gap-1.5">
+            <Input
+              id="task-description"
+              placeholder="Task description (e.g., 'Buy groceries by tomorrow high priority at 6pm personal')"
+              {...register('description')}
+              onKeyDown={handleKeyDown}
+              disabled={isSaving || isSuggesting}
+              autoFocus={autoFocus}
+              className="flex-1 h-9 text-base"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={handleSuggest}
+              disabled={isSaving || isSuggesting || !description.trim()}
+              title="Suggest details from description"
+              aria-label="Suggest task details"
+              className="h-9 w-9"
+            >
+              {isSuggesting ? (
+                <span className="animate-spin h-3.5 w-3.5 border-b-2 border-primary rounded-full" />
+              ) : (
+                <Lightbulb className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+          {errors.description && <p className="text-destructive text-sm mt-1">{errors.description.message}</p>}
+        </div>
+
+        <ImageUploadArea
+          imagePreview={imagePreview}
+          setImagePreview={setImagePreview}
+          setImageFile={setImageFile}
+          disabled={isSaving}
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <Controller
+            control={control}
+            name="status"
+            render={({ field }) => (
+              <div>
+                <Label>Status</Label>
+                <Select value={field.value} onValueChange={field.onChange} disabled={isSaving || isSuggesting}>
+                  <SelectTrigger className="h-9 text-base">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="to-do">To-Do</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="skipped">Skipped</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.status && <p className="text-destructive text-sm mt-1">{errors.status.message}</p>}
+              </div>
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="category"
+            render={({ field }) => (
+              <CategorySelector
+                value={field.value}
+                onChange={field.onChange}
+                categories={allCategories}
+                onCategoryCreated={createCategory}
+                onCategoryUpdated={updateCategory}
+                onCategoryDeleted={deleteCategory}
+              />
+            )}
+          />
+          {errors.category && <p className="text-destructive text-sm mt-1">{errors.category.message}</p>}
+
+          <Controller
+            control={control}
+            name="priority"
+            render={({ field }) => (
+              <PrioritySelector value={field.value} onChange={field.onChange} />
+            )}
+          />
+          {errors.priority && <p className="text-destructive text-sm mt-1">{errors.priority.message}</p>}
+        </div>
+
+        <div>
+          <Controller
+            control={control}
+            name="sectionId"
+            render={({ field }) => (
+              <SectionSelector
+                value={field.value}
+                onChange={field.onChange}
+                sections={sections}
+                createSection={createSection}
+                updateSection={updateSection}
+                deleteSection={deleteSection}
+                updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+              />
+            )}
+          />
+          {errors.sectionId && <p className="text-destructive text-sm mt-1">{errors.sectionId.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div>
+            <Label>Due Date</Label>
+            <div className="flex gap-1.5">
+              <Controller
+                control={control}
+                name="dueDate"
+                render={({ field }) => (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal h-9 text-base",
+                          !field.value && "text-muted-foreground"
+                        )}
+                        disabled={isSaving || isSuggesting}
+                        aria-label="Select due date"
+                      >
+                        <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarUI
+                        mode="single"
+                        selected={field.value || undefined}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
+              />
+              {watch('dueDate') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setValue('dueDate', null)}
+                  disabled={isSaving || isSuggesting}
+                  title="Clear due date"
+                  aria-label="Clear due date"
+                  className="h-9 w-9"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+            {errors.dueDate && <p className="text-destructive text-sm mt-1">{errors.dueDate.message}</p>}
+          </div>
+
+          <div>
+            <Label>Recurring</Label>
+            <Controller
+              control={control}
+              name="recurringType"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
+                  <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
+                    <SelectValue placeholder="Select recurrence" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.recurringType && <p className="text-destructive text-sm mt-1">{errors.recurringType.message}</p>}
+          </div>
+        </div>
+
+        <div>
+          <Label>Reminder</Label>
           <div className="flex gap-1.5">
             <Controller
               control={control}
-              name="dueDate"
+              name="remindAtDate"
               render={({ field }) => (
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-full justify-start text-left font-normal h-9 text-base",
+                        "flex-1 justify-start text-left font-normal h-9 text-base",
                         !field.value && "text-muted-foreground"
                       )}
                       disabled={isSaving || isSuggesting}
-                      aria-label="Select due date"
+                      aria-label="Set reminder date"
                     >
-                      <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                      <BellRing className="mr-2 h-3.5 w-3.5" />
+                      {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -471,167 +546,94 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 </Popover>
               )}
             />
-            {watch('dueDate') && (
+              {watch('remindAtDate') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setValue('remindAtDate', null);
+                    setValue('remindAtTime', '');
+                  }}
+                  disabled={isSaving || isSuggesting}
+                  title="Clear reminder date and time"
+                  aria-label="Clear reminder date and time"
+                  className="h-9 w-9"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            <Input
+              type="time"
+              {...register('remindAtTime')}
+              className="w-24 h-9 text-base"
+              disabled={isSaving || isSuggesting || !remindAtDate}
+              aria-label="Set reminder time"
+            />
+          </div>
+          {errors.remindAtDate && <p className="text-destructive text-sm mt-1">{errors.remindAtDate.message}</p>}
+          {errors.remindAtTime && <p className="text-destructive text-sm mt-1">{errors.remindAtTime.message}</p>}
+        </div>
+
+        <div>
+          <Label htmlFor="task-link">Link / File Path (Optional)</Label>
+          <div className="flex gap-1.5">
+            <Input
+              id="task-link"
+              placeholder="URL or local file path (e.g., /Users/...)"
+              {...register('link')}
+              disabled={isSaving || isSuggesting}
+              className="h-9 text-base flex-1"
+            />
+            {watch('link') && (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => setValue('dueDate', null)}
+                onClick={() => setValue('link', null)}
                 disabled={isSaving || isSuggesting}
-                title="Clear due date"
-                aria-label="Clear due date"
+                title="Clear link"
+                aria-label="Clear link"
                 className="h-9 w-9"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
-          {errors.dueDate && <p className="text-destructive text-sm mt-1">{errors.dueDate.message}</p>}
+          {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
         </div>
 
         <div>
-          <Label>Recurring</Label>
-          <Controller
-            control={control}
-            name="recurringType"
-            render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
-                <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
-                  <SelectValue placeholder="Select recurrence" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="monthly">Monthly</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          {errors.recurringType && <p className="text-destructive text-sm mt-1">{errors.recurringType.message}</p>}
-        </div>
-      </div>
-
-      <div>
-        <Label>Reminder</Label>
-        <div className="flex gap-1.5">
-          <Controller
-            control={control}
-            name="remindAtDate"
-            render={({ field }) => (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "flex-1 justify-start text-left font-normal h-9 text-base",
-                      !field.value && "text-muted-foreground"
-                    )}
-                    disabled={isSaving || isSuggesting}
-                    aria-label="Set reminder date"
-                  >
-                    <BellRing className="mr-2 h-3.5 w-3.5" />
-                    {field.value ? format(field.value, "PPP") : <span>Set reminder date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarUI
-                    mode="single"
-                    selected={field.value || undefined}
-                    onSelect={field.onChange}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
-          />
-            {watch('remindAtDate') && (
+          <Label htmlFor="task-notes">Notes</Label>
+          <div className="flex gap-1.5">
+            <Textarea
+              id="task-notes"
+              placeholder="Add notes about this task..."
+              {...register('notes')}
+              rows={2}
+              disabled={isSaving || isSuggesting}
+              className="min-h-[60px] text-base flex-1"
+            />
+            {watch('notes') && (
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  setValue('remindAtDate', null);
-                  setValue('remindAtTime', '');
-                }}
+                onClick={() => setValue('notes', null)}
                 disabled={isSaving || isSuggesting}
-                title="Clear reminder date and time"
-                aria-label="Clear reminder date and time"
-                className="h-9 w-9"
+                title="Clear notes"
+                aria-label="Clear notes"
+                className="h-9 w-9 self-start"
               >
                 <X className="h-3.5 w-3.5" />
               </Button>
             )}
-          <Input
-            type="time"
-            {...register('remindAtTime')}
-            className="w-24 h-9 text-base"
-            disabled={isSaving || isSuggesting || !remindAtDate}
-            aria-label="Set reminder time"
-          />
+          </div>
+          {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
         </div>
-        {errors.remindAtDate && <p className="text-destructive text-sm mt-1">{errors.remindAtDate.message}</p>}
-        {errors.remindAtTime && <p className="text-destructive text-sm mt-1">{errors.remindAtTime.message}</p>}
-      </div>
+      </div> {/* End scrollable content wrapper */}
 
-      <div>
-        <Label htmlFor="task-link">Link / File Path (Optional)</Label>
-        <div className="flex gap-1.5">
-          <Input
-            id="task-link"
-            placeholder="URL or local file path (e.g., /Users/...)"
-            {...register('link')}
-            disabled={isSaving || isSuggesting}
-            className="h-9 text-base flex-1"
-          />
-          {watch('link') && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setValue('link', null)}
-              disabled={isSaving || isSuggesting}
-              title="Clear link"
-              aria-label="Clear link"
-              className="h-9 w-9"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-        {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="task-notes">Notes</Label>
-        <div className="flex gap-1.5">
-          <Textarea
-            id="task-notes"
-            placeholder="Add notes about this task..."
-            {...register('notes')}
-            rows={2}
-            disabled={isSaving || isSuggesting}
-            className="min-h-[60px] text-base flex-1"
-          />
-          {watch('notes') && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setValue('notes', null)}
-              disabled={isSaving || isSuggesting}
-              title="Clear notes"
-              aria-label="Clear notes"
-              className="h-9 w-9 self-start"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-        {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
-      </div>
-
-      <div className="flex justify-end space-x-1.5 mt-3">
+      <div className="flex justify-end space-x-1.5 mt-3 flex-shrink-0">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving || isSuggesting} className="h-9 text-base">
           Cancel
         </Button>

@@ -1,9 +1,15 @@
 "use client";
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import TaskForm from './TaskForm';
-import { TaskSection, Category, NewTaskData, Task } from '@/hooks/useTasks';
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 
 interface AddTaskDialogProps {
   isOpen: boolean;
@@ -16,7 +22,7 @@ interface AddTaskDialogProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  allTasks: Task[];
+  allTasks?: Task[];
   preselectedParentTaskId?: string | null;
   preselectedSectionId?: string | null;
   createCategory: (name: string, color: string) => Promise<string | null>;
@@ -44,11 +50,11 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
 }) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px] flex flex-col max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>{preselectedParentTaskId ? "Add Subtask" : "Add New Task"}</DialogTitle>
+          <DialogTitle>Add New Task</DialogTitle>
           <DialogDescription>
-            {preselectedParentTaskId ? "Create a new subtask for the selected task." : "Fill in the details to add a new task."}
+            Fill in the details for your new task.
           </DialogDescription>
         </DialogHeader>
         <TaskForm
@@ -56,18 +62,19 @@ const AddTaskDialog: React.FC<AddTaskDialogProps> = ({
           onCancel={onClose}
           sections={sections}
           allCategories={allCategories}
-          currentDate={currentDate}
           autoFocus={true}
-          preselectedParentTaskId={preselectedParentTaskId}
           preselectedSectionId={preselectedSectionId}
+          preselectedParentTaskId={preselectedParentTaskId}
+          currentDate={currentDate}
           createSection={createSection}
           updateSection={updateSection}
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-          allTasks={allTasks}
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          allTasks={allTasks}
+          className="flex-1"
         />
       </DialogContent>
     </Dialog>
