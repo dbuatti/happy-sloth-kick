@@ -38,9 +38,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     archiveAllCompletedTasks,
     toggleAllDoToday: toggleAllDoTodayFromHook, // Renamed to avoid conflict
     markAllTasksAsSkipped,
-    createCategory, // Destructure
-    updateCategory, // Destructure
-    deleteCategory, // Destructure
+    createCategory,
+    updateCategory,
+    deleteCategory,
   } = useTasks({
     currentDate,
     viewMode: 'focus',
@@ -79,9 +79,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
         toggleAllDoToday={handleToggleAllDoToday} // Use the wrapper function
         markAllTasksAsSkipped={markAllTasksAsSkipped}
         isDemo={isDemo}
-        createCategory={createCategory} // Pass through
-        updateCategory={updateCategory} // Pass through
-        deleteCategory={deleteCategory} // Pass through
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
 
       {taskToOverview && (
@@ -99,9 +99,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
           onAddSubtask={() => {}} // FocusMode doesn't directly add subtasks from here
-          createCategory={createCategory} // Pass through
-          updateCategory={updateCategory} // Pass through
-          deleteCategory={deleteCategory} // Pass through
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
         />
       )}
     </div>

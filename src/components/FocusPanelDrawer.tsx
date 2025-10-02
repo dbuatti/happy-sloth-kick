@@ -25,18 +25,18 @@ interface FocusPanelDrawerProps {
   toggleAllDoToday: () => Promise<void>;
   markAllTasksAsSkipped?: () => Promise<void>;
   isDemo?: boolean;
-  createCategory: (name: string, color: string) => Promise<string | null>; // Added
-  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
-  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
+  createCategory: (name: string, color: string) => Promise<string | null>;
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>;
+  deleteCategory: (categoryId: string) => Promise<boolean>;
 }
 
 const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   isOpen,
   onClose,
   loading,
-  createCategory, // Destructure
-  updateCategory, // Destructure
-  deleteCategory, // Destructure
+  createCategory,
+  updateCategory,
+  deleteCategory,
   ...focusPanelProps // Collect all other props to pass to FocusPanel
 }) => {
   return (
@@ -49,9 +49,9 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
           <FocusPanel
             {...focusPanelProps}
             loading={loading}
-            createCategory={createCategory} // Pass through
-            updateCategory={updateCategory} // Pass through
-            deleteCategory={deleteCategory} // Pass through
+            createCategory={createCategory}
+            updateCategory={updateCategory}
+            deleteCategory={deleteCategory}
           />
         </div>
       </DrawerContent>
