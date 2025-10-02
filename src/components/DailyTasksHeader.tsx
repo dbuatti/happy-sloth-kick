@@ -34,7 +34,7 @@ interface DailyTasksHeaderProps {
   updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>;
   deleteCategory: (categoryId: string) => Promise<boolean>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>; // Updated signature
+  toggleAllDoToday: () => Promise<void>;
   dailyProgress: {
     totalPendingCount: number;
     completedCount: number;
@@ -75,7 +75,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateCategory,
   deleteCategory,
   archiveAllCompletedTasks,
-  toggleAllDoToday, // Destructure updated toggleAllDoToday
+  toggleAllDoToday,
   dailyProgress,
   isDemo = false,
   nextAvailableTask,
@@ -108,9 +108,10 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
   // Wrapper for updateSection to match ManageSectionsDialogProps
   const updateSectionForDialog = useCallback(async (id: string, newName: string) => {
-    const originalSection = sections.find(s => s.id === id);
-    await updateSection(id, newName, originalSection?.include_in_focus_mode ?? true); // Use originalSection
-  }, [updateSection, sections]);
+    // The updateSection hook function only takes id and newName.
+    // include_in_focus_mode is handled by updateSectionIncludeInFocusMode.
+    await updateSection(id, newName);
+  }, [updateSection]);
 
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">

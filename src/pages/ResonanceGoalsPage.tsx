@@ -3,12 +3,12 @@
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-// Removed: import { Label } from '@/components/ui/label';
-// Removed: import { Textarea } from '@/components/ui/textarea';
-// Removed: import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-// Removed: import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Lightbulb, Settings, Trash2 } from 'lucide-react'; // Removed CalendarIcon, Plus, imported Trash2
-// Removed: import { Calendar } from '@/components/ui/calendar';
+// Removed: import { Label } from '@/components/ui/label'; // Unused import
+// Removed: import { Textarea } from '@/components/ui/textarea'; // Unused import
+// Removed: import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Unused import
+// Removed: import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'; // Unused import
+import { Lightbulb, Settings, Trash2, Plus } from 'lucide-react'; // Removed CalendarIcon, imported Plus
+// Removed: import { Calendar } from '@/components/ui/calendar'; // Unused import
 import { format, parseISO } from 'date-fns'; // Removed isValid
 import { cn } from '@/lib/utils';
 import { useTasks, Category } from '@/hooks/useTasks'; // Removed Task, TaskSection

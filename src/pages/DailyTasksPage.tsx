@@ -257,7 +257,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [processedTasks, bulkUpdateTasks]);
 
   const handleToggleAllDoToday = useCallback(async () => {
-    await toggleAllDoTodayFromHook(); // Call without arguments
+    await toggleAllDoTodayFromHook();
   }, [toggleAllDoTodayFromHook]);
 
   return (
@@ -386,6 +386,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
           onAddSubtask={openAddTaskDialog}
+          createCategory={createCategory}
+          updateCategory={updateCategory}
+          deleteCategory={deleteCategory}
         />
       )}
 
@@ -424,6 +427,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         allTasks={processedTasks}
         preselectedParentTaskId={preselectedParentTaskId}
         preselectedSectionId={preselectedSectionIdForSubtask}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
     </div>
   );

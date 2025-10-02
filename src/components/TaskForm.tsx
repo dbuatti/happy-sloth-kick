@@ -86,15 +86,15 @@ interface TaskFormProps {
   allCategories: Category[];
   autoFocus?: boolean;
   preselectedSectionId?: string | null;
-  parentTaskId?: string | null;
+  preselectedParentTaskId?: string | null; // Added this prop
   currentDate?: Date;
   createSection: (name: string) => Promise<void>;
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
-  createCategory: (name: string, color: string) => Promise<string | null>; // Added
-  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
-  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
+  createCategory: (name: string, color: string) => Promise<string | null>;
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>;
+  deleteCategory: (categoryId: string) => Promise<boolean>;
   className?: string;
   allTasks?: Task[];
 }
@@ -107,15 +107,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
   allCategories,
   autoFocus = false,
   preselectedSectionId = null,
-  parentTaskId = null,
+  preselectedParentTaskId = null, // Destructure
   currentDate = new Date(),
   createSection,
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
-  createCategory, // Destructure new category functions
-  updateCategory, // Destructure new category functions
-  deleteCategory, // Destructure new category functions
+  createCategory,
+  updateCategory,
+  deleteCategory,
   className,
   allTasks,
 }) => {
@@ -138,7 +138,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       remindAtTime: '',
       sectionId: preselectedSectionId,
       recurringType: 'none',
-      parentTaskId: parentTaskId ?? null,
+      parentTaskId: preselectedParentTaskId ?? null, // Use preselectedParentTaskId
       link: null,
       image_url: null,
     },
@@ -154,8 +154,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
     const defaultCategoryId = generalCategory?.id || allCategories[0]?.id || '';
 
     let parentTask: Task | undefined;
-    if (parentTaskId && allTasks) {
-      parentTask = allTasks.find(t => t.id === parentTaskId);
+    if (preselectedParentTaskId && allTasks) { // Use preselectedParentTaskId here
+      parentTask = allTasks.find(t => t.id === preselectedParentTaskId);
     }
 
     const defaultValues = {
@@ -169,7 +169,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       remindAtTime: '',
       sectionId: parentTask?.section_id || preselectedSectionId,
       recurringType: 'none' as const,
-      parentTaskId: parentTaskId ?? null,
+      parentTaskId: preselectedParentTaskId ?? null, // Use preselectedParentTaskId
       link: null,
       image_url: null,
     };
@@ -197,7 +197,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setImagePreview(null);
     }
     setImageFile(null);
-  }, [initialData, preselectedSectionId, parentTaskId, allCategories, reset, allTasks]);
+  }, [initialData, preselectedSectionId, preselectedParentTaskId, allCategories, reset, allTasks]); // Add preselectedParentTaskId to dependencies
 
   const handleSuggest = useCallback(async () => {
     if (!description.trim()) {

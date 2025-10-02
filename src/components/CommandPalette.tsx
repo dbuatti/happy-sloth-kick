@@ -1,14 +1,14 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react'; // Removed useMemo
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { Plus, Search, Target, Calendar as CalendarIcon, ListTodo, FolderOpen, Users, Link as LinkIcon, Moon, Sun, Laptop, Goal, Clock, Brain, BookOpen, Utensils, Archive, Settings as SettingsIcon, BellRing, MessageSquare, Lightbulb, Code, GitBranch, FileText, Image, X } from 'lucide-react';
+// Removed: import { Button } from "@/components/ui/button"; // Unused import
+import { Plus, Search, Target, Calendar as CalendarIcon, ListTodo, FolderOpen, Users, Link as LinkIcon, Moon, Sun, Laptop, Goal, Code, X, Repeat, LayoutGrid } from 'lucide-react'; // Removed Clock, Brain, BellRing, MessageSquare, Lightbulb, GitBranch, FileText, Image, BookOpen, Utensils, Archive, Settings as SettingsIcon
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/context/AuthContext';
-import { useTasks, Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
+import { useTasks, NewTaskData } from '@/hooks/useTasks'; // Removed Task, TaskSection, Category
 import { useSettings } from '@/context/SettingsContext';
 import { useReminders } from '@/context/ReminderContext';
 import { useProjects } from '@/hooks/useProjects';
@@ -22,7 +22,7 @@ import { useDevIdeas } from '@/hooks/useDevIdeas';
 import { useMeals } from '@/hooks/useMeals';
 import { useGoals } from '@/hooks/useGoals';
 import { useNavigate } from 'react-router-dom';
-import { format, isSameDay, parseISO, isValid } from 'date-fns';
+// Removed: import { format, isSameDay, parseISO, isValid } from 'date-fns'; // Unused imports
 import TaskForm from './TaskForm';
 import { showError, showSuccess } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,11 +33,11 @@ interface CommandPaletteProps {
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, setIsCommandPaletteOpen }) => {
-  const { theme, setTheme } = useTheme();
+  const { setTheme } = useTheme(); // Removed theme
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { settings: userSettings, updateSettings } = useSettings();
-  const { scheduleReminder, cancelReminder } = useReminders();
+  const { settings: userSettings } = useSettings(); // Removed updateSettings
+  // Removed: const { scheduleReminder, cancelReminder } = useReminders(); // Unused
 
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
   const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
@@ -54,23 +54,22 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     deleteSection,
     updateSectionIncludeInFocusMode,
     handleAddTask,
-    updateTask,
     setFocusTask,
-    createCategory, // Destructure
-    updateCategory, // Destructure
-    deleteCategory, // Destructure
+    createCategory,
+    updateCategory,
+    deleteCategory,
   } = useTasks({ currentDate, userId: user?.id });
 
-  const { projects } = useProjects();
-  const { peopleMemory } = usePeopleMemory();
-  const { quickLinks } = useQuickLinks();
-  const { habits } = useHabits();
-  const { weeklyFocus } = useWeeklyFocus();
-  const { appointments } = useAppointments();
-  const { gratitudeEntries, worryEntries } = useJournalEntries();
-  const { devIdeas } = useDevIdeas();
-  const { meals } = useMeals();
-  const { goals } = useGoals();
+  const { projects } = useProjects({ userId: user?.id });
+  const { people } = usePeopleMemory({ userId: user?.id }); // Corrected destructuring
+  const { quickLinks } = useQuickLinks({ userId: user?.id });
+  const { habits } = useHabits({ userId: user?.id }); // Added userId
+  const { weeklyFocus } = useWeeklyFocus({ userId: user?.id });
+  const { appointments } = useAppointments({ userId: user?.id }); // Added userId
+  const { gratitudeEntries, worryEntries } = useJournalEntries({ userId: user?.id });
+  const { ideas } = useDevIdeas({ userId: user?.id }); // Corrected destructuring
+  const { upcomingMeals } = useMeals({ userId: user?.id }); // Corrected destructuring
+  const { goals } = useGoals({ userId: user?.id });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -143,13 +142,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     setIsCommandPaletteOpen(false);
   }, [setIsCommandPaletteOpen]);
 
-  const handleOpenLocalFile = useCallback((path: string) => {
-    // This would typically require a native integration (e.g., Electron, Tauri)
-    // For web, we can only log or show a message.
-    showError(`Cannot open local file directly in web browser: ${path}`);
-    console.log(`Attempted to open local file: ${path}`);
-    setIsCommandPaletteOpen(false);
-  }, [setIsCommandPaletteOpen]);
+  // Removed: handleOpenLocalFile as it's unused and not directly supported in web
 
   const getIconForType = (type: string) => {
     switch (type) {
@@ -200,7 +193,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isCommandPaletteOpen, s
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (isMac ? e.metaKey : e.ctrlKey)) {
         e.preventDefault();
-        setIsCommandPaletteOpen((open) => !open);
+        setIsCommandPaletteOpen(prev => !prev); // Fixed: Use functional update
       }
     };
 

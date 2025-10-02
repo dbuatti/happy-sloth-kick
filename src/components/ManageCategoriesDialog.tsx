@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-// Removed: import { Label } from "@/components/ui/label";
+// Removed: import { Label } from "@/components/ui/label"; // Unused import
 import { Category } from '@/hooks/useTasks';
 import { Plus, Trash2, Edit, Check, X } from 'lucide-react';
-import { HexColorPicker } from 'react-colorful';
+import { HexColorPicker } from 'react-colorful'; // Ensure this is correctly imported
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { showError, showSuccess } from '@/utils/toast';

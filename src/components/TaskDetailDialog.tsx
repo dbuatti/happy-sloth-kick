@@ -10,11 +10,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import TaskForm from './TaskForm';
-import { format, parseISO, isValid } from 'date-fns';
+import { format, parseISO } from 'date-fns'; // Removed isValid
 import { cn } from '@/lib/utils';
-import { Edit, Trash2, Link as LinkIcon, FileText, Image, Calendar as CalendarIcon, BellRing, Target, PlusCircle } from 'lucide-react';
+import { Edit, Trash2, Link as LinkIcon, FileText, Calendar as CalendarIcon, BellRing, Target, PlusCircle } from 'lucide-react'; // Removed Image
 import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+// Removed: import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'; // Unused import
 import { showSuccess, showError } from '@/utils/toast';
 import ConfirmationDialog from './ConfirmationDialog';
 
