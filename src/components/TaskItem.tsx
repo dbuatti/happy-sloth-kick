@@ -415,12 +415,19 @@ const TaskItem: React.FC<TaskItemProps> = ({
             </TooltipContent>
           </Tooltip>
         )}
-        <DoTodaySwitch
-          isOn={isDoToday}
-          onToggle={handleToggleDoTodaySwitch}
-          taskId={task.id}
-          isDemo={isDemo}
-        />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DoTodaySwitch
+              isOn={isDoToday}
+              onToggle={handleToggleDoTodaySwitch}
+              taskId={task.id}
+              isDemo={isDemo}
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isDoToday ? 'Remove from "Do Today"' : 'Add to "Do Today"'}</p>
+          </TooltipContent>
+        </Tooltip>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

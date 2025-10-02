@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react'; // Added ChevronDown, ChevronUp
+import { Plus, Lightbulb, ChevronDown, ChevronUp, X } from 'lucide-react'; // Added X icon
 import { Category, TaskSection, NewTaskData } from '@/hooks/useTasks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -50,6 +50,13 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
     setSelectedCategory(defaultCategoryId);
   }, [defaultCategoryId]);
 
+  // Auto-focus input on mount or after adding a task
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isAdding]); // Re-focus when isAdding changes (i.e., after a task is added/attempted)
+
   const handleAddTask = useCallback(async () => {
     if (!description.trim()) {
       showError('Task description cannot be empty.');
@@ -70,7 +77,7 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
       setSelectedSection(null); // Reset selected section
       setDueDate(undefined);
       showSuccess('Task added!');
-      inputRef.current?.focus();
+      // inputRef.current?.focus(); // Removed, handled by useEffect on isAdding
     }
   }, [description, selectedCategory, selectedSection, dueDate, onAddTask, defaultCategoryId]);
 
@@ -130,15 +137,29 @@ const QuickAddTask: React.FC<QuickAddTaskProps> = ({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <Input
-          ref={inputRef}
-          placeholder="Quick add a new task..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isAdding || isDemo || isSuggesting}
-          className="flex-grow h-9 text-base"
-        />
+        <div className="relative flex-grow">
+          <Input
+            ref={inputRef}
+            placeholder="Quick add a new task..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isAdding || isDemo || isSuggesting}
+            className="flex-grow h-9 text-base pr-8" // Added pr-8 for clear button
+          />
+          {description && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setDescription('')}
+              className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7 text-muted-foreground hover:text-foreground"
+              aria-label="Clear input"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
