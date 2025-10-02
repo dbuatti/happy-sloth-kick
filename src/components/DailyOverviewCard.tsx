@@ -25,7 +25,6 @@ interface DailyOverviewCardProps {
   isDemo?: boolean;
   archiveAllCompletedTasks: () => Promise<void>; // New prop
   toggleAllDoToday: () => Promise<void>; // New prop
-  // Removed markAllTasksAsCompleted prop
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -38,10 +37,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   isDemo,
   archiveAllCompletedTasks,
   toggleAllDoToday,
-  // Removed markAllTasksAsCompleted from destructuring
 }) => {
-  // Removed isConfirmMarkAllDoneOpen state
-
   const progressPercentage = dailyProgress.totalPendingCount === 0
     ? 100
     : Math.round((dailyProgress.completedCount / (dailyProgress.completedCount + dailyProgress.totalPendingCount)) * 100) || 0;
@@ -187,7 +183,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Has image</p>
+                        <p>Has image</p>
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -231,8 +227,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
           <p className="text-center text-muted-foreground mt-4">No tasks currently in focus. Great job!</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4"> {/* Adjusted grid to 2 columns */}
-          {/* Removed Mark All Done button */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
           <Button
             variant="outline"
             size="sm"
@@ -246,15 +241,13 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
             variant="outline"
             size="sm"
             onClick={toggleAllDoToday}
-            disabled={isDemo || dailyProgress.totalPendingCount === 0} // Disable if no pending tasks to toggle
+            disabled={isDemo || dailyProgress.totalPendingCount === 0}
             className="flex items-center justify-center"
           >
             <ChevronsDownUp className="h-4 w-4 mr-2" /> Toggle Do Today
           </Button>
         </div>
       </CardContent>
-
-      {/* Removed ConfirmationDialog */}
     </Card>
   );
 };

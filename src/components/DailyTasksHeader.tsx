@@ -198,7 +198,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isDemo={isDemo}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
         toggleAllDoToday={toggleAllDoToday}
-        // Removed markAllTasksAsCompleted prop
       />
 
       <ManageCategoriesDialog

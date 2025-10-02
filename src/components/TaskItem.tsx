@@ -204,6 +204,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
         "group",
         !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer"
       )}
+      onClick={() => !isOverlay && !isEditing && onOpenOverview(task)} // Make entire item clickable
     >
       {/* Priority Pill */}
       <div className={cn(
@@ -230,7 +231,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 flex items-center justify-center gap-1" // Added flex, items-center, justify-center, gap-1
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               toggleExpand?.(task.id);
@@ -242,7 +243,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               isExpanded ? "rotate-90" : "rotate-0"
             )} />
             {directSubtasksCount > 0 && (
-              <span className="ml-1 text-xs text-muted-foreground">{directSubtasksCount}</span>
+              <span className="text-xs text-muted-foreground">{directSubtasksCount}</span>
             )}
           </Button>
         )}
@@ -278,7 +279,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {/* Clickable Content Area */}
       <div
         className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 min-w-0 py-1"
-        onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
+        // onClick removed from here, now on parent div
       >
         <div className="flex-grow min-w-0 w-full">
           {isEditing ? (

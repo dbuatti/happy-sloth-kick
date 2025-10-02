@@ -293,14 +293,14 @@ const TaskList: React.FC<TaskListProps> = ({
   // Overall empty state for filtered tasks
   if (filteredTasks.length === 0 && !loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-        <ListTodo className="h-12 w-12 mb-4" />
-        <p className="text-lg font-semibold mb-2">No tasks found!</p>
-        <p className="text-center max-w-md">
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-card rounded-lg shadow-sm mt-6">
+        <ListTodo className="h-16 w-16 mb-4 text-primary/60" />
+        <p className="text-xl font-semibold mb-2">No tasks found!</p>
+        <p className="text-center max-w-md mb-6">
           It looks like there are no tasks matching your current filters or for this day.
           Try adjusting your filters or add a new task to get started!
         </p>
-        <Button onClick={() => onOpenAddTaskDialog(null, null)} className="mt-6">
+        <Button onClick={() => onOpenAddTaskDialog(null, null)} className="mt-2">
           <Plus className="h-4 w-4 mr-2" /> Add Your First Task
         </Button>
       </div>
@@ -341,8 +341,8 @@ const TaskList: React.FC<TaskListProps> = ({
                   </Button>
                 )}
                 <Button
-                  variant="outline" // Changed to outline for better visibility
-                  size="sm" // Changed to sm for consistency
+                  variant="outline"
+                  size="sm"
                   onClick={() => onOpenAddTaskDialog(null, section?.id || null)}
                   disabled={isDemo}
                   aria-label={`Add task to ${section?.name || 'Unsectioned Tasks'}`}
@@ -352,7 +352,7 @@ const TaskList: React.FC<TaskListProps> = ({
               </div>
             </div>
             {(!section || expandedSections[section.id] !== false) && (
-              tasks.length > 0 ? ( // Conditional rendering for tasks within a section
+              tasks.length > 0 ? (
                 <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                   <ul className="divide-y divide-border">
                     {tasks.map(task => (
@@ -382,14 +382,18 @@ const TaskList: React.FC<TaskListProps> = ({
                         insertionIndicator={insertionIndicator}
                         isSelected={selectedTaskIds.has(task.id)}
                         onAddSubtask={onOpenAddTaskDialog}
-                        showDragHandle={true} // Ensure drag handle is always shown for sortable items
+                        showDragHandle={true}
                       />
                     ))}
                   </ul>
                 </SortableContext>
               ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  <p>No tasks in this section. Add one above!</p>
+                <div className="p-6 text-center text-muted-foreground flex flex-col items-center justify-center">
+                  <ListTodo className="h-10 w-10 mb-3 text-primary/40" />
+                  <p className="text-md font-medium mb-2">No tasks here!</p>
+                  <p className="text-sm max-w-xs">
+                    This section is empty. Click "Add Task" above to get started.
+                  </p>
                 </div>
               )
             )}
