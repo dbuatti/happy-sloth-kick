@@ -1,11 +1,11 @@
-import React, { SetStateAction, useState } from 'react'; // Import useState
+import React, { SetStateAction, useState } from 'react';
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
 import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
 import { Button } from '@/components/ui/button';
-import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus, CheckCircle2 } from 'lucide-react'; // Added CheckCircle2
+import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus, CheckCircle2, XSquare } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from '@/components/ui/separator';
 import QuickAddTask from '@/components/QuickAddTask';
-import { Checkbox } from '@/components/ui/checkbox'; // Import Checkbox
-import ConfirmationDialog from './ConfirmationDialog'; // Import ConfirmationDialog
+import { Checkbox } from '@/components/ui/checkbox';
+import ConfirmationDialog from './ConfirmationDialog';
 
 interface DailyTasksHeaderProps {
   currentDate: Date;
@@ -50,10 +50,10 @@ interface DailyTasksHeaderProps {
   setIsManageSectionsOpen: React.Dispatch<SetStateAction<boolean>>;
   isFilterPanelOpen: boolean;
   toggleFilterPanel: () => void;
-  markAllTasksAsCompleted: () => Promise<void>; // Keep this prop
+  markAllTasksAsCompleted: () => Promise<void>;
+  markAllTasksAsSkipped: () => Promise<void>;
   onOpenAddTaskDialog?: () => void;
   handleAddTask: (taskData: NewTaskData) => Promise<any>;
-  // New props for bulk selection
   selectedCount: number;
   isSelectAllChecked: boolean;
   onToggleSelectAll: () => void;
@@ -84,14 +84,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   setIsManageSectionsOpen,
   isFilterPanelOpen,
   toggleFilterPanel,
-  markAllTasksAsCompleted, // Destructure this prop
+  markAllTasksAsCompleted,
+  markAllTasksAsSkipped,
   onOpenAddTaskDialog,
   handleAddTask,
   selectedCount,
   isSelectAllChecked,
   onToggleSelectAll,
 }) => {
-  const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false); // State for confirmation dialog
+  const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false);
+  const [isConfirmMarkAllSkippedOpen, setIsConfirmMarkAllSkippedOpen] = useState(false);
 
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -152,10 +154,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
                 <ChevronsDownUp className="mr-2 h-4 w-4" /> Toggle All Sections
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => setIsConfirmMarkAllDoneOpen(true)} // Open confirmation dialog
+                onClick={() => setIsConfirmMarkAllDoneOpen(true)}
                 disabled={isDemo || dailyProgress.totalPendingCount === 0}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" /> Mark All Pending as Completed
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setIsConfirmMarkAllSkippedOpen(true)}
+                disabled={isDemo || dailyProgress.totalPendingCount === 0}
+              >
+                <XSquare className="h-4 w-4 mr-2" /> Mark All Pending as Skipped
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -172,21 +180,20 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
 
       <Separator className="my-4" />
 
-      {/* Global Quick Add Task moved here */}
       <QuickAddTask
         onAddTask={handleAddTask}
         defaultCategoryId={allCategories[0]?.id || ''}
         isDemo={isDemo}
         allCategories={allCategories}
         currentDate={currentDate}
-        sections={sections} // Pass sections prop
+        sections={sections}
         createSection={createSection}
         updateSection={updateSection}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
 
-      <Separator className="my-4" /> {/* Add a separator below QuickAddTask */}
+      <Separator className="my-4" />
 
       <DailyOverviewCard
         dailyProgress={dailyProgress}
@@ -229,6 +236,19 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         description="Are you sure you want to mark all pending tasks as completed for today? This action cannot be undone easily."
         confirmText="Mark All Done"
         confirmVariant="default"
+      />
+
+      <ConfirmationDialog
+        isOpen={isConfirmMarkAllSkippedOpen}
+        onClose={() => setIsConfirmMarkAllSkippedOpen(false)}
+        onConfirm={() => {
+          markAllTasksAsSkipped();
+          setIsConfirmMarkAllSkippedOpen(false);
+        }}
+        title="Confirm Mark All Pending as Skipped"
+        description="Are you sure you want to mark all pending tasks as skipped for today? This action cannot be undone easily."
+        confirmText="Mark All Skipped"
+        confirmVariant="destructive"
       />
     </div>
   );

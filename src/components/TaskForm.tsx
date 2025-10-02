@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, BellRing, Lightbulb, X } from 'lucide-react'; // Added X icon
+import { Calendar as CalendarIcon, BellRing, Lightbulb, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import CategorySelector from "./CategorySelector";
 import PrioritySelector from "./PrioritySelector";
@@ -21,11 +21,11 @@ import { showError, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import ImageUploadArea from './ImageUploadArea';
-import { useAuth } from '@/context/AuthContext'; // Import useAuth
+import { useAuth } from '@/context/AuthContext';
 
 const taskFormSchema = z.object({
   description: z.string().min(1, { message: 'Task description is required.' }).max(255, { message: 'Description must be 255 characters or less.' }).trim(),
-  status: z.enum(['to-do', 'completed', 'skipped', 'archived']), // Added status field
+  status: z.enum(['to-do', 'completed', 'skipped', 'archived']),
   category: z.string().min(1, { message: 'Category is required.' }),
   priority: z.string().min(1, { message: 'Priority is required.' }),
   dueDate: z.date().nullable().optional().transform(v => v ?? null),
@@ -113,7 +113,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   className,
   allTasks,
 }) => {
-  const { user } = useAuth(); // Get the authenticated user
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -123,7 +123,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     resolver: zodResolver(taskFormSchema),
     defaultValues: {
       description: '',
-      status: 'to-do', // Default status
+      status: 'to-do',
       category: '',
       priority: 'medium',
       dueDate: null,
@@ -154,7 +154,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
     const defaultValues = {
       description: '',
-      status: 'to-do' as const, // Default status
+      status: 'to-do' as const,
       category: parentTask?.category || defaultCategoryId,
       priority: parentTask?.priority || 'medium',
       dueDate: null,
@@ -172,7 +172,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       reset({
         ...defaultValues,
         description: initialData.description || '',
-        status: initialData.status || 'to-do', // Initialize status from initialData
+        status: initialData.status || 'to-do',
         category: initialData.category || defaultValues.category,
         priority: initialData.priority || 'medium',
         dueDate: initialData.due_date ? parseISO(initialData.due_date) : null,
@@ -253,7 +253,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
     let imageUrlToSave = initialData?.image_url || null;
 
     if (imagePreview === null && initialData?.image_url) {
-      // Image was present initially but now cleared, so delete from storage
       imageUrlToSave = null;
       try {
         const imagePath = initialData.image_url.split('/taskimages/')[1];
@@ -271,7 +270,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         setIsSaving(false);
         return;
       }
-      const filePath = `${user.id}/${uuidv4()}`; // Use dynamic user ID
+      const filePath = `${user.id}/${uuidv4()}`;
       const { error: uploadError } = await supabase.storage
         .from('taskimages')
         .upload(filePath, imageFile);
@@ -289,17 +288,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
       imageUrlToSave = urlData.publicUrl;
     }
 
-    // Construct NewTaskData object
     const newTaskData: NewTaskData = {
       description: data.description.trim(),
-      status: data.status, // Pass status from form
+      status: data.status,
       category: data.category,
       priority: data.priority,
       due_date: data.dueDate ? format(data.dueDate, 'yyyy-MM-dd') : null,
       notes: data.notes,
       remind_at: finalRemindAt ? finalRemindAt.toISOString() : null,
       section_id: data.sectionId,
-      recurring_type: data.recurringType, // Corrected to recurring_type
+      recurring_type: data.recurringType,
       parent_task_id: data.parentTaskId,
       link: data.link,
       image_url: imageUrlToSave,
@@ -565,26 +563,58 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
       <div>
         <Label htmlFor="task-link">Link / File Path (Optional)</Label>
-        <Input
-          id="task-link"
-          placeholder="URL or local file path (e.g., /Users/...)"
-          {...register('link')}
-          disabled={isSaving || isSuggesting}
-          className="h-9 text-base"
-        />
+        <div className="flex gap-1.5">
+          <Input
+            id="task-link"
+            placeholder="URL or local file path (e.g., /Users/...)"
+            {...register('link')}
+            disabled={isSaving || isSuggesting}
+            className="h-9 text-base flex-1"
+          />
+          {watch('link') && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setValue('link', null)}
+              disabled={isSaving || isSuggesting}
+              title="Clear link"
+              aria-label="Clear link"
+              className="h-9 w-9"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
         {errors.link && <p className="text-destructive text-sm mt-1">{errors.link.message}</p>}
       </div>
 
       <div>
         <Label htmlFor="task-notes">Notes</Label>
-        <Textarea
-          id="task-notes"
-          placeholder="Add notes about this task..."
-          {...register('notes')}
-          rows={2}
-          disabled={isSaving || isSuggesting}
-          className="min-h-[60px] text-base"
-        />
+        <div className="flex gap-1.5">
+          <Textarea
+            id="task-notes"
+            placeholder="Add notes about this task..."
+            {...register('notes')}
+            rows={2}
+            disabled={isSaving || isSuggesting}
+            className="min-h-[60px] text-base flex-1"
+          />
+          {watch('notes') && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setValue('notes', null)}
+              disabled={isSaving || isSuggesting}
+              title="Clear notes"
+              aria-label="Clear notes"
+              className="h-9 w-9 self-start"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
         {errors.notes && <p className="text-destructive text-sm mt-1">{errors.notes.message}</p>}
       </div>
 

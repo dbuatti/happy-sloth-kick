@@ -12,8 +12,8 @@ import FilterPanel from '@/components/FilterPanel';
 import DailyBriefingCard from '@/components/DailyBriefingCard';
 import { getDailyBriefing } from '@/integrations/supabase/api';
 import { useQuery } from '@tanstack/react-query';
-import AddTaskDialog from '@/components/AddTaskDialog'; // Import the new dialog
-import { showSuccess, showError } from '@/utils/toast'; // Import showSuccess and showError
+import AddTaskDialog from '@/components/AddTaskDialog';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface DailyTasksPageProps {
   isDemo?: boolean;
@@ -24,9 +24,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(false);
   const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
-  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false); // State for AddTaskDialog
-  const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null); // New state for subtask parent
-  const [preselectedSectionIdForSubtask, setPreselectedSectionIdForSubtask] = useState<string | null>(null); // New state for subtask section
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
+  const [preselectedSectionIdForSubtask, setPreselectedSectionIdForSubtask] = useState<string | null>(null);
 
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -38,7 +38,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
-  const [isSelectAllChecked, setIsSelectAllChecked] = useState(false); // New state for select all checkbox
+  const [isSelectAllChecked, setIsSelectAllChecked] = useState(false);
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [isManageSectionsOpen, setIsManageSectionsOpen] = useState(false);
 
@@ -47,7 +47,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     filteredTasks,
     nextAvailableTask,
     loading: tasksLoading,
-    userId, // Ensure userId is correctly destructured from useTasks
+    userId,
     handleAddTask,
     updateTask,
     deleteTask,
@@ -65,8 +65,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
-    toggleAllDoToday: toggleAllDoTodayFromHook, // Renamed to avoid conflict
+    toggleAllDoToday: toggleAllDoTodayFromHook,
     dailyProgress,
+    markAllTasksAsSkipped,
   } = useTasks({
     currentDate,
     userId: demoUserId,
@@ -193,7 +194,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
 
     const tasksToToggle = processedTasks.filter(task => selectedTaskIds.has(task.id));
     for (const task of tasksToToggle) {
-      // Only toggle non-recurring top-level tasks
       if (task.recurring_type === 'none' && task.parent_task_id === null) {
         await toggleDoToday(task);
       }
@@ -217,7 +217,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const { data: dailyBriefing, isLoading: isBriefingLoading, isError: isBriefingError } = useQuery<string | null, Error>({
     queryKey: ['dailyBriefing', userId, currentDate.toISOString().split('T')[0]],
     queryFn: () => getDailyBriefing(userId as string, currentDate),
-    enabled: !!userId && !isDemo, // Only enable query if userId is available and not in demo mode
+    enabled: !!userId && !isDemo,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -239,11 +239,10 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
       .map(task => task.id);
     if (pendingTaskIds.length > 0) {
       await bulkUpdateTasks({ status: 'completed' }, pendingTaskIds);
-      showSuccess('All pending tasks marked as completed!'); // Added success toast
+      showSuccess('All pending tasks marked as completed!');
     }
   }, [processedTasks, bulkUpdateTasks]);
 
-  // New function to wrap toggleAllDoToday from hook to match DailyTasksHeader prop signature
   const handleToggleAllDoToday = useCallback(async () => {
     await toggleAllDoTodayFromHook(filteredTasks);
   }, [toggleAllDoTodayFromHook, filteredTasks]);
@@ -284,6 +283,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         selectedCount={selectedTaskIds.size}
         isSelectAllChecked={isSelectAllChecked}
         onToggleSelectAll={handleToggleSelectAll}
+        markAllTasksAsSkipped={markAllTasksAsSkipped}
       />
 
       <FilterPanel
@@ -350,7 +350,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onChangePriority={handleBulkChangePriority}
           onBulkChangeSection={handleBulkChangeSection}
           sections={sections}
-          onBulkToggleDoToday={handleBulkToggleDoToday} // Pass new handler
+          onBulkToggleDoToday={handleBulkToggleDoToday}
         />
       )}
 
