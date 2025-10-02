@@ -207,7 +207,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isDemo={isDemo}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
         toggleAllDoToday={toggleAllDoToday}
-        markAllTasksAsSkipped={markAllTasksAsSkipped} {/* Fixed: Pass markAllTasksAsSkipped prop */}
+        markAllTasksAsSkipped={markAllTasksAsSkipped}
       />
 
       <ManageCategoriesDialog
