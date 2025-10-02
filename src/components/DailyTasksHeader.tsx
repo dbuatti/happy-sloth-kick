@@ -1,4 +1,4 @@
-import React, { SetStateAction, useState, useCallback } from 'react';
+import React, { SetStateAction, useState } from 'react';
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
@@ -30,6 +30,9 @@ interface DailyTasksHeaderProps {
   updateSection: (sectionId: string, newName: string) => Promise<void>;
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  createCategory: (name: string, color: string) => Promise<string | null>; // Added
+  updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>; // Added
+  deleteCategory: (categoryId: string) => Promise<boolean>; // Added
   archiveAllCompletedTasks: () => Promise<void>;
   toggleAllDoToday: () => Promise<void>;
   dailyProgress: {
@@ -68,6 +71,9 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   updateSection,
   deleteSection,
   updateSectionIncludeInFocusMode,
+  createCategory, // Destructure new category functions
+  updateCategory, // Destructure new category functions
+  deleteCategory, // Destructure new category functions
   archiveAllCompletedTasks,
   toggleAllDoToday,
   dailyProgress,
@@ -95,15 +101,16 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false);
   const [isConfirmMarkAllSkippedOpen, setIsConfirmMarkAllSkippedOpen] = useState(false);
 
-  const handleCategoryCreated = useCallback(async () => {
-    // This is a dummy function for now, actual logic would be in useTasks or similar hook
-    console.log("Category created (dummy)");
-  }, []);
+  // Wrapper for createSection to match ManageSectionsDialogProps
+  const createSectionForDialog = useCallback(async (name: string) => {
+    await createSection(name);
+  }, [createSection]);
 
-  const handleCategoryDeleted = useCallback(async () => {
-    // This is a dummy function for now, actual logic would be in useTasks or similar hook
-    console.log("Category deleted (dummy)");
-  }, []);
+  // Wrapper for updateSection to match ManageSectionsDialogProps
+  const updateSectionForDialog = useCallback(async (id: string, newName: string) => {
+    const originalSection = sections.find(s => s.id === id);
+    await updateSection(id, newName); // Assuming updateSection handles include_in_focus_mode internally or it's not needed here
+  }, [updateSection, sections]);
 
   return (
     <div className="sticky top-0 z-10 flex flex-col bg-background bg-gradient-to-br from-[hsl(var(--primary)/0.05)] to-[hsl(var(--secondary)/0.05)] dark:from-[hsl(var(--primary)/0.1)] dark:to-[hsl(var(--secondary)/0.1)] rounded-b-2xl shadow-lg pb-4 px-4 lg:px-6">
@@ -224,16 +231,17 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
         categories={allCategories}
-        onCategoryCreated={handleCategoryCreated}
-        onCategoryDeleted={handleCategoryDeleted}
+        onCategoryCreated={createCategory}
+        onCategoryDeleted={deleteCategory}
+        onCategoryUpdated={updateCategory}
       />
 
       <ManageSectionsDialog
         isOpen={isManageSectionsOpen}
         onClose={() => setIsManageSectionsOpen(false)}
         sections={sections}
-        createSection={createSection}
-        updateSection={updateSection}
+        createSection={createSectionForDialog}
+        updateSection={updateSectionForDialog}
         deleteSection={deleteSection}
         updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />

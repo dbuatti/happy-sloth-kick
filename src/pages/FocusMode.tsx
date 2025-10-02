@@ -1,10 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { useAllAppointments } from '@/hooks/useAllAppointments';
+// Removed: import { useAllAppointments } from '@/hooks/useAllAppointments';
 import FocusPanel from '@/components/FocusPanel';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-// Removed: import { Appointment } from '@/hooks/useAppointments'; // Unused import
+// Removed: import { Appointment } from '@/hooks/useAppointments';
 
 interface FocusModeProps {
   isDemo?: boolean;
@@ -44,14 +44,14 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
     userId: userId,
   });
 
-  // Removed: const { appointments: allAppointments } = useAllAppointments(); // Unused variable
+  // Removed: const { appointments: allAppointments } = useAllAppointments();
 
   const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
 
-  // Wrapper function for toggleAllDoToday to match expected signature
+  // Wrapper function for toggleAllDoToday to match FocusPanelProps
   const handleToggleAllDoToday = useCallback(async () => {
     await toggleAllDoTodayFromHook(filteredTasks);
   }, [toggleAllDoTodayFromHook, filteredTasks]);

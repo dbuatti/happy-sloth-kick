@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import FocusPanel from './FocusPanel';
-import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
+import FocusPanel from './FocusPanel'; // Import the new FocusPanel component
+import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks'; // Import types
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;

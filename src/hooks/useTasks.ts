@@ -28,6 +28,11 @@ import {
   updateSectionIncludeInFocusModeMutation,
   reorderSectionsMutation,
 } from '@/integrations/supabase/sectionMutations';
+import {
+  createCategoryMutation,
+  updateCategoryMutation,
+  deleteCategoryMutation,
+} from '@/integrations/supabase/categoryMutations'; // Import new category mutations
 import { useTaskProcessing } from './useTaskProcessing';
 import { useAuth } from '@/context/AuthContext';
 import { useReminders } from '@/context/ReminderContext';
@@ -542,6 +547,22 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     return markAllTasksAsSkippedMutation(mutationContext);
   }, [userId, mutationContext]);
 
+  // New category management functions
+  const createCategory = useCallback(async (name: string, color: string) => {
+    if (!userId) { showError('User not authenticated.'); return null; }
+    return createCategoryMutation(name, color, mutationContext);
+  }, [userId, mutationContext]);
+
+  const updateCategory = useCallback(async (categoryId: string, updates: Partial<Category>) => {
+    if (!userId) { showError('User not authenticated.'); return false; }
+    return updateCategoryMutation(categoryId, updates, mutationContext);
+  }, [userId, mutationContext]);
+
+  const deleteCategory = useCallback(async (categoryId: string) => {
+    if (!userId) { showError('User not authenticated.'); return false; }
+    return deleteCategoryMutation(categoryId, mutationContext);
+  }, [userId, mutationContext]);
+
   return {
     tasks: rawTasks,
     processedTasks,
@@ -577,5 +598,8 @@ export const useTasks = ({ currentDate, viewMode = 'daily', userId: propUserId, 
     toggleAllDoToday,
     dailyProgress,
     markAllTasksAsSkipped,
+    createCategory, // Expose new category functions
+    updateCategory,
+    deleteCategory,
   };
 };

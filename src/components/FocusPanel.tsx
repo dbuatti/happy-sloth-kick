@@ -24,7 +24,7 @@ interface FocusPanelProps {
   doTodayOffIds: Set<string>;
   toggleDoToday: (task: Task) => Promise<void>;
   archiveAllCompletedTasks: () => Promise<void>;
-  toggleAllDoToday: () => Promise<void>;
+  toggleAllDoToday: () => Promise<void>; // Changed to no arguments
   markAllTasksAsSkipped?: () => Promise<void>;
   isDemo?: boolean;
 }

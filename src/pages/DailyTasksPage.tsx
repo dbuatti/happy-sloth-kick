@@ -68,6 +68,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     toggleAllDoToday: toggleAllDoTodayFromHook,
     dailyProgress,
     markAllTasksAsSkipped,
+    createCategory, // Destructure new category functions
+    updateCategory,
+    deleteCategory,
   } = useTasks({
     currentDate,
     userId: demoUserId,
@@ -294,6 +297,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         isSelectAllChecked={isSelectAllChecked}
         onToggleSelectAll={handleToggleSelectAll}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
+        createCategory={createCategory}
+        deleteCategory={deleteCategory}
+        updateCategory={updateCategory}
       />
 
       <FilterPanel
@@ -361,7 +367,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onBulkChangeSection={handleBulkChangeSection}
           sections={sections}
           onBulkToggleDoToday={handleBulkToggleDoToday}
-          onBulkMarkSkipped={handleBulkMarkSkipped} // Pass new handler
+          onBulkMarkSkipped={handleBulkMarkSkipped}
         />
       )}
 
@@ -400,7 +406,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         toggleDoToday={toggleDoToday}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
         toggleAllDoToday={handleToggleAllDoToday}
-        markAllTasksAsSkipped={markAllTasksAsSkipped} // Pass new prop
+        markAllTasksAsSkipped={markAllTasksAsSkipped}
+        loading={tasksLoading}
       />
 
       <AddTaskDialog
