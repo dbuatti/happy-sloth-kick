@@ -202,6 +202,16 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
     handleClearSelection();
   }, [selectedTaskIds, processedTasks, toggleDoToday, handleClearSelection]);
 
+  const handleBulkMarkSkipped = useCallback(async () => {
+    if (selectedTaskIds.size === 0) {
+      showError('No tasks selected to mark as skipped.');
+      return;
+    }
+    await bulkUpdateTasks({ status: 'skipped' }, Array.from(selectedTaskIds));
+    showSuccess('Selected tasks marked as skipped!');
+    handleClearSelection();
+  }, [selectedTaskIds, bulkUpdateTasks, handleClearSelection]);
+
   const toggleFilterPanel = useCallback(() => {
     setIsFilterPanelOpen(prev => !prev);
   }, []);
@@ -351,6 +361,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           onBulkChangeSection={handleBulkChangeSection}
           sections={sections}
           onBulkToggleDoToday={handleBulkToggleDoToday}
+          onBulkMarkSkipped={handleBulkMarkSkipped} // Pass new handler
         />
       )}
 
@@ -388,6 +399,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         setFocusTask={setFocusTask}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
+        archiveAllCompletedTasks={archiveAllCompletedTasks}
+        toggleAllDoToday={handleToggleAllDoToday}
+        markAllTasksAsSkipped={markAllTasksAsSkipped} // Pass new prop
       />
 
       <AddTaskDialog

@@ -12,8 +12,8 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Archive, CheckCircle2, Trash2, XCircle, ChevronDown, FolderOpen, ChevronsDownUp } from 'lucide-react'; // Added ChevronsDownUp
-import { Task, TaskSection } from '@/hooks/useTasks'; // Import TaskSection
+import { Archive, CheckCircle2, Trash2, XCircle, ChevronDown, FolderOpen, ChevronsDownUp, XSquare } from 'lucide-react'; // Added XSquare
+import { Task, TaskSection } from '@/hooks/useTasks';
 
 interface BulkActionBarProps {
   selectedCount: number;
@@ -24,7 +24,8 @@ interface BulkActionBarProps {
   onChangePriority: (priority: Task['priority']) => Promise<void>;
   onBulkChangeSection: (sectionId: string | null) => Promise<void>;
   sections: TaskSection[];
-  onBulkToggleDoToday: () => Promise<void>; // New prop
+  onBulkToggleDoToday: () => Promise<void>;
+  onBulkMarkSkipped: () => Promise<void>; // New prop
 }
 
 const BulkActionBar: React.FC<BulkActionBarProps> = ({
@@ -36,7 +37,8 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
   onChangePriority,
   onBulkChangeSection,
   sections,
-  onBulkToggleDoToday, // Destructure new prop
+  onBulkToggleDoToday,
+  onBulkMarkSkipped, // Destructure new prop
 }) => {
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-card p-3 rounded-full shadow-2xl border border-border flex items-center gap-2 z-50">
@@ -58,6 +60,9 @@ const BulkActionBar: React.FC<BulkActionBarProps> = ({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onBulkToggleDoToday}>
             <ChevronsDownUp className="mr-2 h-4 w-4" /> Toggle Do Today
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onBulkMarkSkipped}> {/* New dropdown item */}
+            <XSquare className="mr-2 h-4 w-4" /> Mark Skipped
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuSub>

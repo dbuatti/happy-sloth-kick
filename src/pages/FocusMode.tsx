@@ -1,10 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
-import FullScreenFocusView from '@/components/FullScreenFocusView';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { Target, Plus } from 'lucide-react';
+import TaskDetailDialog from '@/components/TaskDetailDialog';
+import AddTaskDialog from '@/components/AddTaskDialog';
+import { showSuccess } from '@/utils/toast';
+import { format, parseISO, isSameDay } from 'date-fns';
+import { useAllAppointments } from '@/hooks/useAllAppointments';
+import { Appointment } from '@/hooks/useAppointments';
 
 interface FocusModeProps {
   isDemo?: boolean;
@@ -12,80 +18,99 @@ interface FocusModeProps {
 }
 
 const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
-  // Removed unused 'user' and 'settings' variables
-  const [currentDate] = useState(new Date());
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { settings: userSettings } = useSettings();
+  const userId = isDemo ? demoUserId : user?.id;
+
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true); // Focus mode starts open
+  const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
+  const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
+  const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
+  const [preselectedParentTaskId, setPreselectedParentTaskId] = useState<string | null>(null);
+  const [preselectedSectionIdForSubtask, setPreselectedSectionIdForSubtask] = useState<string | null>(null);
+
+  const currentDate = new Date(); // Focus mode always uses current date
 
   const {
-    nextAvailableTask,
-    processedTasks: allTasks, // Renamed to allTasks for clarity in this component
+    processedTasks,
     filteredTasks,
+    nextAvailableTask,
+    loading: tasksLoading,
+    handleAddTask,
     updateTask,
     deleteTask,
     sections,
     allCategories,
-    handleAddTask,
+    createSection,
+    updateSection,
+    deleteSection,
+    updateSectionIncludeInFocusMode,
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
-  } = useTasks({ currentDate, viewMode: 'focus', userId: demoUserId });
+    archiveAllCompletedTasks,
+    toggleAllDoToday,
+    markAllTasksAsSkipped,
+  } = useTasks({
+    currentDate,
+    userId,
+    viewMode: 'focus',
+  });
 
-  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true);
+  const { appointments: allAppointments } = useAllAppointments();
 
-  const handleMarkDone = async () => {
-    if (nextAvailableTask) {
-      await updateTask(nextAvailableTask.id, { status: 'completed' });
-      setFocusTask(null); // Clear focus after completing
-    }
-  };
+  const scheduledTasksMap = useMemo(() => {
+    const map = new Map<string, Appointment>();
+    allAppointments.forEach((app: Appointment) => {
+      if (app.task_id) {
+        map.set(app.task_id, app);
+      }
+    });
+    return map;
+  }, [allAppointments]);
 
-  const handleCloseFocusView = useCallback(() => {
-    setFocusTask(null); // Clear focus when closing the full-screen view
-  }, [setFocusTask]);
-
-  const handleOpenDetail = useCallback((_task: Task) => { // Renamed to _task to mark as intentionally unused
-    // In focus mode, we don't open a separate dialog, but rather the panel
-    // This function is passed to FocusToolsPanel, which then uses it to open TaskOverviewDialog
-    // So, this is just a passthrough.
-    // The TaskOverviewDialog will be rendered inside the FocusPanelDrawer.
-    // For now, we'll just ensure the panel is open and the task is set for overview.
-    setIsFocusPanelOpen(true);
-    // The FocusToolsPanel will handle setting the task for its internal TaskOverviewDialog
+  const handleOpenOverview = useCallback((task: Task) => {
+    setTaskToOverview(task);
+    setIsTaskOverviewOpen(true);
   }, []);
 
-  const handleExitFocusMode = () => {
-    setFocusTask(null); // Clear focus task when exiting
-    navigate(isDemo ? '/demo/dashboard' : '/dashboard');
-  };
+  const openAddTaskDialog = useCallback((parentTaskId: string | null = null, sectionId: string | null = null) => {
+    setPreselectedParentTaskId(parentTaskId);
+    setPreselectedSectionIdForSubtask(sectionId);
+    setIsAddTaskDialogOpen(true);
+  }, []);
+
+  const closeAddTaskDialog = useCallback(() => {
+    setIsAddTaskDialogOpen(false);
+    setPreselectedParentTaskId(null);
+    setPreselectedSectionIdForSubtask(null);
+  }, []);
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden">
-      {nextAvailableTask ? (
-        <FullScreenFocusView
-          taskDescription={nextAvailableTask.description}
-          onClose={handleCloseFocusView}
-          onMarkDone={handleMarkDone}
-        />
-      ) : (
-        <div className="flex items-center justify-center h-full w-full bg-accent text-accent-foreground p-8 text-center">
-          <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight">No Focus Task Set</h1>
-            <p className="text-xl md:text-2xl">Select a task from the panel to begin focusing.</p>
-            <Button size="lg" onClick={handleExitFocusMode} className="mt-8">
-              <X className="mr-2 h-6 w-6" /> Exit Focus Mode
-            </Button>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-col items-center justify-center h-full w-full p-4">
+      <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+        <Target className="h-7 w-7 text-primary" /> Focus Mode
+      </h1>
+      <p className="text-muted-foreground mb-8 text-center max-w-md">
+        Stay productive by focusing on one task at a time. Your next available task is highlighted.
+      </p>
+
+      <Button onClick={() => setIsFocusPanelOpen(true)} className="mb-4">
+        <Target className="h-4 w-4 mr-2" /> Open Focus Panel
+      </Button>
+
+      <Button variant="outline" onClick={() => openAddTaskDialog()} disabled={isDemo}>
+        <Plus className="h-4 w-4 mr-2" /> Add New Task
+      </Button>
 
       <FocusPanelDrawer
         isOpen={isFocusPanelOpen}
         onClose={() => setIsFocusPanelOpen(false)}
         nextAvailableTask={nextAvailableTask}
-        allTasks={allTasks}
+        allTasks={processedTasks}
         filteredTasks={filteredTasks}
         updateTask={updateTask}
-        onOpenDetail={handleOpenDetail}
+        onOpenDetail={handleOpenOverview}
         onDeleteTask={deleteTask}
         sections={sections}
         allCategories={allCategories}
@@ -94,6 +119,43 @@ const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => 
         setFocusTask={setFocusTask}
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
+        archiveAllCompletedTasks={archiveAllCompletedTasks} // Pass prop
+        toggleAllDoToday={toggleAllDoToday} // Pass prop
+        markAllTasksAsSkipped={markAllTasksAsSkipped} // Pass prop
+      />
+
+      {taskToOverview && (
+        <TaskDetailDialog
+          task={taskToOverview}
+          isOpen={isTaskOverviewOpen}
+          onClose={() => setIsTaskOverviewOpen(false)}
+          onUpdate={updateTask}
+          onDelete={deleteTask}
+          sections={sections}
+          allCategories={allCategories}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          allTasks={processedTasks}
+          onAddSubtask={openAddTaskDialog}
+        />
+      )}
+
+      <AddTaskDialog
+        isOpen={isAddTaskDialogOpen}
+        onClose={closeAddTaskDialog}
+        onSave={handleAddTask}
+        sections={sections}
+        allCategories={allCategories}
+        currentDate={currentDate}
+        createSection={createSection}
+        updateSection={updateSection}
+        deleteSection={deleteSection}
+        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+        allTasks={processedTasks}
+        preselectedParentTaskId={preselectedParentTaskId}
+        preselectedSectionId={preselectedSectionIdForSubtask}
       />
     </div>
   );

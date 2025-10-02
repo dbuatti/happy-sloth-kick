@@ -2,7 +2,7 @@ import React, { SetStateAction, useState } from 'react';
 import DateNavigator from './DateNavigator';
 import { Task, TaskSection, Category, NewTaskData } from '@/hooks/useTasks';
 import ManageCategoriesDialog from './ManageCategoriesDialog';
-import ManageSectionsDialog from './ManageSectionsDialog'; // Corrected import path
+import ManageSectionsDialog from './ManageSectionsDialog';
 import DailyOverviewCard from './DailyOverviewCard';
 import { Button } from '@/components/ui/button';
 import { Filter as FilterIcon, Settings as SettingsIcon, ListTodo, ChevronsDownUp, Plus, CheckCircle2, XSquare } from 'lucide-react';
@@ -207,6 +207,7 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         isDemo={isDemo}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
         toggleAllDoToday={toggleAllDoToday}
+        markAllTasksAsSkipped={markAllTasksAsSkipped} {/* Fixed: Pass markAllTasksAsSkipped prop */}
       />
 
       <ManageCategoriesDialog

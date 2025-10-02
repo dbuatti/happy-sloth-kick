@@ -4,7 +4,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle2, Target, ListTodo, Archive, ChevronsDownUp, Repeat, Link as LinkIcon, Calendar as CalendarIcon, FileText, Image } from 'lucide-react'; // Added icons for task display
+import { CheckCircle2, Target, ListTodo, Archive, ChevronsDownUp, Repeat, Link as LinkIcon, Calendar as CalendarIcon, FileText, Image, XSquare } from 'lucide-react'; // Added XSquare icon
 import { Task } from '@/hooks/useTasks';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
@@ -23,8 +23,9 @@ interface DailyOverviewCardProps {
   onOpenFocusView: () => void;
   tasksLoading: boolean;
   isDemo?: boolean;
-  archiveAllCompletedTasks: () => Promise<void>; // New prop
-  toggleAllDoToday: () => Promise<void>; // New prop
+  archiveAllCompletedTasks: () => Promise<void>;
+  toggleAllDoToday: () => Promise<void>;
+  markAllTasksAsSkipped: () => Promise<void>; // New prop
 }
 
 const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
@@ -37,6 +38,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
   isDemo,
   archiveAllCompletedTasks,
   toggleAllDoToday,
+  markAllTasksAsSkipped, // Destructure new prop
 }) => {
   const progressPercentage = dailyProgress.totalPendingCount === 0
     ? 100
@@ -234,7 +236,7 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
           <p className="text-center text-muted-foreground mt-4">No tasks currently in focus. Great job!</p>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-4"> {/* Changed to 3 columns */}
           <Button
             variant="outline"
             size="sm"
@@ -252,6 +254,15 @@ const DailyOverviewCard: React.FC<DailyOverviewCardProps> = ({
             className="flex items-center justify-center"
           >
             <ChevronsDownUp className="h-4 w-4 mr-2" /> Toggle Do Today
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={markAllTasksAsSkipped}
+            disabled={isDemo || dailyProgress.totalPendingCount === 0}
+            className="flex items-center justify-center"
+          >
+            <XSquare className="h-4 w-4 mr-2" /> Mark All Skipped
           </Button>
         </div>
       </CardContent>
