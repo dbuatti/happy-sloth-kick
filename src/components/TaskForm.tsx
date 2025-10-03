@@ -148,6 +148,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const description = watch('description');
   const remindAtDate = watch('remindAtDate');
+  const parentTaskId = watch('parentTaskId'); // Watch parentTaskId
 
   useEffect(() => {
     const generalCategory = allCategories.find(cat => cat.name.toLowerCase() === 'general');
@@ -496,7 +497,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
               control={control}
               name="recurringType"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={!!initialData?.parent_task_id || isSaving || isSuggesting}>
+                <Select value={field.value} onValueChange={field.onChange} disabled={!!parentTaskId || isSaving || isSuggesting}>
                   <SelectTrigger aria-label="Select recurrence type" className="h-9 text-base">
                     <SelectValue placeholder="Select recurrence" />
                   </SelectTrigger>

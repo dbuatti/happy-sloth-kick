@@ -21,7 +21,7 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import DoTodaySwitch from '@/components/DoTodaySwitch'; // Import the new DoTodaySwitch component
+import DoTodaySwitch from '@/components/DoTodaySwitch';
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
 
@@ -443,7 +443,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
             <DoTodaySwitch
               isOn={isDoToday}
               onToggle={handleToggleDoTodaySwitch}
-              taskId={task.id}
               isDemo={isDemo}
             />
           </TooltipTrigger>
