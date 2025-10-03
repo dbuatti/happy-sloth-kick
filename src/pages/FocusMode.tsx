@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useState, useCallback } from 'react'; // Removed unused useMemo
+import React, { useState, useCallback } from 'react';
 import { useTasks, Task } from '@/hooks/useTasks';
 import FocusPanelDrawer from '@/components/FocusPanelDrawer';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
 import { PomodoroProvider } from '@/context/PomodoroContext';
-// Removed unused useAllAppointments, Appointment
 import { Button } from '@/components/ui/button';
 import { Target } from 'lucide-react';
-import { showSuccess } from '@/utils/toast';
+// Removed unused showSuccess import
 
 interface FocusModeProps {
-  // Removed unused isDemo
   demoUserId?: string;
 }
 
-const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => { // Removed isDemo from destructuring
+const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
   const [currentDate] = useState(new Date());
-  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true); // Keep open by default for Focus Mode page
+  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true);
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
@@ -25,15 +23,12 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => { // Removed isD
     processedTasks,
     filteredTasks,
     loading: tasksLoading,
-    // Removed unused userId
     handleAddTask,
     updateTask,
     deleteTask,
     sections,
     allCategories,
-    // Removed unused updateTaskParentAndOrder
     archiveAllCompletedTasks,
-    // Removed unused markAllTasksInSectionCompleted
     createSection,
     updateSection,
     deleteSection,
@@ -49,18 +44,13 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => { // Removed isD
   } = useTasks({
     currentDate,
     userId: demoUserId,
-    viewMode: 'focus', // Ensure tasks are filtered for focus mode
+    viewMode: 'focus',
   });
-
-  // Removed unused scheduledTasksMap
-  // Removed unused useAllAppointments and Appointment imports
 
   const handleOpenOverview = useCallback((task: Task) => {
     setTaskToOverview(task);
     setIsTaskOverviewOpen(true);
   }, []);
-
-  // Removed unused handleSetFocusTaskFromPage
 
   return (
     <PomodoroProvider>
@@ -104,9 +94,6 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => { // Removed isD
         toggleAllDoToday={toggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
         loading={tasksLoading}
-        createCategory={createCategory}
-        updateCategory={updateCategory}
-        deleteCategory={deleteCategory}
       />
 
       {taskToOverview && (
@@ -122,11 +109,9 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => { // Removed isD
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
-          // Removed unused onAddSubtask
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
-          // Removed unused onOpenOverview
         />
       )}
     </PomodoroProvider>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSettings, DEFAULT_SETTINGS } from '@/context/SettingsContext'; // Import DEFAULT_SETTINGS
+import { useSettings, DEFAULT_SETTINGS, UserSettings } from '@/hooks/useSettings';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Textarea } from '@/components/ui/textarea';
-// Removed unused Select and related imports
 import ConfirmationDialog from '@/components/ConfirmationDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { Settings as SettingsIcon, LogOut, Trash2, RefreshCcw } from 'lucide-react';
@@ -23,12 +22,11 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId }) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuth(); // Destructure signOut directly from useAuth
   const userId = demoUserId || user?.id;
-  const { settings, isLoading, updateSettings } = useSettings({ userId });
+  const { settings, isLoading, updateSettings } = useSettings({ userId }); // Destructure isLoading from useSettings
   const navigate = useNavigate();
 
-  // Initialize state with default values or existing settings
   const [projectTrackerTitle, setProjectTrackerTitle] = useState(settings?.project_tracker_title || DEFAULT_SETTINGS.project_tracker_title);
   const [scheduleShowFocusTasksOnly, setScheduleShowFocusTasksOnly] = useState(settings?.schedule_show_focus_tasks_only || DEFAULT_SETTINGS.schedule_show_focus_tasks_only);
   const [futureTasksDaysVisible, setFutureTasksDaysVisible] = useState(String(settings?.future_tasks_days_visible || DEFAULT_SETTINGS.future_tasks_days_visible));
@@ -61,7 +59,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId 
       return;
     }
 
-    const updates: Partial<UserSettings> = { // Correctly typed as Partial<UserSettings>
+    const updates: Partial<UserSettings> = {
       project_tracker_title: projectTrackerTitle,
       schedule_show_focus_tasks_only: scheduleShowFocusTasksOnly,
       future_tasks_days_visible: parseInt(futureTasksDaysVisible, 10),
@@ -72,24 +70,23 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId 
       pomodoro_rounds_before_long_break: parseInt(pomodoroRoundsBeforeLongBreak, 10),
     };
 
-    // Basic validation for numbers
-    if (isNaN(updates.future_tasks_days_visible!) || updates.future_tasks_days_visible! < -1) { // Added non-null assertion
+    if (isNaN(updates.future_tasks_days_visible!) || updates.future_tasks_days_visible! < -1) {
       showError('Future tasks days visible must be a number (-1 for all).');
       return;
     }
-    if (isNaN(updates.pomodoro_work_duration!) || updates.pomodoro_work_duration! <= 0) { // Added non-null assertion
+    if (isNaN(updates.pomodoro_work_duration!) || updates.pomodoro_work_duration! <= 0) {
       showError('Pomodoro work duration must be a positive number.');
       return;
     }
-    if (isNaN(updates.pomodoro_short_break_duration!) || updates.pomodoro_short_break_duration! <= 0) { // Added non-null assertion
+    if (isNaN(updates.pomodoro_short_break_duration!) || updates.pomodoro_short_break_duration! <= 0) {
       showError('Pomodoro short break duration must be a positive number.');
       return;
     }
-    if (isNaN(updates.pomodoro_long_break_duration!) || updates.pomodoro_long_break_duration! <= 0) { // Added non-null assertion
+    if (isNaN(updates.pomodoro_long_break_duration!) || updates.pomodoro_long_break_duration! <= 0) {
       showError('Pomodoro long break duration must be a positive number.');
       return;
     }
-    if (isNaN(updates.pomodoro_rounds_before_long_break!) || updates.pomodoro_rounds_before_long_break! <= 0) { // Added non-null assertion
+    if (isNaN(updates.pomodoro_rounds_before_long_break!) || updates.pomodoro_rounds_before_long_break! <= 0) {
       showError('Pomodoro rounds before long break must be a positive number.');
       return;
     }
@@ -111,7 +108,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId 
 
   const handleSignOut = useCallback(async () => {
     if (isDemo) {
-      navigate('/demo'); // Redirect demo user to demo dashboard
+      navigate('/demo');
       return;
     }
     await signOut();
@@ -129,11 +126,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId 
     }
 
     try {
-      // This is a simplified example. Real account deletion would involve
-      // a Supabase Edge Function with service_role key to delete auth.users entry
-      // and trigger cascade deletes in public schema.
-      // For now, we'll just delete public.profiles and public.user_settings
-      // and then sign out.
       const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId);
       if (profileError) throw profileError;
 
@@ -170,8 +162,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId 
       if (error) throw error;
 
       showSuccess('Settings reset to default!');
-      // Invalidate query to refetch and update UI
-      await updateSettings({}); // Trigger a refetch of settings
+      await updateSettings({});
     } catch (error: any) {
       showError(`Failed to reset settings: ${error.message}`);
       console.error('Error resetting settings:', error);

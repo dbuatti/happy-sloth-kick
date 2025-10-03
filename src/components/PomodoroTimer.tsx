@@ -5,9 +5,9 @@ import { usePomodoro } from '@/context/PomodoroContext';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RotateCcw, FastForward, Settings as SettingsIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Ensure ProgressProps is available if needed
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom'; // For linking to settings
+import { Link } from 'react-router-dom';
 
 const PomodoroTimer: React.FC = () => {
   const {
@@ -94,15 +94,11 @@ const PomodoroTimer: React.FC = () => {
             className={cn(
               "absolute inset-0 w-full h-full rounded-full",
               "bg-transparent",
-              timerState === 'working' && "progress-primary",
-              isBreak && "progress-green",
-              timerState === 'paused' && "progress-gray"
-            )}
-            indicatorClassName={cn( // This prop is valid for shadcn/ui Progress
-              "transition-colors duration-500",
-              timerState === 'working' && "bg-primary",
-              isBreak && "bg-green-500",
-              timerState === 'paused' && "bg-gray-500"
+              // Apply indicator styling directly to the Progress component's class
+              "transition-colors duration-500 [&>div]:bg-primary", // Default indicator color
+              timerState === 'working' && "[&>div]:bg-primary",
+              isBreak && "[&>div]:bg-green-500",
+              timerState === 'paused' && "[&>div]:bg-gray-500"
             )}
           />
           <div className="relative z-10 flex flex-col items-center justify-center">
@@ -117,11 +113,11 @@ const PomodoroTimer: React.FC = () => {
 
         <div className="flex justify-center gap-2">
           {(timerState === 'idle' || timerState === 'paused') && (
-            <Button onClick={() => startTimer()} disabled={isTimerActive}> {/* Corrected disabled logic */}
+            <Button onClick={() => startTimer()} disabled={isTimerActive}>
               <Play className="h-5 w-5 mr-2" /> Start
             </Button>
           )}
-          {isTimerActive && ( /* Corrected condition */
+          {isTimerActive && (
             <Button onClick={pauseTimer}>
               <Pause className="h-5 w-5 mr-2" /> Pause
             </Button>

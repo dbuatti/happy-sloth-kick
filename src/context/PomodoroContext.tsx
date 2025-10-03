@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useSound } from '@/context/SoundContext';
 import { useSettings } from '@/context/SettingsContext';
-import { showSuccess } from '@/utils/toast'; // Removed showError as it's unused
+import { showSuccess } from '@/utils/toast';
 
 interface PomodoroContextType {
   timerState: 'idle' | 'working' | 'shortBreak' | 'longBreak' | 'paused';
@@ -29,11 +29,11 @@ export const PomodoroProvider: React.FC<PomodoroProviderProps> = ({ children }) 
   const { playSound } = useSound();
   const { settings } = useSettings();
 
-  // Access settings with optional chaining and provide defaults
-  const workDuration = settings?.pomodoro_work_duration || 25; // minutes
-  const shortBreakDuration = settings?.pomodoro_short_break_duration || 5; // minutes
-  const longBreakDuration = settings?.pomodoro_long_break_duration || 15; // minutes
-  const roundsBeforeLongBreak = settings?.pomodoro_rounds_before_long_break || 4;
+  // Access settings properties safely, as settings is guaranteed to be UserSettings due to useSettings hook logic
+  const workDuration = settings.pomodoro_work_duration;
+  const shortBreakDuration = settings.pomodoro_short_break_duration;
+  const longBreakDuration = settings.pomodoro_long_break_duration;
+  const roundsBeforeLongBreak = settings.pomodoro_rounds_before_long_break;
 
   const [timerState, setTimerState] = useState<'idle' | 'working' | 'shortBreak' | 'longBreak' | 'paused'>('idle');
   const [timeLeft, setTimeLeft] = useState(workDuration * 60);
@@ -41,8 +41,6 @@ export const PomodoroProvider: React.FC<PomodoroProviderProps> = ({ children }) 
   const [focusedTaskDescription, setFocusedTaskDescription] = useState<string | null>(null);
 
   const intervalRef = useRef<number | null>(null);
-
-  // Removed unused getDurationForState
 
   const startTimer = useCallback((taskDescription?: string) => {
     if (timerState === 'idle' || timerState === 'paused') {
@@ -118,11 +116,11 @@ export const PomodoroProvider: React.FC<PomodoroProviderProps> = ({ children }) 
               setTimeLeft(workDuration * 60);
               showSuccess('Back to work!');
             }
-            return 0; // Resetting time for the next phase
+            return 0;
           }
           return prevTime - 1;
         });
-      }, 1000) as unknown as number; // Type assertion for setInterval return type
+      }, 1000) as unknown as number;
     }
 
     return () => {
@@ -132,7 +130,6 @@ export const PomodoroProvider: React.FC<PomodoroProviderProps> = ({ children }) 
     };
   }, [timerState, currentRound, workDuration, shortBreakDuration, longBreakDuration, roundsBeforeLongBreak, playSound]);
 
-  // Update timeLeft if durations change while idle
   useEffect(() => {
     if (timerState === 'idle') {
       setTimeLeft(workDuration * 60);

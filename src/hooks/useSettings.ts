@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from 'react'; // Removed unused useState, useEffect, useMemo
+import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { showError, showSuccess } from '@/utils/toast';
@@ -16,14 +16,14 @@ export interface UserSettings {
   future_tasks_days_visible: number;
   meditation_notes: string | null;
   dashboard_panel_sizes: any | null; // JSONB type
-  pomodoro_work_duration: number; // New setting
-  pomodoro_short_break_duration: number; // New setting
-  pomodoro_long_break_duration: number; // New setting
-  pomodoro_rounds_before_long_break: number; // New setting
+  pomodoro_work_duration: number; // Added Pomodoro property
+  pomodoro_short_break_duration: number; // Added Pomodoro property
+  pomodoro_long_break_duration: number; // Added Pomodoro property
+  pomodoro_rounds_before_long_break: number; // Added Pomodoro property
 }
 
-export const DEFAULT_SETTINGS: UserSettings = { // Exported DEFAULT_SETTINGS
-  user_id: '', // Will be filled by auth
+export const DEFAULT_SETTINGS: UserSettings = {
+  user_id: '',
   project_tracker_title: 'Project Balance Tracker',
   focused_task_id: null,
   dashboard_layout: null,
@@ -42,9 +42,9 @@ interface UseSettingsProps {
   userId?: string;
 }
 
-export const useSettings = ({ userId: propUserId }: UseSettingsProps = {}) => {
-  const { user, loading: authLoading } = useAuth();
-  const currentUserId = propUserId ?? user?.id;
+export const useSettings = ({ userId }: UseSettingsProps = {}) => { // Removed propUserId from destructuring
+  const { user, loading: authLoading } = useAuth(); // Corrected destructuring
+  const currentUserId = userId ?? user?.id;
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading, isError, error } = useQuery<UserSettings, Error>({
@@ -57,14 +57,13 @@ export const useSettings = ({ userId: propUserId }: UseSettingsProps = {}) => {
         .eq('user_id', currentUserId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 means "no rows found"
+      if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
       if (data) {
         return { ...DEFAULT_SETTINGS, ...data };
       } else {
-        // If no settings found, create default ones
         const { data: newSettings, error: insertError } = await supabase
           .from('user_settings')
           .insert({ ...DEFAULT_SETTINGS, user_id: currentUserId })
@@ -77,7 +76,7 @@ export const useSettings = ({ userId: propUserId }: UseSettingsProps = {}) => {
       }
     },
     enabled: !!currentUserId && !authLoading,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 
   const updateSettings = useCallback(async (updates: Partial<UserSettings>) => {

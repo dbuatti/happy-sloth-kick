@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'; // Removed unused useEffect
+import React, { useState, useCallback } from 'react';
 import {
   Drawer,
   DrawerContent,
@@ -17,14 +17,13 @@ import { usePomodoro } from '@/context/PomodoroContext';
 import PomodoroTimer from './PomodoroTimer';
 import { cn } from '@/lib/utils';
 import { showSuccess, showError } from '@/utils/toast';
-// Removed Checkbox as it's unused
 import ConfirmationDialog from './ConfirmationDialog';
 
 interface FocusPanelDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   allTasks: Task[];
-  filteredTasks: Task[]; // Tasks that are currently visible based on filters
+  filteredTasks: Task[];
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   onOpenDetail: (task: Task) => void;
   onDeleteTask: (taskId: string) => Promise<boolean | undefined>;
@@ -61,10 +60,8 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
   toggleAllDoToday,
   markAllTasksAsSkipped,
   loading,
-  // Removed unused createCategory, updateCategory, deleteCategory
 }) => {
   const {
-    // Removed unused timerState
     startTimer,
     resetTimer,
     focusedTaskDescription,
@@ -83,7 +80,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
 
   const handleSetFocusTask = useCallback(async (task: Task) => {
     await setFocusTask(task.id);
-    startTimer(task.description); // Start timer with the focused task's description
+    startTimer(task.description);
     showSuccess(`Focus set to: ${task.description}`);
   }, [setFocusTask, startTimer]);
 
@@ -102,8 +99,8 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
     }
     const newTask: NewTaskData = {
       description: taskSearch.trim(),
-      category: allCategories[0]?.id || null, // Default to first category
-      section_id: sections.find(s => s.name.toLowerCase() === 'priorities')?.id || null, // Default to a 'Priorities' section if exists
+      category: allCategories[0]?.id || null,
+      section_id: sections.find(s => s.name.toLowerCase() === 'priorities')?.id || null,
     };
     const newTaskId = await handleAddTask(newTask);
     if (newTaskId) {
@@ -130,7 +127,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
         </DrawerHeader>
         <ScrollArea className="flex-1 px-4 pb-4">
           <div className="space-y-6">
-            <PomodoroTimer /> {/* Integrated Pomodoro Timer */}
+            <PomodoroTimer />
 
             <Separator />
 
@@ -157,7 +154,7 @@ const FocusPanelDrawer: React.FC<FocusPanelDrawerProps> = ({
                   isDoToday={isDoToday(focusedTask)}
                   toggleDoToday={toggleDoToday}
                   setFocusTask={setFocusTask}
-                  isDemo={false} // Focus mode is not demo specific
+                  isDemo={false}
                   isSelected={false}
                   onSelectTask={() => {}}
                   onAddSubtask={() => {}}
