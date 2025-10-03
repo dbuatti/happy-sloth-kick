@@ -6,21 +6,41 @@ import { Task, NewTaskData, TaskUpdate, MutationContext } from '@/hooks/useTasks
 // Helper to check if an ID is a virtual client-side ID
 const isVirtualId = (id: string) => id.startsWith('virtual-');
 
-// Helper to ensure task data is consistent for DB operations
-const prepareTaskForDb = (task: Partial<Task>): Partial<Task> => {
-  const prepared = { ...task };
-  // Ensure non-nullable fields have defaults if they are being inserted/updated
-  // IMPORTANT: Do NOT set description to '' if it's undefined, as this clears it on status updates.
-  // The description should only be updated if explicitly provided.
-  if (prepared.status === undefined) prepared.status = 'to-do';
-  if (prepared.recurring_type === undefined) prepared.recurring_type = 'none';
-  if (prepared.priority === undefined) prepared.priority = 'medium';
-  if (prepared.category === undefined) prepared.category = null; // Default to null if not provided
-  if (prepared.section_id === undefined) prepared.section_id = null;
-  if (prepared.parent_task_id === undefined) prepared.parent_task_id = null;
-  if (prepared.original_task_id === undefined) prepared.original_task_id = null;
-  return prepared;
+// This function prepares data specifically for INSERT operations, applying defaults for missing fields.
+const prepareTaskForInsert = (taskData: NewTaskData, userId: string): Partial<Task> => {
+  return {
+    user_id: userId,
+    description: taskData.description,
+    status: taskData.status || 'to-do',
+    recurring_type: taskData.recurring_type || 'none',
+    priority: taskData.priority || 'medium',
+    category: taskData.category || null,
+    due_date: taskData.due_date || null,
+    notes: taskData.notes || null,
+    remind_at: taskData.remind_at || null,
+    section_id: taskData.section_id || null,
+    parent_task_id: taskData.parent_task_id || null,
+    original_task_id: taskData.original_task_id || null,
+    link: taskData.link || null,
+    image_url: taskData.image_url || null,
+    // created_at, updated_at, completed_at are handled by DB defaults or specific logic
+  };
 };
+
+// This function prepares data specifically for UPDATE operations.
+// It only includes properties that are explicitly provided (not undefined),
+// ensuring that other fields in the database are not inadvertently set to null.
+const prepareTaskForUpdate = (updates: Partial<Task>): Partial<Task> => {
+  const prepared: Record<string, any> = {}; // Use Record<string, any> for flexible assignment
+  for (const key in updates) {
+    const value = updates[key as keyof Partial<Task>];
+    if (value !== undefined) {
+      prepared[key] = value;
+    }
+  }
+  return prepared as Partial<Task>; // Assert the final type
+};
+
 
 export const addTaskMutation = async (newTaskData: NewTaskData, context: MutationContext) => {
   const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries } = context;
@@ -57,7 +77,7 @@ export const addTaskMutation = async (newTaskData: NewTaskData, context: Mutatio
   try {
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ ...prepareTaskForDb(newTaskData), user_id: userId })
+      .insert(prepareTaskForInsert(newTaskData, userId)) // Use prepareTaskForInsert here
       .select()
       .single();
 
@@ -153,7 +173,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId })
+        .insert(prepareTaskForInsert(newTaskData, userId)) // Use prepareTaskForInsert here
         .select()
         .single();
 
@@ -171,7 +191,7 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
     } else {
       const { data, error } = await supabase
         .from('tasks')
-        .update(prepareTaskForDb(updates))
+        .update(prepareTaskForUpdate(updates)) // Use prepareTaskForUpdate here
         .eq('id', taskId)
         .eq('user_id', userId)
         .select()
@@ -216,116 +236,59 @@ export const updateTaskMutation = async (taskId: string, updates: TaskUpdate, co
 };
 
 export const deleteTaskMutation = async (taskId: string, context: MutationContext) => {
-  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, rawTasks } = context;
+  const { userId, queryClient, inFlightUpdatesRef, invalidateTasksQueries, processedTasks } = context;
 
-  console.log('--- deleteTaskMutation START ---');
-  console.log('Attempting to delete taskId:', taskId);
-  console.log('Current rawTasks count:', rawTasks.length);
-
-  let originalTaskIdForSeriesDeletion: string | null = null;
-  let isTargetingVirtualInstance = false;
-
-  if (isVirtualId(taskId)) {
-    isTargetingVirtualInstance = true;
-    const parts = taskId.split('-');
-    if (parts.length >= 3) {
-      originalTaskIdForSeriesDeletion = parts[1];
-    } else {
-      console.error('Unexpected virtual task ID format:', taskId);
-      showError('Failed to parse virtual task ID for deletion.');
-      console.log('--- deleteTaskMutation END (Failed) ---');
-      return false;
-    }
-    console.log('Identified virtual task. Extracted originalTaskIdForSeriesDeletion:', originalTaskIdForSeriesDeletion);
-  } else {
-    const realTask = rawTasks.find((t: Omit<Task, 'category_color' | 'isDoTodayOff'>) => t.id === taskId);
-    if (!realTask) {
-      showError('Task not found for deletion.');
-      console.error('Error: Real task not found in rawTasks for taskId:', taskId);
-      console.log('--- deleteTaskMutation END (Failed) ---');
-      return false;
-    }
-    console.log('Found real task:', realTask);
-    originalTaskIdForSeriesDeletion = realTask.original_task_id || realTask.id;
-  }
-
-  let idsToDelete: string[] = [];
-  if (originalTaskIdForSeriesDeletion) {
-    idsToDelete = rawTasks
-      .filter(t => t.id === originalTaskIdForSeriesDeletion || t.original_task_id === originalTaskIdForSeriesDeletion)
-      .map(t => t.id);
-    console.log('Identified all series tasks to delete (idsToDelete):', idsToDelete);
-  } else {
-    console.error('Logic error: originalTaskIdForSeriesDeletion is null after identification.');
-    showError('An internal error occurred during task identification for deletion.');
-    console.log('--- deleteTaskMutation END (Failed) ---');
+  const taskToDelete = processedTasks.find(t => t.id === taskId);
+  if (!taskToDelete) {
+    showError('Task not found for deletion.');
     return false;
   }
 
-  if (isTargetingVirtualInstance && !idsToDelete.includes(taskId)) {
-    idsToDelete.push(taskId);
-    console.log('Added virtual taskId to idsToDelete for cache removal:', taskId);
-  }
+  const originalTaskId = taskToDelete.original_task_id || taskToDelete.id;
 
-  const realTaskIdsToDelete = idsToDelete.filter(id => !isVirtualId(id));
-  const _virtualTaskIdsToDelete = idsToDelete.filter(id => isVirtualId(id));
-  void _virtualTaskIdsToDelete; // Explicitly mark as void to suppress unused variable warning
-  console.log('Real task IDs to delete from DB:', realTaskIdsToDelete);
-  console.log('Virtual task IDs (will be removed from cache only):', _virtualTaskIdsToDelete);
-
-
-  const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
+  // Optimistic update: remove the task and its direct subtasks from the cache
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
-    (old || []).filter(task => !idsToDelete.includes(task.id))
+    (old || []).filter(task => task.id !== taskId && task.parent_task_id !== taskId)
   );
-  idsToDelete.forEach(id => inFlightUpdatesRef.current.add(id));
-  console.log('Optimistically removed tasks from cache.');
+  inFlightUpdatesRef.current.add(taskId);
 
   try {
-    if (realTaskIdsToDelete.length > 0) {
-      console.log('Executing Supabase delete for real tasks:', realTaskIdsToDelete);
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .delete()
-        .in('id', realTaskIdsToDelete)
-        .eq('user_id', userId);
+    // Delete the task itself from the database
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId)
+      .eq('user_id', userId);
 
-      if (tasksError) throw tasksError;
-      console.log('Supabase delete for real tasks successful.');
-    } else {
-      console.log('No real tasks to delete from DB.');
-    }
+    if (error) throw error;
 
-    if (originalTaskIdForSeriesDeletion) {
-      console.log('Executing Supabase delete for recurring task completion logs for originalTaskId:', originalTaskIdForSeriesDeletion);
+    // If it was a recurring task, also delete its completion logs for today
+    if (taskToDelete.recurring_type !== 'none') {
       const { error: recurringLogError } = await supabase
         .from('recurring_task_completion_log')
         .delete()
         .eq('user_id', userId)
-        .eq('original_task_id', originalTaskIdForSeriesDeletion);
+        .eq('original_task_id', originalTaskId)
+        .eq('completion_date', format(context.currentDate, 'yyyy-MM-dd'));
       
       if (recurringLogError) {
-        console.warn('Failed to delete recurring task completion logs:', recurringLogError.message);
-      } else {
-        console.log('Supabase delete for recurring task completion logs successful.');
+        console.warn('Failed to delete recurring task completion log during single task delete:', recurringLogError.message);
       }
     }
 
-    showSuccess('Task(s) deleted successfully!');
-    idsToDelete.forEach(id => context.cancelReminder(id));
-    console.log('--- deleteTaskMutation END (Success) ---');
+    showSuccess('Task deleted successfully!');
+    context.cancelReminder(taskId);
     return true;
   } catch (error: any) {
-    showError('Failed to delete task(s).');
-    console.error('Error deleting task(s) in catch block:', error.message);
-    queryClient.setQueryData(['tasks', userId], previousTasks);
-    console.log('Reverted optimistic update due to error.');
-    console.log('--- deleteTaskMutation END (Failed) ---');
+    showError('Failed to delete task.');
+    console.error('Error deleting task:', error.message);
+    // Revert optimistic update (this is tricky for single delete, might need to refetch or reconstruct)
+    // For simplicity, we'll just invalidate and let it refetch.
+    queryClient.invalidateQueries({ queryKey: ['tasks', userId] });
     return false;
   } finally {
-    idsToDelete.forEach(id => inFlightUpdatesRef.current.delete(id));
+    inFlightUpdatesRef.current.delete(taskId);
     invalidateTasksQueries();
-    console.log('Cleared in-flight updates and invalidated queries.');
   }
 };
 
@@ -347,7 +310,7 @@ export const bulkUpdateTasksMutation = async (updates: Partial<Task>, ids: strin
     if (realTaskIds.length > 0) {
       const { error } = await supabase
         .from('tasks')
-        .update(prepareTaskForDb(updates))
+        .update(prepareTaskForUpdate(updates)) // Use prepareTaskForUpdate here
         .in('id', realTaskIds)
         .eq('user_id', userId)
         .select();
@@ -427,6 +390,7 @@ export const bulkDeleteTasksMutation = async (ids: string[], context: MutationCo
   console.log('Real task IDs to delete from DB (bulk):', realTaskIdsToDelete);
   console.log('Virtual task IDs (will be removed from cache only) (bulk):', _virtualTaskIdsToDelete);
 
+
   const previousTasks = (queryClient.getQueryData(['tasks', userId]) as Task[] || []);
   queryClient.setQueryData(['tasks', userId], (old: Task[] | undefined) =>
     (old || []).filter(task => !allIdsToDelete.includes(task.id))
@@ -502,7 +466,7 @@ export const archiveAllCompletedTasksMutation = async (context: MutationContext)
   try {
     const { error } = await supabase
       .from('tasks')
-      .update({ status: 'archived' })
+      .update(prepareTaskForUpdate({ status: 'archived' })) // Use prepareTaskForUpdate here
       .eq('user_id', userId)
       .eq('status', 'completed');
 
@@ -548,7 +512,7 @@ export const markAllTasksInSectionCompletedMutation = async (sectionId: string |
     if (realTaskIdsToComplete.length > 0) {
       const { error } = await supabase
         .from('tasks')
-        .update({ status: 'completed' })
+        .update(prepareTaskForUpdate({ status: 'completed' })) // Use prepareTaskForUpdate here
         .in('id', realTaskIdsToComplete)
         .eq('user_id', userId);
 
@@ -615,7 +579,7 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
     try {
       const { data, error } = await supabase
         .from('tasks')
-        .insert({ ...prepareTaskForDb(newTaskData), user_id: userId })
+        .insert(prepareTaskForInsert(newTaskData, userId)) // Use prepareTaskForInsert here
         .select()
         .single();
 
@@ -665,7 +629,7 @@ export const updateTaskParentAndOrderMutation = async (activeId: string, newPare
   try {
     const { error } = await supabase
       .from('tasks')
-      .update(updates)
+      .update(prepareTaskForUpdate(updates)) // Use prepareTaskForUpdate here
       .eq('id', actualActiveId)
       .eq('user_id', userId);
 
@@ -825,7 +789,7 @@ export const markAllTasksAsSkippedMutation = async (context: MutationContext) =>
     if (realTaskIdsToSkip.length > 0) {
       const { error } = await supabase
         .from('tasks')
-        .update({ status: 'skipped' })
+        .update(prepareTaskForUpdate({ status: 'skipped' })) // Use prepareTaskForUpdate here
         .in('id', realTaskIdsToSkip)
         .eq('user_id', userId);
 
