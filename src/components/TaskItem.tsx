@@ -13,7 +13,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image, PlusCircle } from 'lucide-react'; // Added PlusCircle
+import { Edit, Trash2, MoreHorizontal, Archive, FolderOpen, Undo2, Repeat, Link as LinkIcon, Calendar as CalendarIcon, Target, ClipboardCopy, CalendarClock, ChevronRight, GripVertical, FileText, Image, PlusCircle } from 'lucide-react';
 import { format, parseISO, isSameDay, isPast, isValid } from 'date-fns';
 import { cn } from "@/lib/utils";
 import { Task } from '@/hooks/useTasks';
@@ -49,7 +49,7 @@ export interface TaskItemProps {
   listeners?: React.HTMLAttributes<HTMLButtonElement>;
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
-  onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void; // New prop
+  onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void;
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -74,7 +74,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
   listeners,
   isSelected,
   onSelectTask,
-  onAddSubtask, // Destructure new prop
+  onAddSubtask,
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -193,18 +193,18 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const content = (
     <div
       className={cn(
-        "relative flex items-center w-full rounded-xl transition-all duration-300 py-1.5 pl-4 pr-3 shadow-sm border", // Reduced py from 2 to 1.5
+        "relative flex items-center w-full rounded-xl transition-all duration-300 py-1.5 pl-4 pr-3 shadow-sm border",
         task.status === 'completed'
           ? "text-task-completed-text bg-task-completed-bg border-task-completed-text/20"
           : "bg-card text-foreground border-border",
-        isOverdue && "bg-red-500/10 border-red-500/30", // Stronger overdue styling
-        isDueToday && !isOverdue && "bg-yellow-500/10 border-yellow-500/30", // Distinct due today styling
+        isOverdue && "bg-red-500/10 border-red-500/30",
+        isDueToday && !isOverdue && "bg-yellow-500/10 border-yellow-500/30",
         !isDoToday && "opacity-60",
         isSelected && "ring-2 ring-primary ring-offset-2",
         "group",
         !isOverlay && "hover:shadow-md hover:scale-[1.005] cursor-pointer"
       )}
-      onClick={() => !isOverlay && !isEditing && onOpenOverview(task)} // Make entire item clickable
+      onClick={() => !isOverlay && !isEditing && onOpenOverview(task)}
     >
       {/* Priority Pill */}
       <Tooltip>
@@ -238,7 +238,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 flex items-center justify-center gap-1" // Added flex, items-center, justify-center, gap-1
+            className="h-8 w-8 flex items-center justify-center gap-1"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               toggleExpand?.(task.id);
@@ -286,7 +286,6 @@ const TaskItem: React.FC<TaskItemProps> = ({
       {/* Clickable Content Area */}
       <div
         className="flex-grow flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 min-w-0 py-1"
-        // onClick removed from here, now on parent div
       >
         <div className="flex-grow min-w-0 w-full">
           {isEditing ? (
@@ -301,16 +300,33 @@ const TaskItem: React.FC<TaskItemProps> = ({
             />
           ) : (
             <>
-              <span
-                className={cn(
-                  "block text-base leading-tight font-medium",
-                  task.status === 'completed' ? 'line-through opacity-75' : '',
-                  "cursor-text"
+              <div className="flex items-center flex-wrap gap-x-2">
+                <span
+                  className={cn(
+                    "block text-base leading-tight font-medium",
+                    task.status === 'completed' ? 'line-through opacity-75' : '',
+                    "cursor-text"
+                  )}
+                  onClick={handleStartEdit}
+                >
+                  {task.description}
+                </span>
+                {!isOverlay && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className={cn(
+                        "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
+                        isDoToday ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                      )}>
+                        {isDoToday ? 'Do Today' : 'Not Today'}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{isDoToday ? 'This task is included in "Do Today"' : 'This task is excluded from "Do Today"'}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
-                onClick={handleStartEdit}
-              >
-                {task.description}
-              </span>
+              </div>
               {scheduledAppointment && (
                 <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <CalendarClock className="h-3 w-3" />
@@ -394,8 +410,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
                 <span className={cn(
                   "inline-flex items-center flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full",
                   "text-foreground bg-muted",
-                  isOverdue && "text-red-700 bg-red-200 dark:text-red-200 dark:bg-red-700 font-bold", // More prominent overdue
-                  isDueToday && !isOverdue && "text-yellow-700 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-700 font-bold" // More prominent due today
+                  isOverdue && "text-red-700 bg-red-200 dark:text-red-200 dark:bg-red-700 font-bold",
+                  isDueToday && !isOverdue && "text-yellow-700 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-700 font-bold"
                 )}>
                   <CalendarIcon className="h-3 w-3 mr-1" /> {getDueDateDisplay(task.due_date)}
                 </span>
@@ -414,7 +430,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="h-7 w-7 flex items-center justify-center" aria-label="Recurring task">
-                <Repeat className="h-4 w-4 text-muted-foreground" /> {/* Slightly larger icon */}
+                <Repeat className="h-4 w-4 text-muted-foreground" />
               </div>
             </TooltipTrigger>
             <TooltipContent>
