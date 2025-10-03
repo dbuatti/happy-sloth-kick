@@ -21,7 +21,7 @@ import { useSound } from '@/context/SoundContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import DoTodaySwitch from '@/components/DoTodaySwitch';
+import DoTodaySwitch from '@/components/DoTodaySwitch'; // Import the new DoTodaySwitch component
 import { showSuccess, showError } from '@/utils/toast';
 import { Appointment } from '@/hooks/useAppointments';
 
