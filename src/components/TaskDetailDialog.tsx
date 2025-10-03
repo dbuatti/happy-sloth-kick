@@ -14,7 +14,6 @@ interface TaskDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  // Removed: onDelete: (taskId: string) => Promise<boolean | undefined>;
   sections: TaskSection[];
   allCategories: Category[];
   createSection: (name: string) => Promise<void>;
@@ -22,11 +21,11 @@ interface TaskDetailDialogProps {
   deleteSection: (sectionId: string) => Promise<void>;
   updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
   allTasks?: Task[];
-  onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void;
+  // Removed unused onAddSubtask
   createCategory: (name: string, color: string) => Promise<string | null>;
   updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>;
   deleteCategory: (categoryId: string) => Promise<boolean>;
-  onOpenOverview: (task: Task) => void;
+  // Removed unused onOpenOverview
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -41,11 +40,9 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   allTasks,
-  onAddSubtask,
   createCategory,
   updateCategory,
   deleteCategory,
-  onOpenOverview,
 }) => {
   const handleSave = async (taskData: NewTaskData) => {
     const success = await onUpdate(task.id, taskData);

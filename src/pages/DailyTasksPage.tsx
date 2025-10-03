@@ -386,11 +386,11 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
-          onAddSubtask={openAddTaskDialog}
+          // Removed onAddSubtask
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
-          onOpenOverview={handleOpenOverview}
+          // Removed onOpenOverview
         />
       )}
 
