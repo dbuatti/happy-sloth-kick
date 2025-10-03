@@ -261,8 +261,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [toggleAllDoTodayFromHook]);
 
   return (
-    <div className="relative h-full w-full">
-      <div className="flex flex-col h-full w-full max-w-5xl mx-auto">
+    <div className="relative h-full w-full"> {/* Outer container for full viewport height */}
+      <div className="flex flex-col h-full w-full max-w-5xl mx-auto"> {/* Constrained content */}
         <DailyTasksHeader
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
@@ -354,7 +354,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             />
           </div>
         </div>
-      </div>
+      </div> {/* End Constrained content */}
 
       <FloatingAddTaskButton onClick={() => openAddTaskDialog()} isDemo={isDemo} />
 
@@ -386,9 +386,11 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
+          onAddSubtask={openAddTaskDialog}
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onOpenOverview={handleOpenOverview}
         />
       )}
 
@@ -411,6 +413,9 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
         toggleAllDoToday={handleToggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
         loading={tasksLoading}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
 
       <AddTaskDialog

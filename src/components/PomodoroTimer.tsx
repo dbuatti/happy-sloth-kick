@@ -1,138 +1,88 @@
-"use client";
-
-import React from 'react';
-import { usePomodoro } from '@/context/PomodoroContext';
-import { Button } from '@/components/ui/button';
-import { Play, Pause, RotateCcw, FastForward, Settings as SettingsIcon } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Play, Pause, RefreshCcw, Settings, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Link } from 'react-router-dom';
+import { usePomodoro } from '@/hooks/usePomodoro';
+import PomodoroSettingsDialog from './PomodoroSettingsDialog';
+import CircularProgress from './CircularProgress';
+
+const formatTime = (seconds: number) => {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
 
 const PomodoroTimer: React.FC = () => {
   const {
-    timerState,
-    timeLeft,
-    currentRound,
-    startTimer,
-    pauseTimer,
+    mode,
+    sessionsCompleted,
+    timeRemaining,
+    isRunning,
+    settings,
+    toggleTimer,
     resetTimer,
-    skipBreak,
-    workDuration,
-    shortBreakDuration,
-    longBreakDuration,
-    focusedTaskDescription,
+    skipSession,
+    saveSettings,
+    duration,
   } = usePomodoro();
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const getProgressPercentage = () => {
-    let totalDuration = 0;
-    let elapsedTime = 0;
+  const progress = duration > 0 ? (timeRemaining / duration) * 100 : 0;
 
-    switch (timerState) {
-      case 'working':
-        totalDuration = workDuration * 60;
-        elapsedTime = totalDuration - timeLeft;
-        break;
-      case 'shortBreak':
-        totalDuration = shortBreakDuration * 60;
-        elapsedTime = totalDuration - timeLeft;
-        break;
-      case 'longBreak':
-        totalDuration = longBreakDuration * 60;
-        elapsedTime = totalDuration - timeLeft;
-        break;
-      default:
-        return 0;
-    }
-    return (elapsedTime / totalDuration) * 100;
-  };
-
-  const getTimerLabel = () => {
-    switch (timerState) {
-      case 'working':
-        return 'Focus Time';
-      case 'shortBreak':
-        return 'Short Break';
-      case 'longBreak':
-        return 'Long Break';
-      case 'paused':
-        return 'Paused';
-      case 'idle':
-      default:
-        return 'Ready to Focus';
+  const getModeText = () => {
+    switch (mode) {
+      case 'work': return 'Focus';
+      case 'short-break': return 'Short Break';
+      case 'long-break': return 'Long Break';
     }
   };
-
-  const isBreak = timerState === 'shortBreak' || timerState === 'longBreak';
-  const isTimerActive = timerState === 'working' || isBreak;
 
   return (
-    <Card className="w-full max-w-md mx-auto text-center">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center justify-center gap-2">
-          {getTimerLabel()}
-          <Link to="/settings" className="text-muted-foreground hover:text-primary">
-            <SettingsIcon className="h-5 w-5" />
-          </Link>
-        </CardTitle>
-        {focusedTaskDescription && (
-          <p className="text-sm text-muted-foreground mt-1">
-            Focusing on: <span className="font-medium text-foreground">{focusedTaskDescription}</span>
-          </p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="relative w-48 h-48 mx-auto flex items-center justify-center">
-          <Progress
-            value={getProgressPercentage()}
-            className={cn(
-              "absolute inset-0 w-full h-full rounded-full",
-              "bg-transparent",
-              // Apply indicator styling directly to the Progress component's class
-              "transition-colors duration-500 [&>div]:bg-primary", // Default indicator color
-              timerState === 'working' && "[&>div]:bg-primary",
-              isBreak && "[&>div]:bg-green-500",
-              timerState === 'paused' && "[&>div]:bg-gray-500"
-            )}
-          />
-          <div className="relative z-10 flex flex-col items-center justify-center">
-            <span className="text-6xl font-extrabold tabular-nums">
-              {formatTime(timeLeft)}
-            </span>
-            <span className="text-sm text-muted-foreground mt-1">
-              Round {currentRound}
-            </span>
+    <>
+      <div className="flex flex-col items-center space-y-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{getModeText()}</span>
+          <span>•</span>
+          <span>Session {sessionsCompleted + 1}</span>
+        </div>
+        <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
+          <CircularProgress progress={progress} />
+          <div className="relative z-10 text-4xl font-bold text-foreground">
+            {formatTime(timeRemaining)}
           </div>
         </div>
-
-        <div className="flex justify-center gap-2">
-          {(timerState === 'idle' || timerState === 'paused') && (
-            <Button onClick={() => startTimer()} disabled={isTimerActive}>
-              <Play className="h-5 w-5 mr-2" /> Start
-            </Button>
-          )}
-          {isTimerActive && (
-            <Button onClick={pauseTimer}>
-              <Pause className="h-5 w-5 mr-2" /> Pause
-            </Button>
-          )}
-          <Button variant="outline" onClick={resetTimer} disabled={timerState === 'idle'}>
-            <RotateCcw className="h-5 w-5 mr-2" /> Reset
+        <div className="flex justify-center space-x-2">
+          <Button
+            size="sm"
+            onClick={toggleTimer}
+            className={cn(
+              "w-24 h-9 text-base",
+              isRunning ? "bg-accent hover:bg-accent/90" : "bg-primary hover:bg-primary/90"
+            )}
+          >
+            {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </Button>
-          {isBreak && (
-            <Button variant="secondary" onClick={skipBreak}>
-              <FastForward className="h-5 w-5 mr-2" /> Skip Break
-            </Button>
-          )}
+          <Button size="sm" variant="outline" onClick={skipSession} className="w-24 h-9 text-base">
+            <SkipForward className="h-4 w-4" /> Skip
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex justify-center space-x-2">
+          <Button size="sm" variant="ghost" onClick={resetTimer}>
+            <RefreshCcw className="h-4 w-4 mr-2" /> Reset
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setIsSettingsOpen(true)}>
+            <Settings className="h-4 w-4 mr-2" /> Settings
+          </Button>
+        </div>
+      </div>
+      <PomodoroSettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        settings={settings}
+        onSave={saveSettings}
+      />
+    </>
   );
 };
 

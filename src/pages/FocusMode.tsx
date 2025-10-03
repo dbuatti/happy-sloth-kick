@@ -1,21 +1,19 @@
-"use client";
-
 import React, { useState, useCallback } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useTasks, Task } from '@/hooks/useTasks';
-import FocusPanelDrawer from '@/components/FocusPanelDrawer';
+import FocusPanel from '@/components/FocusPanel';
 import TaskDetailDialog from '@/components/TaskDetailDialog';
-import { PomodoroProvider } from '@/context/PomodoroContext';
-import { Button } from '@/components/ui/button';
-import { Target } from 'lucide-react';
-// Removed unused showSuccess import
 
 interface FocusModeProps {
+  isDemo?: boolean;
   demoUserId?: string;
 }
 
-const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
-  const [currentDate] = useState(new Date());
-  const [isFocusPanelOpen, setIsFocusPanelOpen] = useState(true);
+const FocusMode: React.FC<FocusModeProps> = ({ isDemo = false, demoUserId }) => {
+  const { user } = useAuth();
+  const userId = isDemo ? demoUserId : user?.id;
+
+  const [currentDate] = useState(new Date()); // Focus mode always uses current date
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
@@ -28,7 +26,6 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     deleteTask,
     sections,
     allCategories,
-    archiveAllCompletedTasks,
     createSection,
     updateSection,
     deleteSection,
@@ -36,15 +33,16 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     setFocusTask,
     doTodayOffIds,
     toggleDoToday,
-    toggleAllDoToday,
+    archiveAllCompletedTasks,
+    toggleAllDoToday: toggleAllDoTodayFromHook, // Renamed to avoid conflict
     markAllTasksAsSkipped,
     createCategory,
     updateCategory,
     deleteCategory,
   } = useTasks({
     currentDate,
-    userId: demoUserId,
     viewMode: 'focus',
+    userId: userId,
   });
 
   const handleOpenOverview = useCallback((task: Task) => {
@@ -52,34 +50,17 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
     setIsTaskOverviewOpen(true);
   }, []);
 
+  // Wrapper function for toggleAllDoToday to match expected signature
+  const handleToggleAllDoToday = useCallback(async () => {
+    await toggleAllDoTodayFromHook(); // Call without arguments
+  }, [toggleAllDoTodayFromHook]);
+
   return (
-    <PomodoroProvider>
-      <div className="flex flex-col h-full w-full max-w-5xl mx-auto p-4 lg:p-6">
-        <h1 className="text-3xl font-bold tracking-tight mb-6 flex items-center gap-2">
-          <Target className="h-8 w-8 text-primary" /> Focus Mode
-        </h1>
-        <p className="text-muted-foreground mb-8">
-          Concentrate on your most important tasks without distractions using the Pomodoro technique.
-        </p>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="bg-card p-6 rounded-lg shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Your Focused Workflow</h2>
-            <p className="text-muted-foreground mb-4">
-              Use the Focus Panel to the right to manage your Pomodoro timer and select a task to concentrate on.
-            </p>
-            <Button onClick={() => setIsFocusPanelOpen(true)}>
-              <Target className="h-4 w-4 mr-2" /> Open Focus Panel
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <FocusPanelDrawer
-        isOpen={isFocusPanelOpen}
-        onClose={() => setIsFocusPanelOpen(false)}
+    <div className="flex flex-col h-full w-full">
+      <FocusPanel
         allTasks={processedTasks}
         filteredTasks={filteredTasks}
+        loading={tasksLoading}
         updateTask={updateTask}
         onOpenDetail={handleOpenOverview}
         onDeleteTask={deleteTask}
@@ -91,9 +72,12 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
         doTodayOffIds={doTodayOffIds}
         toggleDoToday={toggleDoToday}
         archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={toggleAllDoToday}
+        toggleAllDoToday={handleToggleAllDoToday}
         markAllTasksAsSkipped={markAllTasksAsSkipped}
-        loading={tasksLoading}
+        isDemo={isDemo}
+        createCategory={createCategory}
+        updateCategory={updateCategory}
+        deleteCategory={deleteCategory}
       />
 
       {taskToOverview && (
@@ -102,6 +86,7 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
           onUpdate={updateTask}
+          onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}
@@ -109,12 +94,14 @@ const FocusMode: React.FC<FocusModeProps> = ({ demoUserId }) => {
           deleteSection={deleteSection}
           updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
           allTasks={processedTasks}
+          onAddSubtask={() => {}} // FocusMode doesn't directly add subtasks from here
           createCategory={createCategory}
           updateCategory={updateCategory}
           deleteCategory={deleteCategory}
+          onOpenOverview={handleOpenOverview}
         />
       )}
-    </PomodoroProvider>
+    </div>
   );
 };
 

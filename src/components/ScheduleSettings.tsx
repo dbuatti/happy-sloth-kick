@@ -1,72 +1,57 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSettingsContext } from '@/context/SettingsContext'; // Corrected import
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { showSuccess, showError } from '@/utils/toast';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useSettings } from '@/context/SettingsContext';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Filter } from 'lucide-react';
 
 const ScheduleSettings: React.FC = () => {
-  const { settings, isLoading, updateSettings } = useSettingsContext(); // Corrected destructuring and hook
+  const { settings, loading, updateSettings } = useSettings();
 
-  const [scheduleShowFocusTasksOnly, setScheduleShowFocusTasksOnly] = useState(settings.schedule_show_focus_tasks_only);
-  const [futureTasksDaysVisible, setFutureTasksDaysVisible] = useState(String(settings.future_tasks_days_visible));
+  const handleToggleFocusTasks = (checked: boolean) => {
+    updateSettings({ schedule_show_focus_tasks_only: checked });
+  };
 
-  useEffect(() => {
-    if (settings) {
-      setScheduleShowFocusTasksOnly(settings.schedule_show_focus_tasks_only);
-      setFutureTasksDaysVisible(String(settings.future_tasks_days_visible));
-    }
-  }, [settings]);
-
-  const handleSaveSettings = useCallback(async () => {
-    const parsedDays = parseInt(futureTasksDaysVisible, 10);
-    if (isNaN(parsedDays) || parsedDays < -1) {
-      showError('Future tasks days visible must be a number (-1 for all).');
-      return;
-    }
-
-    await updateSettings({
-      schedule_show_focus_tasks_only: scheduleShowFocusTasksOnly,
-      future_tasks_days_visible: parsedDays,
-    });
-    showSuccess('Schedule settings updated!');
-  }, [scheduleShowFocusTasksOnly, futureTasksDaysVisible, updateSettings]);
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <Card>
-        <CardHeader><CardTitle>Schedule Settings</CardTitle></CardHeader>
-        <CardContent className="text-center text-muted-foreground">Loading...</CardContent>
+      <Card className="w-full shadow-lg rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-2xl font-bold flex items-center gap-2">
+            <Filter className="h-6 w-6 text-primary" /> Schedule Options
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <Skeleton className="h-10 w-full mb-2" />
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Schedule Settings</CardTitle>
+    <Card className="w-full shadow-lg rounded-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-2xl font-bold flex items-center gap-2">
+          <Filter className="h-6 w-6 text-primary" /> Schedule Options
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">Customize your time-blocking experience.</p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="pt-0 space-y-4">
         <div className="flex items-center justify-between">
-          <Label htmlFor="schedule-focus-tasks-only">Show Focus Tasks Only</Label>
+          <Label htmlFor="schedule-focus-toggle" className="text-base font-medium flex items-center gap-2">
+            Only show 'Focus Mode' tasks
+          </Label>
           <Switch
-            id="schedule-focus-tasks-only"
-            checked={scheduleShowFocusTasksOnly}
-            onCheckedChange={setScheduleShowFocusTasksOnly}
+            id="schedule-focus-toggle"
+            checked={settings?.schedule_show_focus_tasks_only ?? true}
+            onCheckedChange={handleToggleFocusTasks}
+            aria-label="Toggle showing only focus mode tasks in schedule"
           />
         </div>
-        <div>
-          <Label htmlFor="future-tasks-days-visible">Future Tasks Days Visible (-1 for all)</Label>
-          <Input
-            id="future-tasks-days-visible"
-            type="number"
-            value={futureTasksDaysVisible}
-            onChange={(e) => setFutureTasksDaysVisible(e.target.value)}
-          />
-        </div>
-        <Button onClick={handleSaveSettings} className="w-full">Save Schedule Settings</Button>
+        <p className="text-xs text-muted-foreground mt-1">
+          When enabled, the task list in the schedule view will only show tasks from sections included in Focus Mode.
+        </p>
       </CardContent>
     </Card>
   );
