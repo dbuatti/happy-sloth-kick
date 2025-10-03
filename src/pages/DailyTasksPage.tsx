@@ -261,8 +261,8 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [toggleAllDoTodayFromHook]);
 
   return (
-    <div className="relative h-full w-full"> {/* Outer container for full viewport height */}
-      <div className="flex flex-col h-full w-full max-w-5xl mx-auto"> {/* Constrained content */}
+    <div className="relative h-full w-full">
+      <div className="flex flex-col h-full w-full max-w-5xl mx-auto">
         <DailyTasksHeader
           currentDate={currentDate}
           setCurrentDate={setCurrentDate}
@@ -354,7 +354,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
             />
           </div>
         </div>
-      </div> {/* End Constrained content */}
+      </div>
 
       <FloatingAddTaskButton onClick={() => openAddTaskDialog()} isDemo={isDemo} />
 
@@ -379,6 +379,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
           onUpdate={updateTask}
+          onDelete={deleteTask} {/* Added onDelete prop */}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}
