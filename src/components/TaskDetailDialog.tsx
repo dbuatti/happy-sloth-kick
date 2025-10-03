@@ -14,7 +14,7 @@ interface TaskDetailDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
-  onDelete: (taskId: string) => Promise<boolean | undefined>;
+  // Removed: onDelete: (taskId: string) => Promise<boolean | undefined>;
   sections: TaskSection[];
   allCategories: Category[];
   createSection: (name: string) => Promise<void>;
@@ -26,7 +26,7 @@ interface TaskDetailDialogProps {
   createCategory: (name: string, color: string) => Promise<string | null>;
   updateCategory: (categoryId: string, updates: Partial<Category>) => Promise<boolean>;
   deleteCategory: (categoryId: string) => Promise<boolean>;
-  onOpenOverview: (task: Task) => void; // Added for consistency
+  onOpenOverview: (task: Task) => void;
 }
 
 const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
@@ -34,7 +34,6 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   isOpen,
   onClose,
   onUpdate,
-  // onDelete, // Removed as it's not used directly in this component
   sections,
   allCategories,
   createSection,
@@ -42,11 +41,11 @@ const TaskDetailDialog: React.FC<TaskDetailDialogProps> = ({
   deleteSection,
   updateSectionIncludeInFocusMode,
   allTasks,
-  // onAddSubtask, // Removed as it's not used directly in this component
+  onAddSubtask,
   createCategory,
   updateCategory,
   deleteCategory,
-  // onOpenOverview, // Removed as it's not used directly in this component
+  onOpenOverview,
 }) => {
   const handleSave = async (taskData: NewTaskData) => {
     const success = await onUpdate(task.id, taskData);

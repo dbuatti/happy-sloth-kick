@@ -37,7 +37,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   const [isTaskOverviewOpen, setIsTaskOverviewOpen] = useState(false);
   const [taskToOverview, setTaskToOverview] = useState<Task | null>(null);
 
-  // Fix: Correctly initialize selectedTaskIds with useState
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set<string>());
   const [isSelectAllChecked, setIsSelectAllChecked] = useState(false);
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
@@ -262,98 +261,100 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
   }, [toggleAllDoTodayFromHook]);
 
   return (
-    <div className="flex flex-col h-full w-full">
-      <DailyTasksHeader
-        currentDate={currentDate}
-        setCurrentDate={setCurrentDate}
-        tasks={processedTasks}
-        filteredTasks={filteredTasks}
-        sections={sections}
-        allCategories={allCategories}
-        userId={userId || null}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
-        archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={handleToggleAllDoToday}
-        dailyProgress={dailyProgress}
-        isDemo={isDemo}
-        nextAvailableTask={nextAvailableTask}
-        updateTask={updateTask}
-        onOpenOverview={handleOpenOverview}
-        onOpenFocusView={handleOpenFocusView}
-        tasksLoading={tasksLoading}
-        onToggleAllSections={toggleAllSections}
-        isManageCategoriesOpen={isManageCategoriesOpen}
-        setIsManageCategoriesOpen={setIsManageCategoriesOpen}
-        isManageSectionsOpen={isManageSectionsOpen}
-        setIsManageSectionsOpen={setIsManageSectionsOpen}
-        isFilterPanelOpen={isFilterPanelOpen}
-        toggleFilterPanel={toggleFilterPanel}
-        markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
-        onOpenAddTaskDialog={openAddTaskDialog}
-        handleAddTask={handleAddTask}
-        selectedCount={selectedTaskIds.size}
-        isSelectAllChecked={isSelectAllChecked}
-        onToggleSelectAll={handleToggleSelectAll}
-        markAllTasksAsSkipped={markAllTasksAsSkipped}
-        createCategory={createCategory}
-        deleteCategory={deleteCategory}
-        updateCategory={updateCategory}
-      />
-
-      <FilterPanel
-        isOpen={isFilterPanelOpen}
-        searchFilter={searchFilter}
-        setSearchFilter={setSearchFilter}
-        statusFilter={statusFilter}
-        setStatusFilter={setStatusFilter}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        priorityFilter={priorityFilter}
-        setPriorityFilter={setPriorityFilter}
-        sectionFilter={sectionFilter}
-        setSectionFilter={setSectionFilter}
-        sections={sections}
-        allCategories={allCategories}
-        onClearFilters={handleClearFilters}
-      />
-
-      <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-        <DailyBriefingCard
-          briefing={dailyBriefing ?? null}
-          isLoading={isBriefingLoading}
-          isError={isBriefingError}
+    <div className="relative h-full w-full"> {/* Outer container for full viewport height */}
+      <div className="flex flex-col h-full w-full max-w-5xl mx-auto"> {/* Constrained content */}
+        <DailyTasksHeader
+          currentDate={currentDate}
+          setCurrentDate={setCurrentDate}
+          tasks={processedTasks}
+          filteredTasks={filteredTasks}
+          sections={sections}
+          allCategories={allCategories}
+          userId={userId || null}
+          createSection={createSection}
+          updateSection={updateSection}
+          deleteSection={deleteSection}
+          updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
+          archiveAllCompletedTasks={archiveAllCompletedTasks}
+          toggleAllDoToday={handleToggleAllDoToday}
+          dailyProgress={dailyProgress}
+          isDemo={isDemo}
+          nextAvailableTask={nextAvailableTask}
+          updateTask={updateTask}
+          onOpenOverview={handleOpenOverview}
+          onOpenFocusView={handleOpenFocusView}
+          tasksLoading={tasksLoading}
+          onToggleAllSections={toggleAllSections}
+          isManageCategoriesOpen={isManageCategoriesOpen}
+          setIsManageCategoriesOpen={setIsManageCategoriesOpen}
+          isManageSectionsOpen={isManageSectionsOpen}
+          setIsManageSectionsOpen={setIsManageSectionsOpen}
+          isFilterPanelOpen={isFilterPanelOpen}
+          toggleFilterPanel={toggleFilterPanel}
+          markAllTasksAsCompleted={markAllPendingTasksAsCompleted}
+          onOpenAddTaskDialog={openAddTaskDialog}
+          handleAddTask={handleAddTask}
+          selectedCount={selectedTaskIds.size}
+          isSelectAllChecked={isSelectAllChecked}
+          onToggleSelectAll={handleToggleSelectAll}
+          markAllTasksAsSkipped={markAllTasksAsSkipped}
+          createCategory={createCategory}
+          deleteCategory={deleteCategory}
+          updateCategory={updateCategory}
         />
-        <div className="mt-6">
-          <TaskList
-            processedTasks={processedTasks}
-            filteredTasks={filteredTasks}
-            loading={tasksLoading}
-            updateTask={updateTask}
-            deleteTask={deleteTask}
-            markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
-            sections={sections}
-            createSection={createSection}
-            updateTaskParentAndOrder={updateTaskParentAndOrder}
-            onOpenOverview={handleOpenOverview}
-            currentDate={currentDate}
-            expandedSections={expandedSections}
-            expandedTasks={expandedTasks}
-            toggleTask={toggleTask}
-            toggleSection={toggleSection}
-            setFocusTask={setFocusTask}
-            doTodayOffIds={doTodayOffIds}
-            toggleDoToday={toggleDoToday}
-            scheduledTasksMap={scheduledTasksMap}
-            isDemo={isDemo}
-            selectedTaskIds={selectedTaskIds}
-            onSelectTask={handleSelectTask}
-            onOpenAddTaskDialog={openAddTaskDialog}
+
+        <FilterPanel
+          isOpen={isFilterPanelOpen}
+          searchFilter={searchFilter}
+          setSearchFilter={setSearchFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          priorityFilter={priorityFilter}
+          setPriorityFilter={setPriorityFilter}
+          sectionFilter={sectionFilter}
+          setSectionFilter={setSectionFilter}
+          sections={sections}
+          allCategories={allCategories}
+          onClearFilters={handleClearFilters}
+        />
+
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <DailyBriefingCard
+            briefing={dailyBriefing ?? null}
+            isLoading={isBriefingLoading}
+            isError={isBriefingError}
           />
+          <div className="mt-6">
+            <TaskList
+              processedTasks={processedTasks}
+              filteredTasks={filteredTasks}
+              loading={tasksLoading}
+              updateTask={updateTask}
+              deleteTask={deleteTask}
+              markAllTasksInSectionCompleted={markAllTasksInSectionCompleted}
+              sections={sections}
+              createSection={createSection}
+              updateTaskParentAndOrder={updateTaskParentAndOrder}
+              onOpenOverview={handleOpenOverview}
+              currentDate={currentDate}
+              expandedSections={expandedSections}
+              expandedTasks={expandedTasks}
+              toggleTask={toggleTask}
+              toggleSection={toggleSection}
+              setFocusTask={setFocusTask}
+              doTodayOffIds={doTodayOffIds}
+              toggleDoToday={toggleDoToday}
+              scheduledTasksMap={scheduledTasksMap}
+              isDemo={isDemo}
+              selectedTaskIds={selectedTaskIds}
+              onSelectTask={handleSelectTask}
+              onOpenAddTaskDialog={openAddTaskDialog}
+            />
+          </div>
         </div>
-      </div>
+      </div> {/* End Constrained content */}
 
       <FloatingAddTaskButton onClick={() => openAddTaskDialog()} isDemo={isDemo} />
 
@@ -378,7 +379,6 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
           onUpdate={updateTask}
-          onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}

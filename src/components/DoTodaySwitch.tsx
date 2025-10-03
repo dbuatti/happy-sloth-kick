@@ -1,9 +1,8 @@
 "use client";
 
 import React from 'react';
-// Removed Button import
 import { cn } from '@/lib/utils';
-import { Switch } from "@/components/ui/switch"; // Import Switch component
+import { Switch } from "@/components/ui/switch";
 
 interface DoTodaySwitchProps {
   isOn: boolean;
@@ -15,9 +14,7 @@ const DoTodaySwitch: React.FC<DoTodaySwitchProps> = ({ isOn, onToggle, isDemo })
   return (
     <Switch
       checked={isOn}
-      onCheckedChange={(checked) => {
-        // The onCheckedChange handler of Switch already provides the new state (checked)
-        // We just need to call onToggle, as it handles the state update logic.
+      onCheckedChange={() => { // Removed 'checked' parameter
         onToggle();
       }}
       disabled={isDemo}
@@ -26,7 +23,7 @@ const DoTodaySwitch: React.FC<DoTodaySwitchProps> = ({ isOn, onToggle, isDemo })
         "transition-colors duration-200"
       )}
       aria-label={isOn ? 'Remove from Do Today' : 'Add to Do Today'}
-      onClick={(e) => e.stopPropagation()} // Prevent event propagation to parent elements
+      onClick={(e) => e.stopPropagation()}
     />
   );
 };
