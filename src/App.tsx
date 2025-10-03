@@ -20,7 +20,7 @@ import AuthPage from "./pages/AuthPage";
 import FloatingTimer from "./components/FloatingTimer";
 import DevSpace from "./pages/DevSpace";
 import { TimerProvider } from "./context/TimerContext";
-import { SettingsProvider } from "./context/SettingsContext";
+import { SettingsProvider } from "./context/SettingsContext"; // Corrected import path
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Analytics from "./pages/Analytics";
@@ -29,7 +29,7 @@ import SleepPage from "./pages/SleepPage";
 import CommandPalette from "./components/CommandPalette";
 import MealPlanner from "./pages/MealPlanner";
 import ResonanceGoalsPage from "./pages/ResonanceGoalsPage";
-import { PomodoroProvider } from "./context/PomodoroContext"; // Import PomodoroProvider
+import { PomodoroProvider } from "./context/PomodoroContext";
 
 const queryClient = new QueryClient();
 
@@ -61,7 +61,7 @@ const AppContent = () => {
     return (
       <SettingsProvider userId={demoUserId}>
         <ReminderProvider>
-          <PomodoroProvider> {/* Wrap demo routes with PomodoroProvider */}
+          <PomodoroProvider>
             <div className="relative h-screen w-screen">
               <Sidebar isDemo={true}>
                 <Routes>
@@ -72,7 +72,7 @@ const AppContent = () => {
                   <Route path="/demo/projects" element={<ProjectBalanceTracker isDemo={true} demoUserId={demoUserId} />} />
                   <Route path="/demo/schedule" element={<TimeBlockSchedule isDemo={true} demoUserId={demoUserId} />} />
                   <Route path="/demo/sleep" element={<SleepPage isDemo={true} demoUserId={demoUserId} />} />
-                  <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} /> {/* Removed isDemo prop */}
+                  <Route path="/demo/focus" element={<FocusMode demoUserId={demoUserId} />} />
                   <Route path="/demo/dev-space" element={<DevSpace isDemo={true} demoUserId={demoUserId} />} />
                   <Route path="/demo/settings" element={<Settings isDemo={true} demoUserId={demoUserId} />} />
                   <Route path="/demo/analytics" element={<Analytics isDemo={true} demoUserId={demoUserId} />} />
@@ -96,7 +96,7 @@ const AppContent = () => {
   return (
     <SettingsProvider>
       <ReminderProvider>
-        <PomodoroProvider> {/* Wrap authenticated routes with PomodoroProvider */}
+        <PomodoroProvider>
           <div className="flex-1 flex flex-col">
             {user ? (
               <div className="relative h-screen w-screen">
