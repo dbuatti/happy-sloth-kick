@@ -379,7 +379,7 @@ const DailyTasksPage: React.FC<DailyTasksPageProps> = ({ isDemo = false, demoUse
           isOpen={isTaskOverviewOpen}
           onClose={() => setIsTaskOverviewOpen(false)}
           onUpdate={updateTask}
-          onDelete={deleteTask} {/* Added onDelete prop */}
+          onDelete={deleteTask}
           sections={sections}
           allCategories={allCategories}
           createSection={createSection}
