@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { showSuccess } from '@/utils/toast'; // Removed showError
+import { showSuccess } from '@/utils/toast'; // Removed: showError
 import { Textarea } from '@/components/ui/textarea';
 
 const TaskSettings: React.FC = () => {

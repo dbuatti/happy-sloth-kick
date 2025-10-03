@@ -7,11 +7,11 @@ import { Plus, Target, ListTodo, CalendarDays, Moon, Code, Settings as SettingsI
 
 interface DashboardProps {
   isDemo?: boolean;
-  // demoUserId?: string; // Removed: 'demoUserId' is declared but its value is never read.
+  // Removed: demoUserId?: string; // 'demoUserId' is declared but its value is never read.
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ isDemo = false /*, demoUserId*/ }) => {
-  const { settings: userSettings, isLoading: userSettingsLoading /*, updateSettings*/ } = useSettingsContext(); // Removed: 'updateSettings' is declared but its value is never read.
+const Dashboard: React.FC<DashboardProps> = ({ isDemo = false /* Removed: , demoUserId */ }) => {
+  const { settings: userSettings, isLoading: userSettingsLoading /* Removed: , updateSettings */ } = useSettingsContext(); // 'updateSettings' is declared but its value is never read.
 
   const visiblePages = userSettings?.visible_pages || {
     dailyTasks: true,
