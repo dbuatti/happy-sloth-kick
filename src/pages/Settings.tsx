@@ -24,7 +24,7 @@ interface SettingsPageProps {
 const SettingsPage: React.FC<SettingsPageProps> = ({ isDemo = false, demoUserId }) => {
   const { user, signOut } = useAuth(); // Destructure signOut directly from useAuth
   const userId = demoUserId || user?.id;
-  const { settings, isLoading, updateSettings } = useSettings({ userId }); // Destructure isLoading from useSettings
+  const { settings, isLoading, updateSettings } = useSettings({ userId });
   const navigate = useNavigate();
 
   const [projectTrackerTitle, setProjectTrackerTitle] = useState(settings?.project_tracker_title || DEFAULT_SETTINGS.project_tracker_title);

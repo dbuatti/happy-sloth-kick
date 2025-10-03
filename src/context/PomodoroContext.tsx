@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useSound } from '@/context/SoundContext';
-import { useSettings } from '@/context/SettingsContext';
+import { useSettings, DEFAULT_SETTINGS } from '@/context/SettingsContext'; // Import DEFAULT_SETTINGS
 import { showSuccess } from '@/utils/toast';
 
 interface PomodoroContextType {
@@ -29,11 +29,11 @@ export const PomodoroProvider: React.FC<PomodoroProviderProps> = ({ children }) 
   const { playSound } = useSound();
   const { settings } = useSettings();
 
-  // Access settings properties safely, as settings is guaranteed to be UserSettings due to useSettings hook logic
-  const workDuration = settings.pomodoro_work_duration;
-  const shortBreakDuration = settings.pomodoro_short_break_duration;
-  const longBreakDuration = settings.pomodoro_long_break_duration;
-  const roundsBeforeLongBreak = settings.pomodoro_rounds_before_long_break;
+  // Access settings properties safely using nullish coalescing with DEFAULT_SETTINGS as fallback
+  const workDuration = settings?.pomodoro_work_duration ?? DEFAULT_SETTINGS.pomodoro_work_duration;
+  const shortBreakDuration = settings?.pomodoro_short_break_duration ?? DEFAULT_SETTINGS.pomodoro_short_break_duration;
+  const longBreakDuration = settings?.pomodoro_long_break_duration ?? DEFAULT_SETTINGS.pomodoro_long_break_duration;
+  const roundsBeforeLongBreak = settings?.pomodoro_rounds_before_long_break ?? DEFAULT_SETTINGS.pomodoro_rounds_before_long_break;
 
   const [timerState, setTimerState] = useState<'idle' | 'working' | 'shortBreak' | 'longBreak' | 'paused'>('idle');
   const [timeLeft, setTimeLeft] = useState(workDuration * 60);

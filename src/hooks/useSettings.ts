@@ -42,8 +42,8 @@ interface UseSettingsProps {
   userId?: string;
 }
 
-export const useSettings = ({ userId }: UseSettingsProps = {}) => { // Removed propUserId from destructuring
-  const { user, loading: authLoading } = useAuth(); // Corrected destructuring
+export const useSettings = ({ userId }: UseSettingsProps = {}) => {
+  const { user, loading: authLoading } = useAuth();
   const currentUserId = userId ?? user?.id;
   const queryClient = useQueryClient();
 
