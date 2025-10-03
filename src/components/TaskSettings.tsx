@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSettingsContext } from '@/context/SettingsContext'; // Corrected import
+import { useSettingsContext } from '@/context/SettingsContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess } from '@/utils/toast'; // Removed showError
 import { Textarea } from '@/components/ui/textarea';
 
 const TaskSettings: React.FC = () => {
-  const { settings, isLoading, updateSettings } = useSettingsContext(); // Corrected destructuring and hook
+  const { settings, isLoading, updateSettings } = useSettingsContext();
 
   const [projectTrackerTitle, setProjectTrackerTitle] = useState(settings.project_tracker_title);
   const [meditationNotes, setMeditationNotes] = useState(settings.meditation_notes || '');

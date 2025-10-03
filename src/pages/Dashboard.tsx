@@ -1,19 +1,17 @@
 import React from 'react';
-import { useSettingsContext } from '@/context/SettingsContext'; // Corrected import
+import { useSettingsContext } from '@/context/SettingsContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Plus, Target, ListTodo, CalendarDays, Moon, Code, Settings as SettingsIcon, BarChart2, Archive, Utensils, Goal } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface DashboardProps {
   isDemo?: boolean;
-  demoUserId?: string;
+  // demoUserId?: string; // Removed: 'demoUserId' is declared but its value is never read.
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => {
-  const { settings: userSettings, isLoading: userSettingsLoading, updateSettings } = useSettingsContext(); // Corrected destructuring and hook
-  const userId = demoUserId; // Use demoUserId if in demo mode
+const Dashboard: React.FC<DashboardProps> = ({ isDemo = false /*, demoUserId*/ }) => {
+  const { settings: userSettings, isLoading: userSettingsLoading /*, updateSettings*/ } = useSettingsContext(); // Removed: 'updateSettings' is declared but its value is never read.
 
   const visiblePages = userSettings?.visible_pages || {
     dailyTasks: true,
@@ -26,16 +24,6 @@ const Dashboard: React.FC<DashboardProps> = ({ isDemo = false, demoUserId }) => 
     archive: true,
     mealPlanner: true,
     resonanceGoals: true,
-  };
-
-  const handleTogglePageVisibility = async (page: keyof typeof visiblePages) => {
-    if (isDemo) return;
-    await updateSettings({
-      visible_pages: {
-        ...visiblePages,
-        [page]: !visiblePages[page],
-      },
-    });
   };
 
   const dashboardCards = [
