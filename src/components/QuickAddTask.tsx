@@ -23,10 +23,10 @@ interface QuickAddTaskProps {
   allCategories: Category[];
   currentDate: Date;
   sections: TaskSection[]; // Added sections prop
-  createSection: (name: string) => Promise<void>;
-  updateSection: (sectionId: string, newName: string) => Promise<void>;
-  deleteSection: (sectionId: string) => Promise<void>;
-  updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
+  // Removed: createSection: (name: string) => Promise<void>;
+  // Removed: updateSection: (sectionId: string, newName: string) => Promise<void>;
+  // Removed: deleteSection: (sectionId: string) => Promise<void>;
+  // Removed: updateSectionIncludeInFocusMode: (sectionId: string, include: boolean) => Promise<void>;
 }
 
 const QuickAddTask: React.FC<QuickAddTaskProps> = ({

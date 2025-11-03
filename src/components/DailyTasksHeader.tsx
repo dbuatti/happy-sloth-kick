@@ -207,10 +207,6 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         allCategories={allCategories}
         currentDate={currentDate}
         sections={sections}
-        createSection={createSection}
-        updateSection={updateSection}
-        deleteSection={deleteSection}
-        updateSectionIncludeInFocusMode={updateSectionIncludeInFocusMode}
       />
 
       <Separator className="my-4" />
