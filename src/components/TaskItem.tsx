@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +28,7 @@ import { Appointment } from '@/hooks/useAppointments';
 
 export interface TaskItemProps {
   task: Task;
-  allTasks: Task[];
+  // Removed: allTasks: Task[];
   onDelete: (taskId: string) => void;
   onUpdate: (taskId: string, updates: Partial<Task>) => Promise<string | null>;
   sections: { id: string; name: string }[];
@@ -50,11 +50,13 @@ export interface TaskItemProps {
   isSelected: boolean;
   onSelectTask: (taskId: string, isSelected: boolean) => void;
   onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void;
+  effectiveRecurringType: Task['recurring_type']; // New prop
+  directSubtasksCount: number; // New prop
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({
   task,
-  allTasks,
+  // Removed: allTasks,
   onDelete,
   onUpdate,
   sections,
@@ -75,6 +77,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   isSelected,
   onSelectTask,
   onAddSubtask,
+  effectiveRecurringType, // Destructure new prop
+  directSubtasksCount, // Destructure new prop
 }) => {
   const { playSound } = useSound();
   const [showCompletionEffect, setShowCompletionEffect] = useState(false);
@@ -82,16 +86,8 @@ const TaskItem: React.FC<TaskItemProps> = ({
   const [editText, setEditText] = useState(task.description || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const originalTask = useMemo(() => {
-    if (!task.original_task_id) return null;
-    return allTasks.find(t => t.id === task.original_task_id);
-  }, [allTasks, task.original_task_id]);
-
-  const recurringType = originalTask ? originalTask.recurring_type : task?.recurring_type;
-
-  const directSubtasksCount = useMemo(() => {
-    return allTasks.filter(t => t.parent_task_id === task.id).length;
-  }, [allTasks, task.id]);
+  // Removed originalTask and recurringType useMemo, now using effectiveRecurringType prop directly
+  // Removed directSubtasksCount useMemo, now using directSubtasksCount prop directly
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -426,7 +422,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Actions Area */}
       <div className="flex-shrink-0 flex items-center gap-1 ml-2" onPointerDown={(e: React.PointerEvent) => e.stopPropagation()}>
-        {recurringType !== 'none' && (
+        {effectiveRecurringType !== 'none' && (
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="h-7 w-7 flex items-center justify-center" aria-label="Recurring task">
@@ -434,7 +430,7 @@ const TaskItem: React.FC<TaskItemProps> = ({
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Recurring: {recurringType.charAt(0).toUpperCase() + recurringType.slice(1)}</p>
+              <p>Recurring: {effectiveRecurringType.charAt(0).toUpperCase() + effectiveRecurringType.slice(1)}</p>
             </TooltipContent>
           </Tooltip>
         )}

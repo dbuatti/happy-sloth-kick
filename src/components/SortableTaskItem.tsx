@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/hooks/useTasks';
@@ -15,7 +15,7 @@ interface SortableTaskItemProps {
   onOpenOverview: (task: Task) => void;
   currentDate: Date;
   level: number;
-  allTasks: Task[];
+  allTasks: Task[]; // Still needed for recursive calls and calculations here
   isOverlay?: boolean;
   expandedTasks: Record<string, boolean>;
   toggleTask: (taskId: string) => void;
@@ -36,6 +36,8 @@ interface SortableTaskItemProps {
   scheduledAppointment?: Appointment;
   selectedTaskIds: Set<string>;
   onAddSubtask: (parentTaskId: string | null, sectionId: string | null) => void;
+  // Removed: effectiveRecurringType: Task['recurring_type']; // This is calculated here
+  // Removed: directSubtasksCount: number; // This is calculated here
 }
 
 const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
@@ -88,6 +90,14 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
   };
 
   const directSubtasks = getSubtasksForTask(task.id);
+  const calculatedDirectSubtasksCount = directSubtasks.length;
+
+  const originalTaskForRecurringType = useMemo(() => {
+    if (!task.original_task_id) return null;
+    return allTasks.find(t => t.id === task.original_task_id);
+  }, [allTasks, task.original_task_id]);
+
+  const effectiveRecurringType = originalTaskForRecurringType ? originalTaskForRecurringType.recurring_type : task.recurring_type;
 
   const effectiveIsExpanded = isExpanded !== undefined ? isExpanded : expandedTasks[task.id] !== false;
 
@@ -122,10 +132,10 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
       )}>
         <TaskItem
           task={task}
-          hasSubtasks={hasSubtasks !== undefined ? hasSubtasks : directSubtasks.length > 0}
+          hasSubtasks={hasSubtasks !== undefined ? hasSubtasks : calculatedDirectSubtasksCount > 0}
           isExpanded={effectiveIsExpanded}
           toggleExpand={toggleTask}
-          allTasks={allTasks}
+          // Removed: allTasks={allTasks}
           onDelete={onDelete}
           onUpdate={onUpdate}
           sections={sections}
@@ -144,8 +154,10 @@ const SortableTaskItem: React.FC<SortableTaskItemProps> = ({
           isSelected={isSelected}
           onSelectTask={onSelectTask}
           onAddSubtask={onAddSubtask}
+          effectiveRecurringType={effectiveRecurringType} // Pass new prop
+          directSubtasksCount={calculatedDirectSubtasksCount} // Pass new prop
         />
-        {effectiveIsExpanded && directSubtasks.length > 0 && (
+        {effectiveIsExpanded && calculatedDirectSubtasksCount > 0 && (
           <ul className="list-none mt-1.5 space-y-1.5">
             {directSubtasks.map((subtask) => (
               <SortableTaskItem
