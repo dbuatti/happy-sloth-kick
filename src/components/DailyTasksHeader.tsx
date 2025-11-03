@@ -60,6 +60,8 @@ interface DailyTasksHeaderProps {
   selectedCount: number;
   isSelectAllChecked: boolean;
   onToggleSelectAll: () => void;
+  hideQuickAddTask?: boolean; // New prop
+  hideDailyOverview?: boolean; // New prop
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -97,6 +99,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   selectedCount,
   isSelectAllChecked,
   onToggleSelectAll,
+  hideQuickAddTask = false, // Default to false
+  hideDailyOverview = false, // Default to false
 }) => {
   const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false);
   const [isConfirmMarkAllSkippedOpen, setIsConfirmMarkAllSkippedOpen] = useState(false);
@@ -198,31 +202,37 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
         setCurrentDate={setCurrentDate}
       />
 
-      <Separator className="my-4" />
+      {!hideQuickAddTask && (
+        <>
+          <Separator className="my-4" />
+          <QuickAddTask
+            onAddTask={handleAddTask}
+            defaultCategoryId={allCategories[0]?.id || ''}
+            isDemo={isDemo}
+            allCategories={allCategories}
+            currentDate={currentDate}
+            sections={sections}
+          />
+        </>
+      )}
 
-      <QuickAddTask
-        onAddTask={handleAddTask}
-        defaultCategoryId={allCategories[0]?.id || ''}
-        isDemo={isDemo}
-        allCategories={allCategories}
-        currentDate={currentDate}
-        sections={sections}
-      />
-
-      <Separator className="my-4" />
-
-      <DailyOverviewCard
-        dailyProgress={dailyProgress}
-        nextAvailableTask={nextAvailableTask}
-        updateTask={updateTask}
-        onOpenOverview={onOpenOverview}
-        onOpenFocusView={onOpenFocusView}
-        tasksLoading={tasksLoading}
-        isDemo={isDemo}
-        archiveAllCompletedTasks={archiveAllCompletedTasks}
-        toggleAllDoToday={toggleAllDoToday}
-        markAllTasksAsSkipped={markAllTasksAsSkipped}
-      />
+      {!hideDailyOverview && (
+        <>
+          <Separator className="my-4" />
+          <DailyOverviewCard
+            dailyProgress={dailyProgress}
+            nextAvailableTask={nextAvailableTask}
+            updateTask={updateTask}
+            onOpenOverview={onOpenOverview}
+            onOpenFocusView={onOpenFocusView}
+            tasksLoading={tasksLoading}
+            isDemo={isDemo}
+            archiveAllCompletedTasks={archiveAllCompletedTasks}
+            toggleAllDoToday={toggleAllDoToday}
+            markAllTasksAsSkipped={markAllTasksAsSkipped}
+          />
+        </>
+      )}
 
       <ManageCategoriesDialog
         isOpen={isManageCategoriesOpen}

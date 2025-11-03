@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import DailyTasksHeader from '@/components/DailyTasksHeader';
 import { NewTaskData } from '@/hooks/useTasks';
 
@@ -9,49 +9,32 @@ interface ArchivePageProps {
 
 const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  // Assume other states/data for archive page, e.g., archived tasks
-
-  // Dummy function for handleAddTask as task creation is likely not supported on archive page
-  const handleAddTask = useCallback(async (taskData: NewTaskData) => {
-    console.warn("Task creation is not supported on the Archive page.", taskData);
-    return Promise.resolve(null); // Return a promise that resolves to null or an appropriate value
-  }, []);
-
-  // Dummy functions/values for other required props of DailyTasksHeader
-  const dummyAsyncFunc = useCallback(async () => {}, []);
-  const dummySetState = useCallback(() => {}, []);
-  const dummyCreateCategory = useCallback(async (name: string, color: string) => { console.log('Dummy create category', name, color); return null; }, []);
-  const dummyUpdateCategory = useCallback(async (categoryId: string, updates: any) => { console.log('Dummy update category', categoryId, updates); return false; }, []);
-  const dummyDeleteCategory = useCallback(async (categoryId: string) => { console.log('Dummy delete category', categoryId); return false; }, []);
-
-
-  const dummyDailyProgress = {
-    totalPendingCount: 0,
-    completedCount: 0,
-    overdueCount: 0,
-  };
 
   return (
     <div className="flex flex-col h-full w-full">
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
-        tasks={[]} // Archive page likely doesn't display current tasks in header
+        tasks={[]}
         filteredTasks={[]}
-        sections={[]} // Or pass actual sections if relevant for filtering archived tasks
-        allCategories={[]} // Or pass actual categories
-        userId={demoUserId || null} // Use demoUserId if provided
-        createSection={dummyAsyncFunc}
-        updateSection={dummyAsyncFunc}
-        deleteSection={dummyAsyncFunc}
-        updateSectionIncludeInFocusMode={dummyAsyncFunc}
-        createCategory={dummyCreateCategory}
-        updateCategory={dummyUpdateCategory}
-        deleteCategory={dummyDeleteCategory}
-        archiveAllCompletedTasks={dummyAsyncFunc}
-        toggleAllDoToday={dummyAsyncFunc}
-        dailyProgress={dummyDailyProgress}
-        isDemo={isDemo} // Pass isDemo prop
+        sections={[]}
+        allCategories={[]}
+        userId={demoUserId || null}
+        createSection={async () => {}}
+        updateSection={async () => {}}
+        deleteSection={async () => {}}
+        updateSectionIncludeInFocusMode={async () => {}}
+        createCategory={async () => null}
+        updateCategory={async () => false}
+        deleteCategory={async () => false}
+        archiveAllCompletedTasks={async () => {}}
+        toggleAllDoToday={async () => {}}
+        dailyProgress={{
+          totalPendingCount: 0,
+          completedCount: 0,
+          overdueCount: 0,
+        }}
+        isDemo={isDemo}
         nextAvailableTask={null}
         updateTask={async () => null}
         onOpenOverview={() => {}}
@@ -59,19 +42,22 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
         tasksLoading={false}
         onToggleAllSections={() => {}}
         isManageCategoriesOpen={false}
-        setIsManageCategoriesOpen={dummySetState}
+        setIsManageCategoriesOpen={() => {}}
         isManageSectionsOpen={false}
-        setIsManageSectionsOpen={dummySetState}
+        setIsManageSectionsOpen={() => {}}
         isFilterPanelOpen={false}
         toggleFilterPanel={() => {}}
-        markAllTasksAsCompleted={dummyAsyncFunc}
+        markAllTasksAsCompleted={async () => {}}
         onOpenAddTaskDialog={() => {}}
-        handleAddTask={handleAddTask}
-        // New props for bulk selection - provide dummy values
+        handleAddTask={async (taskData: NewTaskData) => {
+          console.warn("Task creation is not supported on the Archive page.", taskData);
+          return null;
+        }}
         selectedCount={0}
         isSelectAllChecked={false}
-        onToggleSelectAll={dummyAsyncFunc}
-        markAllTasksAsSkipped={dummyAsyncFunc}
+        onToggleSelectAll={() => {}}
+        hideQuickAddTask={true}
+        hideDailyOverview={true}
       />
       {/* Content specific to the Archive page */}
       <div className="p-4">
