@@ -21,8 +21,6 @@ import ConfirmationDialog from './ConfirmationDialog';
 interface DailyTasksHeaderProps {
   currentDate: Date;
   setCurrentDate: React.Dispatch<React.SetStateAction<Date>>;
-  tasks: Task[];
-  filteredTasks: Task[];
   sections: TaskSection[];
   allCategories: Category[];
   userId: string | null;
@@ -60,8 +58,8 @@ interface DailyTasksHeaderProps {
   selectedCount: number;
   isSelectAllChecked: boolean;
   onToggleSelectAll: () => void;
-  hideQuickAddTask?: boolean; // New prop
-  hideDailyOverview?: boolean; // New prop
+  hideQuickAddTask?: boolean;
+  hideDailyOverview?: boolean;
 }
 
 const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
@@ -99,8 +97,8 @@ const DailyTasksHeader: React.FC<DailyTasksHeaderProps> = ({
   selectedCount,
   isSelectAllChecked,
   onToggleSelectAll,
-  hideQuickAddTask = false, // Default to false
-  hideDailyOverview = false, // Default to false
+  hideQuickAddTask = false,
+  hideDailyOverview = false,
 }) => {
   const [isConfirmMarkAllDoneOpen, setIsConfirmMarkAllDoneOpen] = useState(false);
   const [isConfirmMarkAllSkippedOpen, setIsConfirmMarkAllSkippedOpen] = useState(false);

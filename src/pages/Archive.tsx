@@ -15,8 +15,6 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ isDemo = false, demoUserId })
       <DailyTasksHeader
         currentDate={currentDate}
         setCurrentDate={setCurrentDate}
-        tasks={[]}
-        filteredTasks={[]}
         sections={[]}
         allCategories={[]}
         userId={demoUserId || null}
